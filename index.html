@@ -390,11 +390,13 @@ var TAKEOFF = (function () {
 
   /* ---------- quote pricing (per square) ---------- */
   var PRICING = {
-    packages: [{ label: 'Oakridge', perSq: 650 }, { label: 'Duration', perSq: 750 }, { label: 'Duration FLEX', perSq: 850 }],
-    lowPct: 85, highPct: 120, wastePct: 10,
-    steep: [{ from: 8, pct: 10 }, { from: 10, pct: 20 }, { from: 12, pct: 30 }],
-    layerPerSq: 75, minJob: 3500, roundTo: 100
+    packages: [{ label: 'Oakridge', perSq: 565 }, { label: 'Duration', perSq: 655 }, { label: 'Duration FLEX', perSq: 745 }],
+    lowPct: 83, highPct: 117, wastePct: 13,
+    steep: [{ from: 7, pct: 8 }, { from: 9, pct: 15 }, { from: 11, pct: 25 }, { from: 13, pct: 35 }],
+    layerPerSq: 65, minJob: 8000, outMin: 1500, roundTo: 100
   };
+  /* Same math as the website instant quote (team-forte.com/instant-quote). */
+  var WASTE_BY_FACETS = [{ max: 4, pct: 10 }, { max: 10, pct: 13 }, { max: 999, pct: 16 }];
 
   function cleanPricing(p) {
     p = p || {};
@@ -403,8 +405,9 @@ var TAKEOFF = (function () {
       var x = (p.packages || [])[i] || {};
       return { label: pk.label, perSq: Math.max(0, num(x.perSq, pk.perSq)) };
     });
-    ['lowPct', 'highPct', 'wastePct', 'layerPerSq', 'minJob', 'roundTo'].forEach(function (k) { out[k] = Math.max(0, num(p[k], d[k])); });
-    if (out.highPct < out.lowPct) out.highPct = out.lowPct;
+    ['lowPct', 'highPct', 'wastePct', 'layerPerSq', 'minJob', 'outMin', 'roundTo'].forEach(function (k) { out[k] = Math.max(0, num(p[k], d[k])); });
+    if (out.highPct < 100) out.highPct = 100;
+    if (out.lowPct > 100) out.lowPct = 100;
     if (!out.roundTo) out.roundTo = 1;
     out.steep = (Array.isArray(p.steep) ? p.steep : d.steep).map(function (x) { return { from: Math.max(0, num(x.from)), pct: Math.max(0, num(x.pct)) }; })
       .filter(function (x) { return x.from > 0; }).sort(function (a, b) { return a.from - b.from; }).slice(0, 6);
@@ -418,21 +421,35 @@ var TAKEOFF = (function () {
     return pct;
   }
 
-  /* Price ranges per package: [[low, high], ...]. roofs: [{s: sq ft (sloped), p: '7/12'}], layers: roof layers to tear off. */
+  function wastePctFor(pr, facets) {
+    facets = num(facets);
+    if (!facets) return pr.wastePct;
+    for (var i = 0; i < WASTE_BY_FACETS.length; i++) if (facets <= WASTE_BY_FACETS[i].max) return WASTE_BY_FACETS[i].pct;
+    return WASTE_BY_FACETS[WASTE_BY_FACETS.length - 1].pct;
+  }
+
+  /* Price ranges per package: [[low, high], ...]. roofs: [{s: sq ft (sloped), p: '7/12', f: facets}], layers: roof layers to tear off.
+     Each roof is priced on its own (main roof minimum, smaller minimum for extra roofs) and the ranges are added up,
+     exactly like the website instant quote. */
   function priceRanges(pr, roofs, layers) {
     pr = cleanPricing(pr);
     var extraLayers = Math.max(0, Math.round(num(layers, 1)) - 1);
+    var base0 = pr.packages[0].perSq || 1, rt = pr.roundTo;
+    function rnd(x) { return Math.round(x / rt) * rt; }
     return pr.packages.map(function (pk) {
-      var amt = 0;
-      (roofs || []).forEach(function (r) {
-        var sq = num(r.s || r.sqft) / 100 * (1 + pr.wastePct / 100);
-        amt += sq * pk.perSq * (1 + steepPct(pr, r.p || r.pitch) / 100) + sq * extraLayers * pr.layerPerSq;
+      var lo = 0, hi = 0, any = false;
+      (roofs || []).forEach(function (r, i) {
+        var sqft = num(r.s || r.sqft);
+        if (sqft <= 0) return;
+        any = true;
+        var sq = sqft / 100 * (1 + wastePctFor(pr, r.f) / 100);
+        var f = sq * (pk.perSq + extraLayers * pr.layerPerSq) * (1 + steepPct(pr, r.p || r.pitch) / 100);
+        var min = (i === 0 ? pr.minJob : pr.outMin) * pk.perSq / base0;
+        f = Math.max(f, min);
+        lo += rnd(Math.max(f * pr.lowPct / 100, min));
+        hi += rnd(f * pr.highPct / 100);
       });
-      if (amt <= 0) return [0, 0];
-      var lo = Math.max(pr.minJob, amt * pr.lowPct / 100);
-      var hi = Math.max(amt * pr.highPct / 100, pr.lowPct ? lo * pr.highPct / pr.lowPct : lo);
-      var rt = pr.roundTo;
-      return [Math.round(lo / rt) * rt, Math.round(hi / rt) * rt];
+      return any ? [lo, hi] : [0, 0];
     });
   }
 
@@ -454,7 +471,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='1';
+var APP_VERSION='2';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -1389,7 +1406,7 @@ var MAT=(function(){
     e.busy=true;render();
     call('measure',{address:e.address}).then(function(m){
       e.busy=false;e.m=m;e.address=m.address;e.lat=m.lat;e.lng=m.lng;
-      if(m.roofs&&m.roofs.length)e.roofs=m.roofs.map(function(r){return {n:r.n,s:r.s,p:r.p};});
+      if(m.roofs&&m.roofs.length)e.roofs=m.roofs.map(function(r){return {n:r.n,s:r.s,p:r.p,f:r.f};});
       render();
     }).catch(function(er){e.busy=false;render();err(er);});
   }

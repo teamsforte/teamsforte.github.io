@@ -1,7 +1,7 @@
 /* Team Forte app: keeps the app itself on the phone so it opens instantly.
    App files: served from the phone, refreshed in the background.
    Your data (quotes, jobs, photos) always comes from Google. */
-var VERSION = 'tf-v1';
+var VERSION = 'tf-v2';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
