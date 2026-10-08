@@ -1,0 +1,1857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Team Forte</title>
+<meta name="theme-color" content="#13202F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Team Forte">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#13202F;--navy2:#1B2B3D;--red:#FF5440;--red-dk:#E23E2B;--ink:#1C2430;--muted:#5B6675;--line:#DDE2E8;--slate:#F2F4F7;--white:#fff;--green:#1F9D55;--green-bg:#E5F6EC;--r:12px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:Montserrat,"Segoe UI",Arial,sans-serif;background:var(--slate);color:var(--ink);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px calc(32px + env(safe-area-inset-bottom))}
+.bar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 0 10px}
+.bar .wrap{display:flex;align-items:center;gap:10px;padding-bottom:0;min-height:40px}
+.brand{font-weight:800;letter-spacing:.06em;font-size:16px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--red)}
+.bar .link{color:#C4CCD6;font-size:13px;font-weight:600;padding:8px 4px}
+.back{display:flex;align-items:center;gap:4px;color:#fff;font-weight:700;font-size:15px;padding:8px 8px 8px 0}
+.back svg{width:20px;height:20px}
+.bar-title{flex:1;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;margin-right:48px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:10px;font-weight:700;font-size:15px;background:var(--red);color:#fff;transition:background .15s}
+.btn:active{background:var(--red-dk)}
+.btn.block{width:100%}
+a.btn{text-decoration:none}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.dark{background:var(--navy);color:#fff}
+.btn.danger{background:#fff;color:#C62828;border:1px solid #F3C4C4}
+.btn[disabled]{opacity:.55;pointer-events:none}
+.btn svg{width:18px;height:18px}
+h1{font-size:22px;font-weight:800;margin:20px 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:14px 0}
+.card h2{font-size:16px;font-weight:800;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card h2 small{font-weight:600;color:var(--muted);font-size:13px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-weight:600;font-size:14px;color:var(--ink)}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--slate);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{min-height:40px;border-radius:8px;font-weight:700;font-size:14px;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(19,32,47,.15)}
+.stats{display:flex;gap:10px;margin:14px 0 6px}
+.stat{flex:1;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.stat b{display:block;font-size:22px;font-weight:800}
+.stat span{font-size:12px;white-space:nowrap;color:var(--muted);font-weight:600}
+.jobs{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.job{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px;text-align:left;width:100%}
+.job .th{width:76px;height:76px;border-radius:9px;background:var(--slate) center/cover no-repeat;flex:none;display:flex;align-items:center;justify-content:center;color:#9AA5B1}
+.job .th svg{width:28px;height:28px}
+.job .info{flex:1;min-width:0}
+.job .t{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job .m{color:var(--muted);font-size:13px;margin:2px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.pill{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--slate);color:var(--muted);letter-spacing:.02em}
+.pill.live{background:var(--green-bg);color:var(--green)}
+.pill.home{background:#FFE9E5;color:var(--red-dk)}
+.chev{color:#9AA5B1;flex:none}
+.empty{text-align:center;color:var(--muted);padding:40px 16px;background:#fff;border:1px dashed var(--line);border-radius:var(--r);margin-top:12px}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.toggle:first-of-type{border-top:0;padding-top:0}
+.toggle .tl b{display:block;font-size:15px}
+.toggle .tl span{font-size:13px;color:var(--muted)}
+.sw{position:relative;width:52px;height:32px;flex:none;border-radius:999px;background:#C9D1DA;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.sw.on{background:var(--green)}
+.sw.on::after{transform:translateX(20px)}
+.stage{margin-top:16px}
+.stage:first-of-type{margin-top:0}
+.stage-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.stage-h b{font-size:14px;text-transform:uppercase;letter-spacing:.08em}
+.stage-h span{font-size:12px;color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ph{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--slate)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph .star{position:absolute;left:6px;top:6px;background:var(--red);color:#fff;border-radius:999px;font-size:10px;font-weight:800;padding:2px 7px;letter-spacing:.04em}
+.ph .cap{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;font-size:11px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add{aspect-ratio:1;border-radius:9px;border:2px dashed #B9C3CE;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-weight:700;font-size:12px;background:#FAFBFC}
+.add svg{width:26px;height:26px;color:var(--red)}
+label.f{display:block;font-size:13px;font-weight:700;margin:14px 0 6px}
+label.f:first-child{margin-top:0}
+label.f small{font-weight:500;color:var(--muted)}
+.in{width:100%;min-height:46px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;font-size:16px;-webkit-appearance:none;appearance:none}
+.in:focus{outline:2px solid rgba(255,84,64,.35);border-color:var(--red)}
+textarea.in{min-height:84px;resize:vertical}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.mt{margin-top:16px}
+.drive{display:flex;align-items:center;gap:8px;color:var(--navy);font-weight:700;font-size:14px;text-decoration:none;padding:12px 0}
+.drive svg{width:18px;height:18px}
+/* sheets */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(19,32,47,.55);display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sheet{background:#fff;width:100%;max-width:640px;max-height:94vh;overflow:auto;border-radius:18px 18px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));animation:up .2s ease-out}
+.grab{width:40px;height:5px;border-radius:3px;background:#D0D6DD;margin:4px auto 12px}
+.sheet h3{font-size:18px;font-weight:800;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center}
+.x{width:36px;height:36px;border-radius:50%;background:var(--slate);display:flex;align-items:center;justify-content:center}
+.x svg{width:18px;height:18px}
+.big{width:100%;border-radius:12px;background:var(--slate);display:block;max-height:52vh;object-fit:contain}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.acts .btn{min-height:44px;font-size:14px;padding:0 10px}
+@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+/* progress + toast */
+.prog{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--navy);color:#fff;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.prog .wrap{padding-bottom:0}
+.prog .l{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:8px}
+.prog .track{height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+.prog .fill{height:100%;background:var(--red);transition:width .3s}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25);animation:fade .2s}
+.toast.err{background:#B3261E}
+/* login */
+.login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;background:var(--navy);color:#fff;padding:24px}
+.login .box{max-width:380px;margin:0 auto;width:100%}
+.login .logo{font-weight:800;font-size:28px;letter-spacing:.08em;margin-bottom:4px}
+.login .logo b{color:var(--red)}
+.login p{color:#C4CCD6;margin:0 0 28px}
+.login .in{background:#fff;color:var(--ink);text-align:center;font-size:20px;letter-spacing:.2em;font-weight:700}
+.login .remember{display:flex;align-items:center;gap:8px;color:#C4CCD6;font-size:14px;margin:14px 0 18px}
+.login .remember input{width:18px;height:18px;accent-color:var(--red)}
+.login .err{color:#FFB4A8;font-size:14px;min-height:20px;margin-top:10px;text-align:center}
+.spin{width:22px;height:22px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite}
+.spin.dk{border-color:rgba(19,32,47,.15);border-top-color:var(--red)}
+@keyframes rot{to{transform:rotate(360deg)}}
+.loading{display:flex;justify-content:center;padding:60px 0}
+.foot{text-align:center;margin-top:26px}
+.foot a{color:var(--navy);font-weight:700;font-size:14px}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+/* bottom tabs */
+body.has-tabs .wrap{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+body.has-tabs .bar .wrap,body.has-tabs .prog .wrap{padding-bottom:0}
+.row{align-items:flex-end}
+body.has-tabs .prog{bottom:calc(62px + env(safe-area-inset-bottom))}
+body.has-tabs .toast{bottom:calc(80px + env(safe-area-inset-bottom))}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding:0 0 env(safe-area-inset-bottom)}
+.tabs .in2{display:flex;width:100%;max-width:640px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;font-size:11px;font-weight:700;color:#7A8594;position:relative}
+.tab svg{width:24px;height:24px}
+.tab.on{color:var(--red)}
+.tab .dot{position:absolute;top:5px;left:calc(50% + 8px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center}
+/* materials */
+.money{font-variant-numeric:tabular-nums}
+.q{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:10px}
+.q .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.q .nm{font-weight:800;font-size:16px}
+.q .ad{color:var(--muted);font-size:13px;margin:2px 0 8px}
+.q .rg{font-weight:800;font-size:15px;white-space:nowrap}
+.pill.new{background:#FFE9E5;color:var(--red-dk)}
+.pill.approved{background:#E7EEFF;color:#2B4FC7}
+.pill.ordered,.pill.Sent,.pill.Requested,.pill.Scheduled,.pill.Pending{background:#FFF4D6;color:#8A5A00}
+.pill.done,.pill.Delivered,.pill.Picked{background:var(--green-bg);color:var(--green)}
+.pill.Canceled,.pill.Backordered,.pill.Attempted{background:#FDE7E7;color:#B3261E}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.kv:first-of-type{border-top:0}
+.kv span{color:var(--muted)}
+.kv b{text-align:right}
+.big-n{font-size:28px;font-weight:800;line-height:1.1}
+.pkg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pkg button{border:2px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center;background:#fff}
+.pkg button b{display:block;font-size:14px}
+.pkg button span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.pkg button.on{border-color:var(--red);background:#FFF6F4}
+.meas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meas label{display:block;font-size:12px;font-weight:700;margin-bottom:4px}
+.meas label i{font-style:normal;font-weight:700;font-size:10px;color:#8A5A00;background:#FFF4D6;border-radius:4px;padding:1px 5px;margin-left:4px}
+.meas .in{min-height:42px;padding:8px 10px}
+.ln{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 0;border-top:1px solid var(--line)}
+.ln:first-child{border-top:0}
+.ln .l1{flex:1;min-width:0}
+.ln .l1 b{display:block;font-size:14px;font-weight:700}
+.ln .l1 span{font-size:12px;color:var(--muted)}
+.ln .l1 em{font-style:normal;font-size:10px;font-weight:800;color:#8A5A00;background:#FFF4D6;border-radius:4px;padding:1px 5px;margin-left:4px}
+.ln .l2{text-align:right;font-weight:800;font-size:14px;white-space:nowrap}
+.ln .l2 span{display:block;font-weight:600;font-size:12px;color:var(--muted)}
+.cat{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
+.cat:first-child{margin-top:0}
+.tot{border-top:2px solid var(--ink);margin-top:8px;padding-top:8px}
+.tot .kv{border:0;padding:3px 0}
+.tot .kv.grand{font-size:17px;font-weight:800}
+.src{font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;letter-spacing:.03em}
+.src.abc{background:var(--green-bg);color:var(--green)}
+.src.manual{background:#E7EEFF;color:#2B4FC7}
+.src.starter{background:#FFF4D6;color:#8A5A00}
+.note{background:#FFF8E6;border:1px solid #F3DFA8;border-radius:10px;padding:10px 12px;font-size:13px;color:#5C4400;margin:10px 0}
+.note.ok{background:var(--green-bg);border-color:#BFE6CF;color:#145C34}
+.res{display:block;width:100%;text-align:left;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.res b{display:block}
+.res span{font-size:12px;color:var(--muted)}
+.icon-btn{display:inline-flex;align-items:center;gap:6px;color:#fff;font-weight:700;font-size:14px;padding:8px 2px}
+.icon-btn svg{width:20px;height:20px}
+.meter{height:8px;border-radius:4px;background:var(--slate);overflow:hidden;margin-top:8px}
+.meter div{height:100%;background:var(--red)}
+.netpill{position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:60;background:#FFF4E5;color:#7A4B00;border:1px solid #F5D7A6;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="picker" accept="image/*" multiple class="vh" aria-hidden="true" tabindex="-1">
+<script>
+/* Team Forte materials takeoff (Owens Corning system). Shared by the phone app and the tests. */
+var TAKEOFF = (function () {
+  'use strict';
+
+  var PACKAGES = [
+    { key: 'shingle_oakridge', label: 'Oakridge' },
+    { key: 'shingle_duration', label: 'Duration' },
+    { key: 'shingle_flex', label: 'Duration FLEX' }
+  ];
+
+  /* Default price list. Prices are rough starting numbers until replaced by your supplier's prices. */
+  var CATALOG = [
+    { key: 'shingle_oakridge', cat: 'Shingles', name: 'Owens Corning Oakridge shingles', unit: 'bundle', price: 42 },
+    { key: 'shingle_duration', cat: 'Shingles', name: 'Owens Corning TruDefinition Duration shingles', unit: 'bundle', price: 46 },
+    { key: 'shingle_flex', cat: 'Shingles', name: 'Owens Corning Duration FLEX shingles', unit: 'bundle', price: 58 },
+    { key: 'hip_ridge', cat: 'Shingles', name: 'OC ProEdge Hip & Ridge (33 LF)', unit: 'bundle', price: 76 },
+    { key: 'starter', cat: 'Shingles', name: 'OC Starter Strip Plus (105 LF)', unit: 'bundle', price: 66 },
+    { key: 'ice_water', cat: 'Underlayment', name: 'OC WeatherLock G ice & water barrier (2 sq)', unit: 'roll', price: 118 },
+    { key: 'underlayment', cat: 'Underlayment', name: 'OC Deck Defense synthetic underlayment (10 sq)', unit: 'roll', price: 165 },
+    { key: 'drip_edge', cat: 'Metal & flashing', name: 'Drip edge, aluminum, 10 ft', unit: 'piece', price: 12 },
+    { key: 'step_flashing', cat: 'Metal & flashing', name: 'Step flashing 4x4x8 (100 pcs)', unit: 'bundle', price: 48 },
+    { key: 'ridge_vent', cat: 'Ventilation', name: 'OC VentSure ridge vent, 4 ft', unit: 'piece', price: 14 },
+    { key: 'pipe_boot', cat: 'Ventilation', name: 'Pipe boot flashing', unit: 'each', price: 18 },
+    { key: 'coil_nails', cat: 'Fasteners', name: 'Coil roofing nails 1-1/4" (7,200)', unit: 'box', price: 56 },
+    { key: 'cap_nails', cat: 'Fasteners', name: 'Plastic cap nails (2,000)', unit: 'box', price: 34 },
+    { key: 'sealant', cat: 'Fasteners', name: 'Roof sealant, tube', unit: 'tube', price: 9 },
+    { key: 'osb', cat: 'Decking', name: 'OSB roof decking 7/16" 4x8', unit: 'sheet', price: 22 }
+  ];
+
+  var DEFAULTS = { waste: 10, iceCourses: 2, pipes: 2, decking: 2, walls: 0 };
+
+  function num(v, d) { v = Number(v); return isFinite(v) ? v : (d || 0); }
+  function ceil(v) { return Math.max(0, Math.ceil(v - 1e-9)); }
+
+  function pitchRise(p) {
+    var m = String(p || '').match(/(\d+(?:\.\d+)?)\s*(?:\/\s*12)?/);
+    return m ? Math.min(30, num(m[1])) : 6;
+  }
+  function pitchFactor(p) { var r = pitchRise(p) / 12; return Math.sqrt(1 + r * r); }
+
+  /* Google encoded polyline -> [[lat,lng],...] */
+  function decodePoly(str) {
+    var pts = [], i = 0, lat = 0, lng = 0;
+    str = String(str || '');
+    while (i < str.length) {
+      var res = [0, 0];
+      for (var k = 0; k < 2; k++) {
+        var shift = 0, result = 0, b;
+        do { b = str.charCodeAt(i++) - 63; result |= (b & 31) << shift; shift += 5; } while (b >= 32);
+        res[k] = (result & 1) ? ~(result >> 1) : (result >> 1);
+      }
+      lat += res[0]; lng += res[1];
+      pts.push([lat / 1e6, lng / 1e6]);
+    }
+    return pts;
+  }
+
+  function rings(o) {
+    if (!o) return [];
+    if (typeof o === 'string') return [decodePoly(o)];
+    if (Array.isArray(o)) {
+      if (!o.length) return [];
+      if (typeof o[0] === 'string') return o.map(decodePoly);
+      if (Array.isArray(o[0]) && typeof o[0][0] === 'number') return [o];
+      if (Array.isArray(o[0]) && Array.isArray(o[0][0])) return o;
+    }
+    return [];
+  }
+
+  /* Footprint area (sq ft) and perimeter (ft) of a lat/lng ring. */
+  function ringStats(ring) {
+    if (!ring || ring.length < 3) return { area: 0, perim: 0 };
+    var lat0 = ring[0][0] * Math.PI / 180;
+    var fy = 364567, fx = 364567 * Math.cos(lat0);
+    var pts = ring.map(function (p) { return [p[1] * fx, p[0] * fy]; });
+    var a = 0, per = 0;
+    for (var i = 0; i < pts.length; i++) {
+      var p = pts[i], q = pts[(i + 1) % pts.length];
+      a += p[0] * q[1] - q[0] * p[1];
+      per += Math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1]));
+    }
+    return { area: Math.abs(a) / 2, perim: per };
+  }
+
+  /* Estimate measurements from the roofs saved with an instant quote: [{n, s, p, o}] */
+  function estimate(roofs) {
+    var m = { area: 0, eaves: 0, rakes: 0, ridges: 0, hips: 0, valleys: 0, pitch: '', roofs: [] };
+    var biggest = 0;
+    (roofs || []).forEach(function (r) {
+      var s = num(r.s || r.sqft), f = pitchFactor(r.p || r.pitch);
+      if (s <= 0) return;
+      var fp = 0, per = 0;
+      rings(r.o || r.outline).forEach(function (ring) { var st = ringStats(ring); fp += st.area; per += st.perim; });
+      var surface, basis;
+      if (fp > 50) {
+        // Is the quoted sq ft the sloped roof area or the flat footprint? Pick whichever fits the outline.
+        surface = Math.abs(s - fp * f) <= Math.abs(s - fp) ? s : s * f;
+        basis = 'outline';
+      } else {
+        surface = s;
+        per = 4 * Math.sqrt(s / f) * 1.15;
+        basis = 'area';
+      }
+      m.area += surface;
+      m.eaves += 0.55 * per;
+      m.rakes += 0.45 * per * f;
+      m.ridges += 0.30 * per;
+      m.hips += 0.10 * per * f;
+      m.valleys += 0.03 * per * f;
+      m.roofs.push({ name: r.n || r.name || 'Roof', sqft: Math.round(surface), pitch: r.p || r.pitch || '', basis: basis });
+      if (surface > biggest) { biggest = surface; m.pitch = r.p || r.pitch || ''; }
+    });
+    ['area', 'eaves', 'rakes', 'ridges', 'hips', 'valleys'].forEach(function (k) { m[k] = Math.round(m[k]); });
+    m.waste = DEFAULTS.waste;
+    m.iceCourses = DEFAULTS.iceCourses;
+    m.pipes = DEFAULTS.pipes;
+    m.decking = DEFAULTS.decking;
+    m.walls = DEFAULTS.walls;
+    m.est = { eaves: true, rakes: true, ridges: true, hips: true, valleys: true, walls: true, pipes: true, decking: true };
+    return m;
+  }
+
+  /* Quantities for one job. pkg = 0 Oakridge, 1 Duration, 2 Duration FLEX. */
+  function quantities(m, pkg) {
+    var waste = num(m.waste, DEFAULTS.waste) / 100;
+    var area = num(m.area), sq = area / 100;
+    var eaves = num(m.eaves), rakes = num(m.rakes), ridges = num(m.ridges), hips = num(m.hips), valleys = num(m.valleys);
+    var courses = num(m.iceCourses, DEFAULTS.iceCourses);
+    var iceArea = Math.min(area, eaves * 3 * courses + valleys * 3);
+    var shingle = (PACKAGES[pkg] || PACKAGES[1]).key;
+    var q = {};
+    q[shingle] = ceil(sq * (1 + waste) * 3);
+    q.hip_ridge = ceil((ridges + hips) * 1.05 / 33);
+    q.starter = ceil((eaves + rakes) * 1.05 / 105);
+    q.ice_water = ceil(iceArea * 1.1 / 200);
+    q.underlayment = ceil(Math.max(0, area - iceArea) * 1.1 / 1000);
+    q.drip_edge = ceil((eaves + rakes) * 1.05 / 10);
+    q.step_flashing = ceil(num(m.walls) * 12 / 5 / 100);
+    q.ridge_vent = ceil(ridges * 0.8 / 4);
+    q.pipe_boot = ceil(num(m.pipes));
+    q.coil_nails = sq > 0 ? ceil(sq * (1 + waste) * 320 / 7200) : 0;
+    q.cap_nails = sq > 0 ? Math.max(1, ceil(sq / 15)) : 0;
+    q.sealant = sq > 0 ? ceil(sq / 10) + 1 : 0;
+    q.osb = ceil(num(m.decking));
+    return q;
+  }
+
+  /* Build material lines. prices: {key: {name, unit, price, abcItem, uom}}. Keeps manual edits from oldLines. */
+  function lines(m, pkg, prices, oldLines) {
+    var q = quantities(m, pkg);
+    var old = {};
+    (oldLines || []).forEach(function (l) { old[l.key] = l; });
+    var out = [];
+    CATALOG.forEach(function (c) {
+      if (!(c.key in q)) return;
+      var p = (prices && prices[c.key]) || c;
+      var prev = old[c.key];
+      var qty = prev && prev.manual ? prev.qty : q[c.key];
+      if (!qty && !(prev && prev.manual)) return;
+      out.push({
+        key: c.key, cat: p.cat || c.cat, name: p.name || c.name, unit: p.unit || c.unit,
+        qty: qty, calc: q[c.key], manual: !!(prev && prev.manual),
+        price: prev && prev.priceManual ? prev.price : num(p.price, c.price), priceManual: !!(prev && prev.priceManual),
+        abcItem: prev && prev.itemManual ? prev.abcItem : (p.abcItem || ''), uom: prev && prev.itemManual ? prev.uom : (p.uom || ''),
+        itemManual: !!(prev && prev.itemManual)
+      });
+    });
+    (oldLines || []).forEach(function (l) { if (l.custom) out.push(l); });
+    return out;
+  }
+
+  function totals(ls, taxRate) {
+    var sub = 0;
+    (ls || []).forEach(function (l) { sub += num(l.qty) * num(l.price); });
+    sub = Math.round(sub * 100) / 100;
+    var tax = Math.round(sub * num(taxRate) / 100 * 100) / 100;
+    return { subtotal: sub, tax: tax, total: Math.round((sub + tax) * 100) / 100 };
+  }
+
+  /* ---------- quote pricing (per square) ---------- */
+  var PRICING = {
+    packages: [{ label: 'Oakridge', perSq: 650 }, { label: 'Duration', perSq: 750 }, { label: 'Duration FLEX', perSq: 850 }],
+    lowPct: 85, highPct: 120, wastePct: 10,
+    steep: [{ from: 8, pct: 10 }, { from: 10, pct: 20 }, { from: 12, pct: 30 }],
+    layerPerSq: 75, minJob: 3500, roundTo: 100
+  };
+
+  function cleanPricing(p) {
+    p = p || {};
+    var d = PRICING, out = {};
+    out.packages = d.packages.map(function (pk, i) {
+      var x = (p.packages || [])[i] || {};
+      return { label: pk.label, perSq: Math.max(0, num(x.perSq, pk.perSq)) };
+    });
+    ['lowPct', 'highPct', 'wastePct', 'layerPerSq', 'minJob', 'roundTo'].forEach(function (k) { out[k] = Math.max(0, num(p[k], d[k])); });
+    if (out.highPct < out.lowPct) out.highPct = out.lowPct;
+    if (!out.roundTo) out.roundTo = 1;
+    out.steep = (Array.isArray(p.steep) ? p.steep : d.steep).map(function (x) { return { from: Math.max(0, num(x.from)), pct: Math.max(0, num(x.pct)) }; })
+      .filter(function (x) { return x.from > 0; }).sort(function (a, b) { return a.from - b.from; }).slice(0, 6);
+    out.updated = p.updated || '';
+    return out;
+  }
+
+  function steepPct(pr, pitch) {
+    var rise = pitchRise(pitch), pct = 0;
+    (pr.steep || []).forEach(function (x) { if (rise >= x.from) pct = Math.max(pct, x.pct); });
+    return pct;
+  }
+
+  /* Price ranges per package: [[low, high], ...]. roofs: [{s: sq ft (sloped), p: '7/12'}], layers: roof layers to tear off. */
+  function priceRanges(pr, roofs, layers) {
+    pr = cleanPricing(pr);
+    var extraLayers = Math.max(0, Math.round(num(layers, 1)) - 1);
+    return pr.packages.map(function (pk) {
+      var amt = 0;
+      (roofs || []).forEach(function (r) {
+        var sq = num(r.s || r.sqft) / 100 * (1 + pr.wastePct / 100);
+        amt += sq * pk.perSq * (1 + steepPct(pr, r.p || r.pitch) / 100) + sq * extraLayers * pr.layerPerSq;
+      });
+      if (amt <= 0) return [0, 0];
+      var lo = Math.max(pr.minJob, amt * pr.lowPct / 100);
+      var hi = Math.max(amt * pr.highPct / 100, pr.lowPct ? lo * pr.highPct / pr.lowPct : lo);
+      var rt = pr.roundTo;
+      return [Math.round(lo / rt) * rt, Math.round(hi / rt) * rt];
+    });
+  }
+
+  function pitchFromDegrees(deg) {
+    var rise = Math.round(Math.tan(num(deg) * Math.PI / 180) * 12);
+    return Math.max(0, Math.min(24, rise)) + '/12';
+  }
+
+  return {
+    PACKAGES: PACKAGES, CATALOG: CATALOG, DEFAULTS: DEFAULTS, PRICING: PRICING,
+    cleanPricing: cleanPricing, priceRanges: priceRanges, steepPct: steepPct, pitchFromDegrees: pitchFromDegrees, pitchRise: pitchRise,
+    estimate: estimate, quantities: quantities, lines: lines, totals: totals,
+    decodePoly: decodePoly, ringStats: ringStats, pitchFactor: pitchFactor
+  };
+})();
+if (typeof module !== 'undefined') module.exports = TAKEOFF;
+
+(function(){
+'use strict';
+var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
+var API_URL=EXEC_URL+'?r=api';
+var APP_VERSION='1';
+var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
+var STAGES=[['before','Before'],['during','During'],['after','After']];
+var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
+var ICON={
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  chev:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+};
+
+var S={pass:'',jobs:[],view:'login',jobId:null,filter:'All',busy:false,prev:{},upload:null,tab:load('tfp_tab')||'quotes'};
+var app=document.getElementById('app');
+var picker=document.getElementById('picker');
+var pickStage='after';
+
+/* ---------- helpers ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function img(id,w){return S.prev[id]||('https://lh3.googleusercontent.com/d/'+encodeURIComponent(id)+'=w'+(w||400));}
+function store(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}}
+function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function month(d){if(!d)return'';var m=String(d).split('-');var names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return (names[(+m[1]||1)-1]||'')+' '+m[0];}
+function thisMonth(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);}
+function job(){for(var i=0;i<S.jobs.length;i++)if(S.jobs[i].id===S.jobId)return S.jobs[i];return null;}
+function sortJobs(){S.jobs.sort(function(a,b){return String(b.date).localeCompare(String(a.date))||String(b.created||'').localeCompare(String(a.created||''));});}
+function coverOf(j){
+  if(j.coverId&&j.photos.some(function(p){return p.id===j.coverId;}))return j.coverId;
+  var a=j.photos.filter(function(p){return p.stage==='after';});
+  return a.length?a[0].id:(j.photos.length?j.photos[j.photos.length-1].id:'');
+}
+function photosOf(j,stage){return j.photos.filter(function(p){return p.stage===stage;});}
+
+var CACHED={boot:1};
+function ckey(m){return 'tfc_'+m;}
+function cacheSet(m,d){try{localStorage.setItem(ckey(m),JSON.stringify({t:Date.now(),d:d}));}catch(e){}}
+function cacheGet(m){try{var v=JSON.parse(localStorage.getItem(ckey(m))||'null');return v&&v.d;}catch(e){return null;}}
+function cacheClear(){try{Object.keys(localStorage).forEach(function(k){if(k.indexOf('tfc_')===0)localStorage.removeItem(k);});}catch(e){}}
+function netPill(on,txt){var p=document.querySelector('.netpill');if(!on){if(p)p.remove();return;}if(!p){p=document.createElement('div');p.className='netpill';document.body.appendChild(p);}p.textContent=txt;}
+function call(method,args){
+  var body=JSON.stringify({pass:S.pass,method:method,args:args||{}});
+  var ctl=window.AbortController?new AbortController():null;
+  var tmo=setTimeout(function(){if(ctl)ctl.abort();},method==='uploadPhoto'?120000:45000);
+  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body,redirect:'follow',credentials:'omit',signal:ctl?ctl.signal:undefined})
+    .then(function(r){clearTimeout(tmo);if(!r.ok)throw new Error('Google is busy. Try again in a moment.');return r.text();},
+          function(){clearTimeout(tmo);throw new Error(navigator.onLine===false?'No signal. Your saved info is still here — try again when you have signal.':'Couldn’t reach Google. Check your signal and try again.');})
+    .then(function(s){var r;try{r=JSON.parse(s);}catch(e){throw new Error('Unexpected reply from Google. Try again.');}
+      if(r.ok){if(CACHED[method]&&!(args&&Object.keys(args).length))cacheSet(method,r.data);return r.data;}
+      if(r.error==='WRONG_PASSCODE'){logout('That passcode didn’t work.');throw new Error('Wrong passcode');}
+      throw new Error(r.error);});
+}
+
+var toastT;
+function toast(msg,err){
+  var old=document.querySelector('.toast');if(old)old.remove();
+  var t=document.createElement('div');t.className='toast'+(err?' err':'');t.textContent=msg;document.body.appendChild(t);
+  clearTimeout(toastT);toastT=setTimeout(function(){t.remove();},err?4500:2200);
+}
+
+/* ---------- views ---------- */
+function render(){
+  document.body.classList.remove('has-tabs');
+  if(S.view==='login')return renderLogin();
+  if(S.view==='loading'){app.innerHTML=bar('<div class="brand">TEAM <b>FORTE</b></div>')+'<div class="loading"><div class="spin dk"></div></div>';return;}
+  if(S.tab!=='photos'){MAT.render();drawTabs();return;}
+  if(S.view==='job'&&job()){renderJob();drawTabs();return;}
+  S.view='home';renderHome();drawTabs();
+}
+
+var TAB_ICONS={
+  jobs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  quotes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>',
+  photos:ICON.cam,
+  money:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+};
+function drawTabs(){
+  document.body.classList.add('has-tabs');
+  var n=MAT.newCount();
+  var tabs=isCrew()?[['jobs','Jobs'],['photos','Photos']]:[['quotes','Quotes'],['photos','Photos'],['money','Spending']];
+  app.insertAdjacentHTML('beforeend','<nav class="tabs" aria-label="Sections"><div class="in2">'+
+    tabs.map(function(t){
+      return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'"'+(S.tab===t[0]?' aria-current="page"':'')+'>'+TAB_ICONS[t[0]]+t[1]+(t[0]==='quotes'&&n?'<span class="dot">'+n+'</span>':'')+'</button>';
+    }).join('')+'</div></nav>');
+}
+
+function bar(inner){return '<div class="bar"><div class="wrap">'+inner+'</div></div>';}
+
+function renderLogin(msg){
+  app.innerHTML='<div class="login"><div class="box">'+
+    '<div class="logo">TEAM <b>FORTE</b></div><p>Quotes, materials &amp; website photos</p>'+
+    '<form id="lf"><input class="in" id="pc" type="password" inputmode="text" autocomplete="current-password" placeholder="Passcode" aria-label="Passcode" required>'+
+    '<label class="remember"><input type="checkbox" id="rm" checked> Keep me logged in on this phone</label>'+
+    '<button class="btn block" id="lb" type="submit">Log in</button><div class="err" id="le">'+esc(msg||'')+'</div></form></div></div>';
+  var f=document.getElementById('lf');
+  f.onsubmit=function(e){e.preventDefault();
+    var pc=document.getElementById('pc').value.trim();if(!pc)return;
+    var b=document.getElementById('lb');b.disabled=true;b.innerHTML='<div class="spin"></div>';
+    S.pass=pc;
+    call('ping').then(function(){
+      if(document.getElementById('rm').checked)store('tfp_pass',pc);
+      boot();
+    }).catch(function(err){
+      if(err.message!=='Wrong passcode')renderLogin(err.message);
+    });
+  };
+}
+
+function logout(msg){S.pass='';store('tfp_pass',null);cacheClear();S.view='login';MAT.reset();render();if(msg){var le=document.getElementById('le');if(le)le.textContent=msg;}}
+
+function isCrew(){return S.user&&S.user.role==='crew';}
+function applyBoot(d){
+  S.user=(d.ping&&d.ping.user)||{name:'Owner',role:'owner'};
+  var ok=isCrew()?['jobs','photos']:['quotes','photos','money'];
+  if(ok.indexOf(S.tab)<0)S.tab=ok[0];
+  var l=d.list||{};S.jobs=l.jobs||[];if(l.url)EXEC_URL=l.url;sortJobs();
+  if(d.mat)MAT.apply(d.mat);
+  if(d.crew)MAT.applyCrew(d.crew);
+}
+function typing(){var a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=='checkbox'&&a.type!=='radio');}
+function boot(){
+  var cached=cacheGet('boot');
+  if(cached){applyBoot(cached);if(S.view==='login'||S.view==='loading')S.view='home';render();netPill(true,'Updating…');}
+  else{S.view='loading';render();}
+  return call('boot').then(function(d){
+    netPill(false);
+    var same=cached&&JSON.stringify(cached)===JSON.stringify(d);
+    applyBoot(d);
+    if(S.view==='loading'||S.view==='login')S.view='home';
+    if(!same&&!typing()&&!document.querySelector('.sheet,.modal,dialog[open]'))render();
+  }).catch(function(e){
+    if(S.view==='login')return;
+    if(cached){netPill(true,'Offline — showing saved info');setTimeout(function(){netPill(false);},4000);return;}
+    S.view='home';render();toast(e.message,true);
+  });
+}
+window.addEventListener('online',function(){if(S.pass&&S.view!=='login')boot();});
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&S.pass&&S.view!=='login'){var c=null;try{c=JSON.parse(localStorage.getItem('tfc_boot')||'null');}catch(e){}
+    if(!c||Date.now()-c.t>60000)boot();}
+});
+
+function renderHome(){
+  var list=S.jobs.filter(function(j){return S.filter==='All'||j.service===S.filter;});
+  var live=S.jobs.filter(function(j){return j.published&&j.photos.length;}).length;
+  var home=S.jobs.filter(function(j){return j.published&&j.featured&&j.photos.length;}).length;
+  var photos=S.jobs.reduce(function(n,j){return n+j.photos.length;},0);
+  var h=bar('<div class="brand">TEAM <b>FORTE</b> PHOTOS</div><button class="link" data-act="logout">Log out</button>')+
+    '<div class="wrap">'+
+    '<div class="stats"><div class="stat"><b>'+live+'</b><span>On website</span></div><div class="stat"><b>'+home+'</b><span>On homepage</span></div><div class="stat"><b>'+photos+'</b><span>Photos</span></div></div>'+
+    '<button class="btn block mt" data-act="new">'+ICON.plus+'New job</button>'+
+    '<div class="chips mt">'+['All'].concat(SERVICES).map(function(s){return '<button class="chip'+(S.filter===s?' on':'')+'" data-act="filter" data-v="'+s+'">'+s+'</button>';}).join('')+'</div>';
+  if(!list.length){
+    h+='<div class="empty"><b>'+(S.jobs.length?'No '+esc(S.filter.toLowerCase())+' jobs yet':'No jobs yet')+'</b>Tap “New job”, then add before, during and after photos.</div>';
+  }else{
+    h+='<div class="jobs">'+list.map(function(j){
+      var c=coverOf(j);
+      var meta=[j.service,j.town,month(j.date)].filter(Boolean).join(' · ');
+      var pills=(j.published&&j.photos.length?'<span class="pill live">On website</span>':'<span class="pill">'+(j.photos.length?'Hidden':'No photos yet')+'</span>')+
+        (j.featured?'<span class="pill home">★ Homepage</span>':'')+'<span class="pill">'+j.photos.length+' photo'+(j.photos.length===1?'':'s')+'</span>';
+      return '<button class="job" data-act="open" data-id="'+esc(j.id)+'"><div class="th"'+(c?' style="background-image:url(\''+esc(img(c,300))+'\')"':'')+'>'+(c?'':ICON.cam)+'</div>'+
+        '<div class="info"><div class="t">'+esc(j.title)+'</div><div class="m">'+esc(meta)+'</div><div class="pills">'+pills+'</div></div><span class="chev">'+ICON.chev+'</span></button>';
+    }).join('')+'</div>';
+  }
+  if(EXEC_URL&&EXEC_URL.indexOf('__')!==0)h+='<div class="foot"><a href="'+esc(EXEC_URL)+'?r=preview" target="_blank" rel="noopener">See the website gallery →</a></div>';
+  h+='</div>';
+  app.innerHTML=h;
+}
+
+function renderJob(){
+  var j=job();
+  var c=coverOf(j);
+  var h=bar('<button class="back" data-act="home">'+ICON.back+'Jobs</button><div class="bar-title">'+esc(j.title)+'</div>')+'<div class="wrap">';
+  h+='<div class="card">'+
+    tog('published','Show on website',j.photos.length?'Appears in the Our Work gallery':'Add a photo first. Then it will appear',j.published)+
+    tog('featured','Show on homepage','Also appears in the homepage gallery',j.featured)+
+    '</div>';
+  h+='<div class="card"><h2>Photos <small>Tap a photo to edit</small></h2>';
+  STAGES.forEach(function(st){
+    var list=photosOf(j,st[0]);
+    h+='<div class="stage"><div class="stage-h"><b>'+st[1]+'</b><span>'+list.length+' photo'+(list.length===1?'':'s')+'</span></div><div class="grid">'+
+      list.map(function(p){return '<button class="ph" data-act="photo" data-id="'+esc(p.id)+'" aria-label="'+st[1]+' photo"><img loading="lazy" src="'+esc(img(p.id,400))+'" alt="">'+(p.id===c?'<span class="star">COVER</span>':'')+(p.caption?'<span class="cap">'+esc(p.caption)+'</span>':'')+'</button>';}).join('')+
+      '<button class="add" data-act="add" data-stage="'+st[0]+'">'+ICON.cam+'Add '+st[1].toLowerCase()+'</button></div></div>';
+  });
+  h+='</div>';
+  h+='<div class="card"><h2>Job details</h2><form id="jf">'+detailFields(j)+
+    '<button class="btn dark block mt" type="submit">Save details</button></form></div>';
+  if(j.folderUrl)h+='<a class="drive" href="'+esc(j.folderUrl)+'" target="_blank" rel="noopener">'+ICON.folder+'Open this job’s folder in Google Drive</a>';
+  if(!isCrew())h+='<button class="btn danger block mt" data-act="deljob">Delete this job</button>';
+  h+='</div>';
+  app.innerHTML=h;
+  document.getElementById('jf').onsubmit=function(e){e.preventDefault();saveDetails(this);};
+  wireService(document.getElementById('jf'));
+}
+
+function tog(key,title,sub,on){
+  return '<div class="toggle"><div class="tl"><b>'+title+'</b><span>'+sub+'</span></div><button class="sw'+(on?' on':'')+'" role="switch" aria-checked="'+(on?'true':'false')+'" aria-label="'+title+'" data-act="tog" data-k="'+key+'"></button></div>';
+}
+
+function detailFields(j){
+  j=j||{service:S.filter!=='All'?S.filter:'Roofing',date:thisMonth()};
+  var svc=j.service||'Roofing';
+  return '<label class="f">Service</label><div class="seg" id="svc">'+SERVICES.map(function(s){return '<button type="button" class="'+(s===svc?'on':'')+'" data-svc="'+s+'">'+s+'</button>';}).join('')+'</div>'+
+    '<input type="hidden" name="service" value="'+esc(svc)+'">'+
+    '<label class="f">What was the job?</label><input class="in" name="title" list="titles" maxlength="120" placeholder="e.g. Full roof replacement" value="'+esc(j.title||'')+'" required>'+
+    '<datalist id="titles">'+(TITLES[svc]||[]).map(function(t){return '<option value="'+esc(t)+'">';}).join('')+'</datalist>'+
+    '<div class="row"><div><label class="f">Town</label><input class="in" name="town" maxlength="60" placeholder="e.g. Hartford" value="'+esc(j.town||'')+'"></div>'+
+    '<div><label class="f">Month</label><input class="in" type="month" name="date" value="'+esc(j.date||thisMonth())+'"></div></div>'+
+    '<label class="f">Street address <small>(private, never shown on the website)</small></label><input class="in" name="address" maxlength="120" placeholder="Optional" value="'+esc(j.address||'')+'">'+
+    '<label class="f">Short description <small>(optional, shown on the website)</small></label><textarea class="in" name="description" maxlength="600" placeholder="e.g. Tore off two layers, replaced rotted decking, new architectural shingles and ridge vent.">'+esc(j.description||'')+'</textarea>';
+}
+
+function wireService(form){
+  var seg=form.querySelector('#svc');if(!seg)return;
+  seg.onclick=function(e){var b=e.target.closest('button[data-svc]');if(!b)return;
+    seg.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+    form.elements.service.value=b.getAttribute('data-svc');
+    var dl=form.querySelector('#titles');if(dl)dl.innerHTML=(TITLES[b.getAttribute('data-svc')]||[]).map(function(t){return '<option value="'+esc(t)+'">';}).join('');
+  };
+}
+
+function formData(f){return{service:f.elements.service.value,title:f.elements.title.value,town:f.elements.town.value,date:f.elements.date.value,address:f.elements.address.value,description:f.elements.description.value};}
+
+function saveDetails(f){
+  var j=job();var b=f.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving…';
+  var d=formData(f);d.id=j.id;
+  call('saveJob',d).then(function(r){merge(r);toast('Saved');render();})
+    .catch(function(e){b.disabled=false;b.textContent='Save details';toast(e.message,true);});
+}
+
+function merge(r){
+  for(var i=0;i<S.jobs.length;i++)if(S.jobs[i].id===r.id){S.jobs[i]=r;sortJobs();return;}
+  S.jobs.push(r);sortJobs();
+}
+
+/* ---------- sheets ---------- */
+function sheet(html,onClose){
+  closeSheet();
+  var ov=document.createElement('div');ov.className='ov';ov.id='ov';
+  ov.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>'+html+'</div>';
+  ov.addEventListener('click',function(e){if(e.target===ov||e.target.closest('[data-close]')){closeSheet();if(onClose)onClose();}});
+  document.body.appendChild(ov);document.body.style.overflow='hidden';
+  return ov;
+}
+function closeSheet(){var o=document.getElementById('ov');if(o)o.remove();document.body.style.overflow='';}
+function closeBtn(){return '<button class="x" data-close aria-label="Close">'+ICON.x+'</button>';}
+
+function confirmBox(title,text,okLabel){
+  return new Promise(function(res){
+    var ov=sheet('<h3>'+esc(title)+closeBtn()+'</h3><p class="sub">'+esc(text)+'</p><div class="acts"><button class="btn ghost" data-close>Cancel</button><button class="btn" id="cok" style="background:#C62828">'+esc(okLabel)+'</button></div>',function(){res(false);});
+    ov.querySelector('#cok').onclick=function(){closeSheet();res(true);};
+  });
+}
+
+function newJobSheet(){
+  var ov=sheet('<h3>New job'+closeBtn()+'</h3><form id="nf">'+detailFields(null)+'<button class="btn block mt" type="submit">Create job &amp; add photos</button></form>');
+  var f=ov.querySelector('#nf');wireService(f);
+  f.onsubmit=function(e){e.preventDefault();
+    var b=f.querySelector('button[type=submit]');b.disabled=true;b.textContent='Creating…';
+    call('saveJob',formData(f)).then(function(r){merge(r);closeSheet();S.jobId=r.id;S.view='job';render();window.scrollTo(0,0);toast('Job created. Now add photos.');})
+      .catch(function(err){b.disabled=false;b.textContent='Create job & add photos';toast(err.message,true);});
+  };
+}
+
+function photoSheet(id){
+  var j=job();var p=null;j.photos.forEach(function(x){if(x.id===id)p=x;});if(!p)return;
+  var group=photosOf(j,p.stage);var idx=group.indexOf(p);
+  var isCover=coverOf(j)===p.id;
+  var ov=sheet('<h3>Photo'+closeBtn()+'</h3>'+
+    '<img class="big" src="'+esc(img(p.id,1200))+'" alt="">'+
+    '<label class="f mt">Stage</label><div class="seg" id="stg">'+STAGES.map(function(s){return '<button type="button" class="'+(s[0]===p.stage?'on':'')+'" data-st="'+s[0]+'">'+s[1]+'</button>';}).join('')+'</div>'+
+    '<label class="f">Caption <small>(optional)</small></label><div class="row"><input class="in" id="cap" maxlength="160" placeholder="e.g. Rotted decking found under old shingles" value="'+esc(p.caption||'')+'"><button class="btn dark" id="capb" style="flex:0 0 auto">Save</button></div>'+
+    '<div class="acts">'+
+      '<button class="btn ghost" id="mvl"'+(idx<=0?' disabled':'')+'>← Move earlier</button>'+
+      '<button class="btn ghost" id="mvr"'+(idx>=group.length-1?' disabled':'')+'>Move later →</button>'+
+      '<button class="btn ghost" id="cov"'+(isCover?' disabled':'')+'>'+(isCover?'★ Cover photo':'★ Make cover photo')+'</button>'+
+      (isCrew()?'<span></span>':'<button class="btn danger" id="del">Delete photo</button>')+
+    '</div><p class="hint">The cover photo is the one shown on the website card for this job.</p>');
+  function after(r,msg){var k=j.photos.indexOf(p);if(r&&k>=0)j.photos[k]=Object.assign(p,{stage:r.stage||p.stage,caption:r.caption!=null?r.caption:p.caption});resort(j);render();if(msg)toast(msg);}
+  ov.querySelector('#stg').onclick=function(e){var b=e.target.closest('button[data-st]');if(!b||b.classList.contains('on'))return;
+    var st=b.getAttribute('data-st');
+    call('updatePhoto',{id:p.id,stage:st}).then(function(r){p.stage=r.stage;p._o=Date.now();after(r,'Moved to '+st);photoSheet(p.id);}).catch(function(e2){toast(e2.message,true);});
+  };
+  ov.querySelector('#capb').onclick=function(){var v=ov.querySelector('#cap').value;
+    call('updatePhoto',{id:p.id,caption:v}).then(function(r){closeSheet();after(r,'Caption saved');}).catch(function(e2){toast(e2.message,true);});
+  };
+  function mv(dir){call('movePhoto',{id:p.id,dir:dir}).then(function(){
+      var g=photosOf(j,p.stage);var i=g.indexOf(p),k=i+dir;if(k<0||k>=g.length)return;
+      var a=j.photos.indexOf(g[i]),b2=j.photos.indexOf(g[k]);var t=j.photos[a];j.photos[a]=j.photos[b2];j.photos[b2]=t;
+      render();photoSheet(p.id);
+    }).catch(function(e2){toast(e2.message,true);});}
+  ov.querySelector('#mvl').onclick=function(){mv(-1);};
+  ov.querySelector('#mvr').onclick=function(){mv(1);};
+  ov.querySelector('#cov').onclick=function(){
+    call('saveJob',{id:j.id,coverId:p.id}).then(function(r){merge(r);closeSheet();render();toast('Cover photo set');}).catch(function(e2){toast(e2.message,true);});
+  };
+  if(ov.querySelector('#del'))ov.querySelector('#del').onclick=function(){
+    confirmBox('Delete this photo?','It will be removed from the website and moved to the trash in Google Drive.','Delete').then(function(ok){
+      if(!ok){photoSheet(p.id);return;}
+      call('deletePhoto',{id:p.id}).then(function(){j.photos=j.photos.filter(function(x){return x.id!==p.id;});if(j.coverId===p.id)j.coverId='';render();toast('Photo deleted');})
+        .catch(function(e2){toast(e2.message,true);});
+    });
+  };
+}
+
+function resort(j){
+  var rank={before:0,during:1,after:2};
+  j.photos.forEach(function(p,i){p._i=p._o?1e9+p._o:i;});
+  j.photos.sort(function(a,b){return (rank[a.stage]-rank[b.stage])||(a._i-b._i);});
+  j.photos.forEach(function(p){delete p._i;delete p._o;});
+}
+
+/* ---------- uploads ---------- */
+function shrink(file){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(file);var im=new Image();
+    im.onload=function(){
+      try{
+        var w=im.naturalWidth,h=im.naturalHeight,max=2000,s=Math.min(1,max/Math.max(w,h));
+        var cw=Math.round(w*s),ch=Math.round(h*s);
+        var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+        var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cw,ch);cx.drawImage(im,0,0,cw,ch);
+        var full=cv.toDataURL('image/jpeg',0.82);
+        var ts=Math.min(1,500/Math.max(cw,ch));var tv=document.createElement('canvas');tv.width=Math.round(cw*ts);tv.height=Math.round(ch*ts);
+        tv.getContext('2d').drawImage(cv,0,0,tv.width,tv.height);
+        URL.revokeObjectURL(url);
+        res({base64:full.split(',')[1],width:cw,height:ch,thumb:tv.toDataURL('image/jpeg',0.8)});
+      }catch(e){URL.revokeObjectURL(url);rej(e);}
+    };
+    im.onerror=function(){URL.revokeObjectURL(url);rej(new Error('Couldn’t read '+(file.name||'that photo')+'. Try a JPG.'));};
+    im.src=url;
+  });
+}
+
+function upload(files,stage){
+  var j=job();if(!j||!files.length)return;
+  var list=Array.prototype.slice.call(files,0,30);
+  S.upload={total:list.length,done:0,failed:0};drawProg();
+  var errs=[];
+  var seq=Promise.resolve();
+  list.forEach(function(file){
+    seq=seq.then(function(){
+      return shrink(file).then(function(sh){
+        return call('uploadPhoto',{jobId:j.id,stage:stage,base64:sh.base64,mime:'image/jpeg',width:sh.width,height:sh.height}).then(function(p){
+          S.prev[p.id]=sh.thumb;
+          j.photos.push({id:p.id,stage:p.stage,caption:p.caption,w:p.width,h:p.height});resort(j);
+        });
+      }).catch(function(e){S.upload.failed++;errs.push(e.message);})
+      .then(function(){S.upload.done++;drawProg();if(S.view==='job')renderKeepScroll();});
+    });
+  });
+  seq.then(function(){
+    var u=S.upload;S.upload=null;drawProg();
+    if(u.failed)toast(u.failed+' of '+u.total+' didn’t upload: '+errs[0],true);
+    else toast(u.total+' photo'+(u.total===1?'':'s')+' added'+(j.published?'. Live on the website.':'.'));
+  });
+}
+
+function renderKeepScroll(){var y=window.scrollY;render();window.scrollTo(0,y);}
+
+function drawProg(){
+  var el=document.getElementById('prog');
+  if(!S.upload){if(el)el.remove();return;}
+  if(!el){el=document.createElement('div');el.id='prog';el.className='prog';document.body.appendChild(el);}
+  var u=S.upload,n=Math.min(u.done+1,u.total);
+  el.innerHTML='<div class="wrap"><div class="l"><span>'+(u.done<u.total?'Uploading '+n+' of '+u.total+'…':'Finishing…')+'</span><span>'+Math.round(u.done/u.total*100)+'%</span></div><div class="track"><div class="fill" style="width:'+Math.max(4,u.done/u.total*100)+'%"></div></div></div>';
+}
+
+picker.addEventListener('change',function(){var f=picker.files;if(f&&f.length)upload(f,pickStage);picker.value='';});
+
+/* ---------- events ---------- */
+app.addEventListener('click',function(e){
+  var m=e.target.closest('[data-m]');if(m){MAT.click(m,e);return;}
+  var t=e.target.closest('[data-act]');if(!t)return;
+  var a=t.getAttribute('data-act');
+  if(a==='tab'){S.tab=t.getAttribute('data-v');store('tfp_tab',S.tab);if(S.tab==='photos')S.view='home';MAT.home();render();window.scrollTo(0,0);return;}
+  if(a==='logout'){logout('');return;}
+  if(a==='new'){newJobSheet();return;}
+  if(a==='filter'){S.filter=t.getAttribute('data-v');render();return;}
+  if(a==='open'){S.jobId=t.getAttribute('data-id');S.view='job';render();window.scrollTo(0,0);return;}
+  if(a==='home'){S.view='home';render();window.scrollTo(0,0);return;}
+  if(a==='photo'){photoSheet(t.getAttribute('data-id'));return;}
+  if(a==='add'){if(S.upload){toast('Wait for the current upload to finish.');return;}pickStage=t.getAttribute('data-stage');picker.click();return;}
+  if(a==='tog'){
+    var j=job(),k=t.getAttribute('data-k'),v=!j[k],d={id:j.id};d[k]=v;
+    if(k==='featured'&&v&&!j.published){d.published=true;}
+    t.classList.toggle('on',v);
+    call('saveJob',d).then(function(r){merge(r);render();
+      toast(k==='published'?(v?'Showing on the website':'Hidden from the website'):(v?'Showing on the homepage':'Removed from the homepage'));
+    }).catch(function(err){t.classList.toggle('on',!v);toast(err.message,true);});
+    return;
+  }
+  if(a==='deljob'){
+    var jj=job();
+    confirmBox('Delete “'+jj.title+'”?','This removes the job and its '+jj.photos.length+' photo'+(jj.photos.length===1?'':'s')+' from the website and moves them to the trash in Google Drive.','Delete job').then(function(ok){
+      if(!ok)return;
+      call('deleteJob',{id:jj.id}).then(function(){S.jobs=S.jobs.filter(function(x){return x.id!==jj.id;});S.view='home';render();toast('Job deleted');})
+        .catch(function(err){toast(err.message,true);});
+    });
+  }
+});
+
+/* ================= Quotes, materials, orders, spending ================= */
+var MAT=(function(){
+  var M={pricing:TAKEOFF.cleanPricing(null),est:null,repairs:{min:0,items:[]},inspections:[],tags:[],crewJobs:[],crewLoaded:false,execUrl:'',loaded:false,quotes:[],orders:[],prices:[],settings:{suppliers:[],abc:{}},owner:'',
+    view:'list',qid:null,qfilter:'new',money:'orders',mview:'home',draft:null};
+  var PK=TAKEOFF.PACKAGES;
+  var ST_LABEL={new:'New',approved:'Approved',ordered:'Ordered',done:'Done',archived:'Archived'};
+  var DELIVERY=[['OTR','Roof load'],['OTG','Ground drop'],['CPU','Pick up']];
+  var GEAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+
+  /* ---------- helpers ---------- */
+  function money(n,cents){n=Number(n)||0;if(n<0)return '\u2212'+money(-n,cents);return '$'+n.toLocaleString('en-US',{minimumFractionDigits:cents===false?0:2,maximumFractionDigits:cents===false?0:2});}
+  function k(n){n=Number(n)||0;return n>=1000?'$'+(Math.round(n/100)/10).toString().replace(/\.0$/,'')+'k':money(n,false);}
+  function q(){for(var i=0;i<M.quotes.length;i++)if(M.quotes[i].id===M.qid)return M.quotes[i];return null;}
+  function priceMap(){var o={};M.prices.forEach(function(p){o[p.key]=p;});return o;}
+  function dateStr(iso){if(!iso)return'';var d=new Date(iso);if(isNaN(d))return String(iso).slice(0,10);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:d.getFullYear()===new Date().getFullYear()?undefined:'numeric'});}
+  function sqft(qq){return (qq.roofs||[]).reduce(function(n,r){return n+(Number(r.s)||0);},0);}
+  function range(qq,i){var r=(qq.ranges||[])[i];return r&&r[1]?money(r[0],false)+'–'+money(r[1],false):'';}
+  function mid(qq,i){var r=(qq.ranges||[])[i];return r&&r[1]?Math.round((r[0]+r[1])/2/100)*100:0;}
+  function townOf(a){var p=String(a||'').split(',');return p.length>=3?p[p.length-2].trim():'';}
+  function parseAddr(a){var p=String(a||'').split(',').map(function(x){return x.trim();});var o={line1:p[0]||'',city:'',state:'CT',postal:''};
+    if(p.length>=3){o.city=p[p.length-2];var m=p[p.length-1].match(/([A-Z]{2})\s*(\d{5})?/i);if(m){o.state=m[1].toUpperCase();o.postal=m[2]||'';}}else if(p.length===2){o.city=p[1];}
+    return o;}
+  function orderSpend(o){return o.status==='Canceled'?0:(o.actualTotal!==''&&o.actualTotal!=null?Number(o.actualTotal):Number(o.total)||0);}
+  function lineTotal(l){return (Number(l.qty)||0)*(Number(l.price)||0);}
+  function addDays(n){var d=new Date();var added=0;while(added<n){d.setDate(d.getDate()+1);if(d.getDay()!==0&&d.getDay()!==6)added++;}return d.toISOString().slice(0,10);}
+  function mergeQ(r){for(var i=0;i<M.quotes.length;i++)if(M.quotes[i].id===r.id){M.quotes[i]=r;return r;}M.quotes.unshift(r);return r;}
+  function fresh(qq){
+    // keep line prices in step with the price list unless you typed a price for that job
+    var pm=priceMap();
+    return (qq.lines||[]).map(function(l){var p=pm[l.key];var c=Object.assign({},l);
+      if(p&&!l.custom){if(!l.priceManual)c.price=p.price;if(!l.itemManual){c.abcItem=p.abcItem;c.uom=p.uom;}c.name=p.name;c.unit=p.unit;}return c;});
+  }
+  function err(e){toast(e.message||String(e),true);}
+  function units(u,n){u=String(u||'');if(n===1||u==='each'||!u||/^[A-Z]+$/.test(u))return u;if(/(x|ch|sh|s)$/.test(u))return u+'es';return u+'s';}
+
+  function apply(d){M.quotes=d.quotes||[];M.orders=d.orders||[];M.prices=d.prices||[];M.settings=d.settings||M.settings;M.pricing=d.pricing||TAKEOFF.cleanPricing(null);M.owner=d.owner||'';M.repairs=d.repairs||M.repairs;M.inspections=d.inspections||[];M.tags=d.tags||[];M.execUrl=d.execUrl||'';M.loaded=true;}
+  function load(){return call('matList').then(function(d){apply(d);cacheMerge('mat',d);})
+    .catch(function(e){toast(e.message,true);});}
+
+  /* ---------- router ---------- */
+  function renderMat(){
+    if(S.tab==='jobs')return renderCrew();
+    if(!M.loaded){
+      if(M.failed){app.innerHTML=bar('<div class="brand">TEAM <b>FORTE</b></div>')+'<div class="wrap"><div class="empty"><b>Couldn\u2019t load</b>Check your signal and try again.<div class="mt"><button class="btn ghost" data-m="retry">Try again</button></div></div></div>';return;}
+      app.innerHTML=bar('<div class="brand">TEAM <b>FORTE</b></div>')+'<div class="loading"><div class="spin dk"></div></div>';
+      if(!M.loading){M.loading=true;load().then(function(){M.loading=false;M.failed=!M.loaded;render();});}
+      return;
+    }
+    if(S.tab==='quotes'){if(M.view==='quote'&&q())return renderQuote();if(M.view==='new')return renderNew();if(M.view==='pricing')return renderPricing();M.view='list';return renderQuotes();}
+    if(M.mview==='settings')return renderSettings();
+    return renderMoney();
+  }
+
+  /* ---------- quotes list ---------- */
+  function renderQuotes(){
+    var counts={new:0,approved:0,ordered:0,done:0};
+    M.quotes.forEach(function(x){if(counts[x.status]!=null)counts[x.status]++;});
+    var list=M.quotes.filter(function(x){return x.status===M.qfilter;});
+    var warr=M.quotes.filter(function(x){return x.status==='done'&&!x.warrantyDone&&x.type!=='repair';}).length;
+    var dep=M.quotes.filter(function(x){return x.signedAt&&x.depositStatus==='requested';}).length;
+    var h=bar('<div class="brand">QUOTES</div><button class="icon-btn" data-m="pricing" aria-label="Quote prices">'+GEAR+'</button><button class="icon-btn" data-m="newest" style="margin-left:10px">'+ICON.plus+'New estimate</button>')+'<div class="wrap">'+
+      '<div class="chips mt">'+[['new','New'],['approved','Approved'],['ordered','Ordered'],['done','Done']].map(function(f){
+        return '<button class="chip'+(M.qfilter===f[0]?' on':'')+'" data-m="qf" data-v="'+f[0]+'">'+f[1]+(counts[f[0]]?' ('+counts[f[0]]+')':'')+'</button>';}).join('')+'</div>'+
+      (warr?'<div class="note">'+warr+' finished job'+(warr===1?'':'s')+' still need'+(warr===1?'s':'')+' the warranty registered. See Done.</div>':'')+
+      (dep?'<div class="note">'+dep+' signed job'+(dep===1?' is':'s are')+' waiting on a deposit.</div>':'');
+    if(!list.length){
+      h+='<div class="empty"><b>'+(M.qfilter==='new'?'No new quotes':'Nothing here yet')+'</b>'+
+        (M.qfilter==='new'?'Quotes from the website’s instant quote show up here on their own. You can also paste a quote link.':'Approve a quote to start its materials list.')+
+        (M.qfilter==='new'?'<div class="mt"><button class="btn ghost" data-m="addlink">Paste a quote link</button></div>':'')+'</div>';
+    }else{
+      h+=list.map(function(x){
+        var pk=PK[x.pick];var pr=x.contractPrice?money(x.contractPrice,false):(x.pick>=0?range(x,x.pick):range(x,0));
+        return '<button class="q" data-m="openq" data-id="'+esc(x.id)+'"><div class="top"><div style="min-width:0"><div class="nm">'+esc(x.name||(x.source==='app'?'Customer':'Website visitor'))+'</div>'+
+          '<div class="ad">'+esc(x.address||'')+'</div></div><div class="rg money">'+esc(pr)+'</div></div>'+
+          '<div class="pills"><span class="pill '+x.status+'">'+ST_LABEL[x.status]+'</span>'+
+          (x.type==='repair'?'<span class="pill">Repair · '+(x.items||[]).length+' item'+((x.items||[]).length===1?'':'s')+'</span>':'<span class="pill">'+Math.round(sqft(x)).toLocaleString()+' sq ft</span>')+
+          (x.signedAt?'<span class="pill done">✓ Signed</span>':x.proposalSentAt?'<span class="pill">Sent for signature</span>':'')+
+          (pk?'<span class="pill">OC '+esc(pk.label)+(x.color?' · '+esc(x.color):'')+'</span>':'')+
+          '<span class="pill">'+(x.source==='app'?'App estimate · ':'')+esc(x.id)+' · '+dateStr(x.created)+'</span></div></button>';
+      }).join('');
+    }
+    app.innerHTML=h+'</div>';
+  }
+
+  function addLinkSheet(){
+    var ov=sheet('<h3>Add a quote'+closeBtn()+'</h3><p class="sub">Paste the quote link from the customer’s GoHighLevel contact (Quote Link field) or the quote email.</p>'+
+      '<textarea class="in" id="ql" placeholder="https://team-forte.com/quote#q=…" style="min-height:110px"></textarea><button class="btn block mt" id="qlb">Add quote</button>');
+    ov.querySelector('#qlb').onclick=function(){var b=this;var v=ov.querySelector('#ql').value.trim();if(!v)return;b.disabled=true;b.textContent='Adding…';
+      call('addQuote',{link:v}).then(function(r){mergeQ(r);closeSheet();M.qid=r.id;M.view='quote';M.qfilter=r.status;render();window.scrollTo(0,0);toast('Quote added');})
+        .catch(function(e){b.disabled=false;b.textContent='Add quote';err(e);});};
+  }
+
+  /* ---------- quote detail ---------- */
+  function renderQuote(){
+    var x=q();
+    var h=bar('<button class="back" data-m="back">'+ICON.back+'Quotes</button><div class="bar-title">'+esc(x.name||x.id)+'</div>')+'<div class="wrap">';
+    var rep=x.type==='repair';
+    h+='<div class="card"><h2>'+esc(x.name||(x.source==='app'?'Customer':'Website visitor'))+' <span><span class="pill '+x.status+'">'+ST_LABEL[x.status]+'</span> <button class="link" style="color:var(--navy);font-size:13px;font-weight:700;padding:4px" data-m="editcust">Edit</button></span></h2>'+
+      (x.phone?kv('Phone','<a href="tel:'+esc(x.phone.replace(/[^\d+]/g,''))+'" target="_top">'+esc(x.phone)+'</a>'):'')+
+      (x.email?kv('Email','<a href="mailto:'+esc(x.email)+'" target="_top">'+esc(x.email)+'</a>'):'')+
+      kv('Address','<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.address||(x.lat+','+x.lng))+'" target="_blank" rel="noopener">'+esc(x.address||'Map')+'</a>')+
+      kv('Quote',esc(x.id)+' · '+dateStr(x.created))+
+      (x.roofs||[]).map(function(r){return kv(esc(r.n||'Roof'),Math.round(r.s).toLocaleString()+' sq ft · '+esc(r.p||'pitch ?'));}).join('')+
+      (x.layers>1?kv('Layers to tear off',String(x.layers)):'')+
+      (x.link&&!rep?'<div class="acts"><button class="btn" data-m="share">Send quote</button><a class="btn ghost" href="'+esc(x.link)+'" target="_blank" rel="noopener">View quote page</a></div>':'')+
+      ghlLine(x)+'</div>';
+    if(rep)h+=repairCard(x);
+    h+=proposalCard(x);
+    if(x.status==='new')h+=rep?approveRepairCard(x):approveCard(x);
+    else h+=scheduleCard(x)+profitCard(x)+jobCards(x);
+    h+=inspectionCard(x);
+    if(x.status==='done')h+=wrapCard(x);
+    h+='</div>';
+    app.innerHTML=h;
+    wireQuote(x);
+    var ds=document.getElementById('depseg');
+    if(ds)ds.onclick=function(e){var b=e.target.closest('[data-dep]');if(!b||b.classList.contains('on'))return;saveQ({depositStatus:b.getAttribute('data-dep')},b.getAttribute('data-dep')==='paid'?'Deposit marked paid':'Saved');};
+  }
+
+  function kv(a,b){return '<div class="kv"><span>'+a+'</span><b>'+b+'</b></div>';}
+
+  function approveCard(x){
+    var pick=M.draft&&M.draft.id===x.id?M.draft.pick:(x.pick>=0?x.pick:1);
+    var price=M.draft&&M.draft.id===x.id?M.draft.price:(x.contractPrice||mid(x,pick));
+    return '<div class="card"><h2>Approve job</h2>'+
+      '<label class="f">Package</label><div class="pkg" id="pkg">'+PK.map(function(p,i){return '<button type="button" class="'+(i===pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b><span>'+(range(x,i)||' ')+'</span></button>';}).join('')+'</div>'+
+      '<div class="row"><div><label class="f">Color</label><input class="in" id="qc" maxlength="40" value="'+esc(x.color||'')+'" placeholder="e.g. Estate Gray"></div>'+
+      '<div><label class="f">Job price</label><input class="in money" id="qp" inputmode="decimal" value="'+(price||'')+'" placeholder="$"></div></div>'+
+      '<p class="hint">Approving builds the materials list from the quote’s roof measurements and adds the job to Photos.</p>'+
+      '<button class="btn block mt" data-m="approve">Approve job &amp; build materials list</button>'+
+      '<button class="btn ghost block mt" data-m="archive">Not going ahead</button></div>';
+  }
+
+  function jobCards(x){
+    var ls=fresh(x);
+    var t=TAKEOFF.totals(ls,M.settings.taxRate);
+    var mine=M.orders.filter(function(o){return o.quoteId===x.id;});
+    var spent=mine.reduce(function(n,o){return n+orderSpend(o);},0);
+    var pct=x.contractPrice?Math.round(t.total/x.contractPrice*100):0;
+    var h='<div class="card"><h2>Job <small>'+(x.type==='repair'?'Repair':'OC '+esc((PK[x.pick]||{}).label||'')+(x.color?' · '+esc(x.color):''))+'</small></h2>'+
+      '<div class="row"><div><span class="hint">Job price</span><div class="big-n money">'+(x.contractPrice?money(x.contractPrice,false):'—')+'</div></div>'+
+      '<div><span class="hint">Materials (est.)</span><div class="big-n money">'+money(t.total,false)+'</div></div></div>'+
+      (x.contractPrice?'<div class="meter" aria-label="Materials are '+pct+'% of the job price"><div style="width:'+Math.min(100,pct)+'%"></div></div><p class="hint">Materials are about '+pct+'% of the job price'+(spent?' · ordered so far: '+money(spent,false):'')+'</p>':'')+
+      '<div class="acts"><button class="btn ghost" data-m="editjob">Edit price</button>'+
+      (x.photoJobId?'<button class="btn ghost" data-m="photos">Job photos</button>':'<span></span>')+'</div></div>';
+
+    var m=x.meas||{};var est=m.est||{};var skipMeas=x.type==='repair';
+    function f(key,label,unit){return '<div><label for="m_'+key+'">'+label+(est[key]?'<i>est.</i>':'')+'</label><input class="in money" id="m_'+key+'" data-meas="'+key+'" inputmode="numeric" value="'+(m[key]!=null?m[key]:'')+'"'+(unit?' aria-label="'+label+' in '+unit+'"':'')+'></div>';}
+    if(!skipMeas)h+='<div class="card"><h2>Roof measurements <small>'+(Object.keys(est).length?'Check the est. numbers on site':'')+'</small></h2><div class="meas">'+
+      f('area','Roof area (sq ft)')+'<div><label>Pitch</label><input class="in" data-meas="pitch" value="'+esc(m.pitch||'')+'"></div>'+
+      f('eaves','Eaves (ft)')+f('rakes','Rakes (ft)')+f('ridges','Ridges (ft)')+f('hips','Hips (ft)')+f('valleys','Valleys (ft)')+f('walls','Wall flashing (ft)')+
+      f('pipes','Pipe boots')+f('decking','Decking sheets')+f('waste','Waste %')+f('iceCourses','Ice & water rows at eaves')+'</div>'+
+      '<button class="btn dark block mt" data-m="recalc">Update materials list</button></div>';
+
+    h+='<div class="card"><h2>Materials <small>'+ls.length+' items</small></h2><div id="lines">';
+    var lastCat='';
+    ls.forEach(function(l,i){
+      if(l.cat!==lastCat){h+='<div class="cat">'+esc(l.cat||'Other')+'</div>';lastCat=l.cat;}
+      h+='<button class="ln" data-m="line" data-i="'+i+'"><div class="l1"><b>'+esc(l.name)+(l.manual?'<em>edited</em>':'')+'</b><span class="money">'+l.qty+' '+esc(units(l.unit,l.qty))+' × '+money(l.price)+(l.abcItem?' · #'+esc(l.abcItem):'')+'</span></div><div class="l2 money">'+money(lineTotal(l))+'</div></button>';
+    });
+    h+='</div><button class="btn ghost block mt" data-m="addline">'+ICON.plus+'Add item</button>'+
+      '<div class="tot">'+kv('Subtotal','<span class="money">'+money(t.subtotal)+'</span>')+kv('Sales tax ('+(M.settings.taxRate||0)+'%)','<span class="money">'+money(t.tax)+'</span>')+
+      '<div class="kv grand"><span>Total</span><b class="money">'+money(t.total)+'</b></div></div>'+
+      (M.prices.some(function(p){return p.source==='starter';})?'<div class="note">Some prices are starter estimates. Update them under Spending › Prices, or connect ABC Supply for your account prices.</div>':'')+
+      '<button class="btn block mt" data-m="order" data-v="abc"'+(M.settings.abc&&M.settings.abc.connected?'':' disabled')+'>Order from ABC Supply</button>'+
+      (M.settings.abc&&M.settings.abc.connected?'':'<p class="hint" style="text-align:center">Connect ABC Supply in Spending › Settings to order here.</p>')+
+      '<button class="btn ghost block mt" data-m="order" data-v="email">Send order by email</button></div>';
+
+    if(mine.length){
+      h+='<div class="card"><h2>Orders for this job</h2>'+mine.map(orderRow).join('')+'</div>';
+    }
+    h+='<div class="card">'+kv('Status','<span class="pill '+x.status+'">'+ST_LABEL[x.status]+'</span>')+
+      '<div class="acts">'+(x.status!=='done'?'<button class="btn ghost" data-m="status" data-v="done">Mark job done</button>':'<button class="btn ghost" data-m="status" data-v="approved">Reopen</button>')+
+      '<button class="btn danger" data-m="archive">Archive</button></div></div>';
+    return h;
+  }
+
+  function wireQuote(x){
+    var pk=document.getElementById('pkg');
+    if(pk)pk.onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;var i=+b.getAttribute('data-pk');
+      var priceEl=document.getElementById('qp');var cur=Number(priceEl.value)||0;var old=M.draft&&M.draft.id===x.id?M.draft.pick:(x.pick>=0?x.pick:1);
+      M.draft={id:x.id,pick:i,price:(!cur||cur===mid(x,old))?mid(x,i):cur};
+      var c=document.getElementById('qc').value;x.color=c;render();};
+  }
+
+  function readMeas(x){
+    var m=Object.assign({},x.meas||{});var est=Object.assign({},m.est||{});
+    document.querySelectorAll('[data-meas]').forEach(function(el){
+      var key=el.getAttribute('data-meas');
+      if(key==='pitch'){m.pitch=el.value.trim();return;}
+      var v=Number(String(el.value).replace(/[^\d.]/g,''))||0;
+      if(m[key]!==v)delete est[key];
+      m[key]=v;
+    });
+    m.est=est;return m;
+  }
+
+  function saveQ(args,msg){
+    args.id=M.qid;
+    return call('saveQuote',args).then(function(r){mergeQ(r);render();if(msg)toast(msg);return r;}).catch(function(e){err(e);throw e;});
+  }
+
+  function approve(){
+    var x=q();var pick=M.draft&&M.draft.id===x.id?M.draft.pick:(x.pick>=0?x.pick:1);
+    var price=Number(String(document.getElementById('qp').value).replace(/[^\d.]/g,''))||0;
+    var color=document.getElementById('qc').value.trim();
+    var m=TAKEOFF.estimate(x.roofs||[]);
+    m.waste=M.settings.waste!=null?M.settings.waste:m.waste;m.iceCourses=M.settings.iceCourses!=null?M.settings.iceCourses:m.iceCourses;
+    var ls=TAKEOFF.lines(m,pick,priceMap(),[]);
+    var b=document.querySelector('[data-m=approve]');if(b){b.disabled=true;b.textContent='Approving…';}
+    saveQ({status:'approved',pick:pick,color:color,contractPrice:price,meas:m,lines:ls}).then(function(r){
+      M.draft=null;M.qfilter='approved';toast('Approved. Materials list is ready.');
+      call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);}).catch(function(){});
+      return r;
+    }).catch(function(){if(b){b.disabled=false;b.textContent='Approve job & build materials list';}});
+  }
+
+  function recalc(){
+    var x=q();var m=readMeas(x);
+    var ls=TAKEOFF.lines(m,x.pick,priceMap(),x.lines);
+    saveQ({meas:m,lines:ls},'Materials list updated');
+  }
+
+  function lineSheet(i){
+    var x=q();var ls=fresh(x);var l=ls[i];if(!l)return;
+    var ov=sheet('<h3>'+esc(l.name)+closeBtn()+'</h3>'+
+      '<div class="row"><div><label class="f">Quantity ('+esc(units(l.unit,2))+')</label><input class="in money" id="lq" inputmode="numeric" value="'+l.qty+'"></div>'+
+      '<div><label class="f">Price per '+esc(l.unit)+'</label><input class="in money" id="lp" inputmode="decimal" value="'+l.price+'"></div></div>'+
+      (l.calc!=null&&!l.custom?'<p class="hint">Calculated: '+l.calc+' '+esc(l.unit)+'s from the roof measurements.</p>':'')+
+      '<p class="hint">Changing the price here only affects this job. To change it for every job, edit it in Spending › Prices.</p>'+
+      '<label class="f">ABC item # for this job <small>(e.g. the shingle color)</small></label><div class="row"><input class="in" id="li" maxlength="40" value="'+esc(l.abcItem||'')+'"><input class="in" id="lu" maxlength="10" style="flex:0 0 84px" placeholder="UOM" value="'+esc(l.uom||'')+'"></div>'+
+      (M.settings.abc&&M.settings.abc.connected?'<div class="row" style="margin-top:8px"><input class="in" id="lsq" value="'+esc(((x.color?x.color+' ':'')+(/^shingle_/.test(l.key)?((PK.filter(function(p){return p.key===l.key;})[0]||{}).label||''):l.key==='hip_ridge'?'ProEdge':l.name)).trim())+'"><button class="btn dark" id="lsb" style="flex:0 0 auto">Search ABC</button></div><div id="lsr"></div>':'')+
+      '<div class="acts">'+(l.manual||l.priceManual?'<button class="btn ghost" id="lr">Reset to calculated</button>':'<span></span>')+'<button class="btn danger" id="ld">Remove</button></div>'+
+      '<button class="btn block mt" id="ls">Save</button>');
+    ov.querySelector('#ls').onclick=function(){
+      var qty=Math.max(0,Math.round(Number(ov.querySelector('#lq').value)||0));var price=Math.max(0,Number(ov.querySelector('#lp').value)||0);
+      var nl=fresh(x);var it=nl[i];
+      if(qty!==it.qty){it.qty=qty;it.manual=!it.custom;}
+      if(price!==it.price){it.price=price;it.priceManual=true;}
+      var ni=ov.querySelector('#li').value.trim(),nu=ov.querySelector('#lu').value.trim();
+      if(ni!==(it.abcItem||'')||nu!==(it.uom||'')){it.abcItem=ni;it.uom=nu;it.itemManual=true;}
+      closeSheet();saveQ({lines:nl},'Saved');
+    };
+    var sb=ov.querySelector('#lsb');if(sb)sb.onclick=function(){
+      var r=ov.querySelector('#lsr');r.innerHTML='<div class="loading" style="padding:16px"><div class="spin dk"></div></div>';
+      call('abcSearch',{q:ov.querySelector('#lsq').value}).then(function(items){
+        r.innerHTML=items.length?items.map(function(it){return '<button class="res" data-it="'+esc(it.itemNumber)+'" data-u="'+esc(it.uom)+'"><b>'+esc(it.description)+'</b><span>#'+esc(it.itemNumber)+(it.uom?' · '+esc(it.uom):'')+'</span></button>';}).join(''):'<p class="hint">No matches.</p>';
+      }).catch(function(e){r.innerHTML='';err(e);});
+    };
+    ov.addEventListener('click',function(e){var b=e.target.closest('[data-it]');if(!b)return;ov.querySelector('#li').value=b.getAttribute('data-it');ov.querySelector('#lu').value=b.getAttribute('data-u');ov.querySelector('#lsr').innerHTML='';toast('Picked. Tap Save.');});
+    var r=ov.querySelector('#lr');if(r)r.onclick=function(){var nl=fresh(x);nl[i].manual=false;nl[i].priceManual=false;nl[i].itemManual=false;nl[i].qty=nl[i].calc;
+      var pm=priceMap();if(pm[nl[i].key])nl[i].price=pm[nl[i].key].price;closeSheet();saveQ({lines:TAKEOFF.lines(x.meas||{},x.pick,pm,nl)},'Reset');};
+    ov.querySelector('#ld').onclick=function(){var nl=fresh(x);
+      if(nl[i].custom)nl.splice(i,1);else{nl[i].qty=0;nl[i].manual=true;}
+      closeSheet();saveQ({lines:nl},'Removed');};
+  }
+
+  function addLineSheet(){
+    var x=q();var used={};(x.lines||[]).forEach(function(l){if(l.qty)used[l.key]=1;});
+    var opts=M.prices.filter(function(p){return !used[p.key];});
+    var ov=sheet('<h3>Add item'+closeBtn()+'</h3>'+
+      '<label class="f">From your price list</label><select class="in" id="ap"><option value="">Custom item…</option>'+opts.map(function(p){return '<option value="'+esc(p.key)+'">'+esc(p.name)+' ('+money(p.price)+'/'+esc(p.unit)+')</option>';}).join('')+'</select>'+
+      '<div id="cust"><label class="f">Item name</label><input class="in" id="an" maxlength="120" placeholder="e.g. Skylight flashing kit">'+
+      '<div class="row"><div><label class="f">Unit</label><input class="in" id="au" value="each" maxlength="20"></div><div><label class="f">Price</label><input class="in money" id="apr" inputmode="decimal" placeholder="0.00"></div></div></div>'+
+      '<label class="f">Quantity</label><input class="in money" id="aq" inputmode="numeric" value="1">'+
+      '<button class="btn block mt" id="ab">Add to list</button>');
+    var sel=ov.querySelector('#ap');sel.onchange=function(){ov.querySelector('#cust').style.display=sel.value?'none':'';};
+    ov.querySelector('#ab').onclick=function(){
+      var qty=Math.max(1,Math.round(Number(ov.querySelector('#aq').value)||1));var nl=fresh(x);var p=priceMap()[sel.value];
+      if(p){var ex=nl.filter(function(l){return l.key===p.key;})[0];
+        if(ex){ex.qty=qty;ex.manual=true;}else nl.push({key:p.key,cat:p.cat,name:p.name,unit:p.unit,qty:qty,calc:0,manual:true,price:p.price,abcItem:p.abcItem,uom:p.uom,custom:true});}
+      else{var nm=ov.querySelector('#an').value.trim();if(!nm){toast('Type the item name.',true);return;}
+        nl.push({key:'x'+Date.now().toString(36),cat:'Other',name:nm,unit:ov.querySelector('#au').value.trim()||'each',qty:qty,calc:0,manual:true,price:Number(ov.querySelector('#apr').value)||0,priceManual:true,abcItem:'',uom:'',custom:true});}
+      closeSheet();saveQ({lines:nl},'Item added');
+    };
+  }
+
+  function editJobSheet(){
+    var x=q();
+    var ov=sheet('<h3>Job'+closeBtn()+'</h3><label class="f">Job price</label><input class="in money" id="jp" inputmode="decimal" value="'+(x.contractPrice||'')+'">'+
+      '<label class="f">Shingle color</label><input class="in" id="jc" value="'+esc(x.color||'')+'">'+
+      '<label class="f">Package</label><div class="pkg" id="jpk">'+PK.map(function(p,i){return '<button type="button" class="'+(i===x.pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b></button>';}).join('')+'</div>'+
+      '<label class="f">Notes</label><textarea class="in" id="jn">'+esc(x.notes||'')+'</textarea><button class="btn block mt" id="js">Save</button>');
+    var pick=x.pick;
+    ov.querySelector('#jpk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#jpk button').forEach(function(z){z.classList.toggle('on',z===b);});};
+    ov.querySelector('#js').onclick=function(){
+      var args={contractPrice:Number(ov.querySelector('#jp').value)||0,color:ov.querySelector('#jc').value,notes:ov.querySelector('#jn').value};
+      if(pick!==x.pick){
+        // swap the shingle line to the new package
+        var nl=(x.lines||[]).filter(function(l){return !/^shingle_/.test(l.key)||l.custom;});
+        args.pick=pick;args.lines=TAKEOFF.lines(x.meas||{},pick,priceMap(),nl);
+      }
+      closeSheet();saveQ(args,'Saved');
+    };
+  }
+
+  /* ---------- ordering ---------- */
+  function orderSheet(method){
+    var x=q();var ls=fresh(x).filter(function(l){return l.qty>0;});
+    var s=M.settings;var t=TAKEOFF.totals(ls,s.taxRate);var ad=parseAddr(x.address);
+    if(method==='email'&&!(s.suppliers||[]).length){toast('Add a supplier email first (Spending › Settings).',true);return;}
+    var missing=method==='abc'?ls.filter(function(l){return !l.abcItem;}):[];
+    var ov=sheet('<h3>'+(method==='abc'?'Order from ABC Supply':'Send order by email')+closeBtn()+'</h3>'+
+      (method==='abc'?'<p class="sub">'+esc(s.abc.branchName||('Branch '+s.abc.branch))+' · account '+esc(s.abc.shipTo)+(s.abc.env==='sandbox'?' · <b>TEST MODE</b>':'')+'</p>':
+        '<label class="f">Supplier</label><select class="in" id="os">'+s.suppliers.map(function(p,i){return '<option value="'+i+'">'+esc(p.name)+' ('+esc(p.email)+')</option>';}).join('')+'</select>')+
+      (method==='abc'&&x.color&&!missing.length?'<div class="note">Check that the shingle and ridge cap item numbers are for <b>'+esc(x.color)+'</b>. You can set them per job by tapping the item.</div>':'')+
+      (missing.length?'<div class="note">These items aren’t linked to an ABC item number yet: '+esc(missing.map(function(l){return l.name;}).join(', '))+'. Link them in Spending › Prices first.</div>':'')+
+      '<label class="f">Delivery</label><div class="seg" id="odl">'+DELIVERY.map(function(d,i){return '<button type="button" class="'+(i===0?'on':'')+'" data-d="'+d[0]+'">'+d[1]+'</button>';}).join('')+'</div>'+
+      '<div class="row"><div><label class="f">Date</label><input class="in" type="date" id="odd" value="'+addDays(2)+'"></div><div><label class="f">PO</label><input class="in" id="opo" maxlength="20" value="'+esc(x.id)+'"></div></div>'+
+      '<label class="f">Street</label><input class="in" id="oa1" value="'+esc(ad.line1)+'">'+
+      '<div class="row"><div style="flex:2"><label class="f">Town</label><input class="in" id="oac" value="'+esc(ad.city)+'"></div><div><label class="f">State</label><input class="in" id="oas" maxlength="2" value="'+esc(ad.state)+'"></div><div><label class="f">ZIP</label><input class="in" id="oaz" inputmode="numeric" maxlength="10" value="'+esc(ad.postal)+'"></div></div>'+
+      '<label class="f">Notes for the driver <small>(optional)</small></label><input class="in" id="on" maxlength="255" placeholder="e.g. Driveway on left, no roof load on garage">'+
+      '<div class="tot mt">'+kv(ls.length+' items','')+kv('Estimated total','<span class="money">'+money(t.total)+'</span>')+'</div>'+
+      '<button class="btn block mt" id="ogo"'+(missing.length?' disabled':'')+'>'+(method==='abc'?'Place order with ABC':'Send order email')+'</button>');
+    var del='OTR';
+    ov.querySelector('#odl').onclick=function(e){var b=e.target.closest('[data-d]');if(!b)return;del=b.getAttribute('data-d');ov.querySelectorAll('#odl button').forEach(function(z){z.classList.toggle('on',z===b);});};
+    ov.querySelector('#ogo').onclick=function(){
+      var b=this;
+      var args={quoteId:x.id,method:method,lines:ls,deliveryService:del,deliveryDate:ov.querySelector('#odd').value,po:ov.querySelector('#opo').value,
+        address:{line1:ov.querySelector('#oa1').value,city:ov.querySelector('#oac').value,state:ov.querySelector('#oas').value,postal:ov.querySelector('#oaz').value},notes:ov.querySelector('#on').value};
+      if(method==='email')args.supplier=ov.querySelector('#os').value;
+      b.disabled=true;b.textContent=method==='abc'?'Placing order…':'Sending…';
+      call('placeOrder',args).then(function(o){
+        M.orders.unshift(o);if(x.status==='approved'||x.status==='new')x.status='ordered';closeSheet();render();
+        toast(method==='abc'?'Order sent to ABC. Confirmation '+o.confirmation:'Order emailed to '+o.supplier);
+      }).catch(function(e){b.disabled=false;b.textContent=method==='abc'?'Place order with ABC':'Send order email';err(e);});
+    };
+  }
+
+  function orderRow(o){
+    var qq=M.quotes.filter(function(x){return x.id===o.quoteId;})[0];
+    var actual=o.actualTotal!==''&&o.actualTotal!=null;
+    return '<button class="ln" data-m="openo" data-id="'+esc(o.id)+'"><div class="l1"><b>'+esc(qq?(qq.name||qq.id)+' · '+townOf(qq.address):o.po)+'</b><span>'+esc(o.supplier)+' · '+dateStr(o.created)+'</span></div>'+
+      '<div class="l2 money">'+money(orderSpend(o))+(actual?'':'<small style="font-weight:600;color:var(--muted)"> est.</small>')+'<span style="margin-top:4px"><span class="pill '+esc(o.status.split(' ')[0])+'">'+esc(o.status)+'</span></span></div></button>';
+  }
+
+  function orderDetail(id){
+    var o=M.orders.filter(function(z){return z.id===id;})[0];if(!o)return;
+    var statuses=['Sent','Requested','Scheduled','Delivered','Picked up','Backordered','Canceled'];
+    if(statuses.indexOf(o.status)<0)statuses.unshift(o.status);
+    var ov=sheet('<h3>Order '+esc(o.po)+closeBtn()+'</h3>'+
+      kv('Supplier',esc(o.supplier))+kv('Placed',dateStr(o.created))+(o.confirmation?kv('ABC confirmation',esc(o.confirmation)):'')+(o.orderNumber?kv('ABC order #',esc(o.orderNumber)):'')+
+      kv('Delivery',esc((DELIVERY.filter(function(d){return d[0]===o.deliveryService;})[0]||['',''])[1])+(o.deliveryDate?' · '+esc(o.deliveryDate):''))+
+      kv('Estimated total','<span class="money">'+money(o.total)+'</span>')+
+      '<div class="cat mt">Items</div>'+o.lines.map(function(l){return '<div class="kv"><span>'+esc(l.name)+'</span><b class="money">'+l.qty+' '+esc(units(l.unit,l.qty))+'</b></div>';}).join('')+
+      '<label class="f">Status</label><select class="in" id="ost">'+statuses.map(function(s){return '<option'+(s===o.status?' selected':'')+'>'+esc(s)+'</option>';}).join('')+'</select>'+
+      '<label class="f">Invoice total <small>(what you actually paid, if different)</small></label><input class="in money" id="oat" inputmode="decimal" placeholder="'+money(o.total)+'" value="'+(o.actualTotal===''?'':o.actualTotal)+'">'+
+      (o.method==='abc'?'<p class="hint">ABC orders update on their own when the branch confirms, schedules or delivers.</p>':'')+
+      '<button class="btn block mt" id="osv">Save</button><button class="btn danger block mt" id="odel">Delete order record</button>');
+    ov.querySelector('#osv').onclick=function(){
+      call('saveOrder',{id:o.id,status:ov.querySelector('#ost').value,actualTotal:ov.querySelector('#oat').value}).then(function(r){
+        for(var i=0;i<M.orders.length;i++)if(M.orders[i].id===r.id)M.orders[i]=r;closeSheet();render();toast('Saved');}).catch(err);
+    };
+    ov.querySelector('#odel').onclick=function(){
+      confirmBox('Delete this order record?','This only removes it from your spending. It does not cancel the order with the supplier.','Delete').then(function(ok){
+        if(!ok)return;call('deleteOrder',{id:o.id}).then(function(){M.orders=M.orders.filter(function(z){return z.id!==o.id;});render();toast('Deleted');}).catch(err);});
+    };
+  }
+
+  /* ---------- spending ---------- */
+  function renderMoney(){
+    var now=new Date();var ym=now.toISOString().slice(0,7);var prev=new Date(now.getFullYear(),now.getMonth()-1,1);var pym=prev.getFullYear()+'-'+('0'+(prev.getMonth()+1)).slice(-2);
+    var sums={m:0,p:0,y:0};
+    M.orders.forEach(function(o){var c=String(o.created);var v=orderSpend(o);if(c.slice(0,7)===ym)sums.m+=v;if(c.slice(0,7)===pym)sums.p+=v;if(c.slice(0,4)===String(now.getFullYear()))sums.y+=v;});
+    var h=bar('<div class="brand">SPENDING</div><button class="icon-btn" data-m="settings" aria-label="Settings">'+GEAR+'</button>')+'<div class="wrap">'+
+      '<div class="stats"><div class="stat"><b class="money">'+k(sums.m)+'</b><span>This month</span></div><div class="stat"><b class="money">'+k(sums.p)+'</b><span>Last month</span></div><div class="stat"><b class="money">'+k(sums.y)+'</b><span>This year</span></div></div>'+
+      '<div class="seg mt">'+[['orders','Orders'],['jobs','Jobs'],['prices','Prices']].map(function(t){return '<button class="'+(M.money===t[0]?'on':'')+'" data-m="mtab" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';
+    if(M.money==='jobs'){h+=moneyJobs();}
+    else if(M.money==='orders'){
+      h+=M.orders.length?'<div class="card">'+M.orders.map(orderRow).join('')+'</div>':'<div class="empty"><b>No orders yet</b>Approve a quote, then order its materials from the Quotes tab.</div>';
+    }else{
+      var s=M.settings.abc||{};
+      h+=s.connected?'<div class="note ok">ABC Supply prices'+(s.lastRefresh?' updated '+dateStr(s.lastRefresh)+' ('+esc(s.lastRefreshResult||'')+')':' not refreshed yet')+'. They refresh every morning.<div class="mt"><button class="btn ghost" data-m="refresh">Refresh now</button></div></div>':
+        '<div class="note">Prices marked <b>Starter</b> are rough estimates. Tap an item to enter your supplier’s price, or connect ABC Supply (Settings) to keep prices updated on their own.</div>';
+      h+='<p class="hint">Shingle and ridge cap item numbers depend on the color. Link your most common color here, and change it per job on the materials list.</p>';
+      var lastCat='';h+='<div class="card">';
+      M.prices.slice().sort(function(a,b){return String(a.cat).localeCompare(String(b.cat));}).forEach(function(p){
+        if(p.cat!==lastCat){h+='<div class="cat">'+esc(p.cat||'Other')+'</div>';lastCat=p.cat;}
+        var src=p.source==='abc'?'<span class="src abc">ABC</span>':p.source==='starter'?'<span class="src starter">Starter</span>':'<span class="src manual">Yours</span>';
+        h+='<button class="ln" data-m="price" data-k="'+esc(p.key)+'"><div class="l1"><b>'+esc(p.name)+'</b><span>'+src+(p.abcItem?' · ABC #'+esc(p.abcItem):'')+' · '+dateStr(p.updated)+'</span></div><div class="l2 money">'+money(p.price)+'<span>per '+esc(p.unit)+'</span></div></button>';
+      });
+      h+='</div><button class="btn ghost block" data-m="price" data-k="">'+ICON.plus+'Add item</button>';
+    }
+    app.innerHTML=h+'</div>';
+  }
+
+  function priceSheet(key){
+    var p=M.prices.filter(function(z){return z.key===key;})[0]||{key:'',name:'',unit:'each',price:'',cat:'Other',abcItem:'',uom:''};
+    var conn=M.settings.abc&&M.settings.abc.connected;
+    var ov=sheet('<h3>'+(p.key?'Edit item':'New item')+closeBtn()+'</h3>'+
+      '<label class="f">Name</label><input class="in" id="pn" maxlength="120" value="'+esc(p.name)+'">'+
+      '<div class="row"><div><label class="f">Price</label><input class="in money" id="pp" inputmode="decimal" value="'+p.price+'"></div><div><label class="f">Per</label><input class="in" id="pu" maxlength="20" value="'+esc(p.unit)+'"></div></div>'+
+      '<label class="f">Category</label><input class="in" id="pc2" maxlength="40" value="'+esc(p.cat)+'">'+
+      '<label class="f">ABC Supply item # <small>(for ordering and live prices)</small></label><div class="row"><input class="in" id="pa" maxlength="40" value="'+esc(p.abcItem)+'"><input class="in" id="pum" maxlength="10" style="flex:0 0 84px" placeholder="UOM" value="'+esc(p.uom)+'"></div>'+
+      (conn?'<label class="f">Find in ABC catalog</label><div class="row"><input class="in" id="psq" placeholder="e.g. Oakridge Estate Gray"><button class="btn dark" id="psb" style="flex:0 0 auto">Search</button></div><div id="psr"></div>':'')+
+      '<button class="btn block mt" id="psv">Save</button>'+(p.key&&!TAKEOFF.CATALOG.some(function(c){return c.key===p.key;})?'<button class="btn danger block mt" id="pdel">Delete item</button>':''));
+    if(conn)ov.querySelector('#psb').onclick=function(){
+      var r=ov.querySelector('#psr');r.innerHTML='<div class="loading" style="padding:16px"><div class="spin dk"></div></div>';
+      call('abcSearch',{q:ov.querySelector('#psq').value}).then(function(items){
+        r.innerHTML=items.length?items.map(function(it){return '<button class="res" data-it="'+esc(it.itemNumber)+'" data-u="'+esc(it.uom)+'"><b>'+esc(it.description)+'</b><span>#'+esc(it.itemNumber)+(it.uom?' · '+esc(it.uom):'')+'</span></button>';}).join(''):'<p class="hint">No matches.</p>';
+      }).catch(function(e){r.innerHTML='';err(e);});
+    };
+    ov.addEventListener('click',function(e){var b=e.target.closest('[data-it]');if(!b)return;ov.querySelector('#pa').value=b.getAttribute('data-it');ov.querySelector('#pum').value=b.getAttribute('data-u');toast('Linked. Save to keep it.');});
+    ov.querySelector('#psv').onclick=function(){
+      var args={key:p.key||undefined,name:ov.querySelector('#pn').value,unit:ov.querySelector('#pu').value,cat:ov.querySelector('#pc2').value,abcItem:ov.querySelector('#pa').value,uom:ov.querySelector('#pum').value};
+      var np=Number(ov.querySelector('#pp').value);if(String(np)!==String(p.price))args.price=np;
+      call('savePrice',args).then(function(r){var f=false;for(var i=0;i<M.prices.length;i++)if(M.prices[i].key===r.key){M.prices[i]=r;f=true;}if(!f)M.prices.push(r);closeSheet();render();toast('Saved');}).catch(err);
+    };
+    var d=ov.querySelector('#pdel');if(d)d.onclick=function(){call('deletePrice',{key:p.key}).then(function(){M.prices=M.prices.filter(function(z){return z.key!==p.key;});closeSheet();render();toast('Deleted');}).catch(err);};
+  }
+
+  /* ---------- settings ---------- */
+  function renderSettings(){
+    var s=M.settings;var a=s.abc||{};
+    var h=bar('<button class="back" data-m="mhome">'+ICON.back+'Spending</button><div class="bar-title">Settings</div>')+'<div class="wrap"><form id="sf">'+
+      '<div class="card"><h2>Orders</h2>'+
+      '<div class="row"><div><label class="f">Delivery contact</label><input class="in" name="contactName" value="'+esc(s.contactName||'')+'" placeholder="Your name"></div>'+
+      '<div><label class="f">Phone</label><input class="in" name="contactPhone" inputmode="tel" value="'+esc(s.contactPhone||'')+'" placeholder="(860) 854-9335"></div></div>'+
+      '<div class="row"><div><label class="f">Sales tax %</label><input class="in money" name="taxRate" inputmode="decimal" value="'+(s.taxRate!=null?s.taxRate:6.35)+'"></div>'+
+      '<div><label class="f">Waste %</label><input class="in money" name="waste" inputmode="numeric" value="'+(s.waste!=null?s.waste:10)+'"></div>'+
+      '<div><label class="f">Ice &amp; water rows</label><input class="in money" name="iceCourses" inputmode="numeric" value="'+(s.iceCourses!=null?s.iceCourses:2)+'"></div></div>'+
+      '<p class="hint">Ice &amp; water rows: how many 3 ft rows go along the eaves (2 rows = 6 ft).</p></div>'+
+      '<div class="card"><h2>Supplier emails <small>for “Send order by email”</small></h2><div id="sups">'+
+      (s.suppliers.length?s.suppliers:[{name:'',email:''}]).map(supRow).join('')+'</div><button type="button" class="btn ghost block mt" data-m="addsup">'+ICON.plus+'Add supplier</button></div>'+
+      (isOwner()?'':'<!--')+'<div class="card"><h2>ABC Supply <small>'+(a.connected?'<span class="pill done">Connected</span>':'<span class="pill">Not connected</span>')+'</small></h2>'+
+      '<p class="hint">Get these from the ABC Supply developer portal (Individual Business). Start in Test (Sandbox), then switch to Live once ABC approves production access.</p>'+
+      '<label class="f">Mode</label><div class="seg" id="aenv"><button type="button" data-env="sandbox" class="'+(a.env!=='production'?'on':'')+'">Test (Sandbox)</button><button type="button" data-env="production" class="'+(a.env==='production'?'on':'')+'">Live</button></div>'+
+      '<label class="f">Client ID</label><input class="in" name="clientId" autocomplete="off" value="'+esc(a.clientId||'')+'">'+
+      '<label class="f">Client secret</label><input class="in" name="secret" type="password" autocomplete="new-password" placeholder="'+(a.hasSecret?'Saved. Type to replace':'')+'">'+
+      '<div class="row"><div><label class="f">Ship-to account #</label><input class="in" name="shipTo" value="'+esc(a.shipTo||'')+'"></div>'+
+      '<div><label class="f">Branch #</label><input class="in" name="branch" value="'+esc(a.branch||'')+'"></div></div>'+
+      '<input type="hidden" name="branchName" value="'+esc(a.branchName||'')+'">'+
+      (a.branchName?'<p class="hint">Branch: '+esc(a.branchName)+'</p>':'')+
+      '<div class="acts"><button type="button" class="btn ghost" data-m="abctest">Test login</button><button type="button" class="btn ghost" data-m="branches">Find CT branches</button></div><div id="brs"></div>'+
+      (a.connected?'<div class="acts"><button type="button" class="btn ghost" data-m="hook"'+(a.webhookId?' disabled':'')+'>'+(a.webhookId?'Order updates on':'Turn on order updates')+'</button><button type="button" class="btn danger" data-m="disc">Disconnect</button></div>':'')+
+      '</div>'+(isOwner()?'':'-->')+settingsExtraCards()+'<button class="btn block" type="submit">Save settings</button></form></div>';
+    app.innerHTML=h;
+    var env=a.env||'sandbox';
+    document.getElementById('sf').addEventListener('click',function(e){var b=e.target.closest('[data-sw]');if(!b)return;b.classList.toggle('on');b.setAttribute('aria-checked',b.classList.contains('on'));});
+    if(isOwner())loadPeople();
+    if(document.getElementById('aenv'))document.getElementById('aenv').onclick=function(e){var b=e.target.closest('[data-env]');if(!b)return;env=b.getAttribute('data-env');this.querySelectorAll('button').forEach(function(z){z.classList.toggle('on',z===b);});};
+    document.getElementById('sf').onsubmit=function(e){e.preventDefault();saveSettings(this,env);};
+  }
+  function supRow(p){return '<div class="row sup" style="margin-top:8px"><input class="in" placeholder="Supplier name" data-sn value="'+esc(p.name)+'"><input class="in" placeholder="orders@supplier.com" type="email" data-se value="'+esc(p.email)+'"></div>';}
+  function saveSettings(f,env){
+    var sups=[];f.querySelectorAll('.sup').forEach(function(r){var n=r.querySelector('[data-sn]').value.trim(),e=r.querySelector('[data-se]').value.trim();if(n||e)sups.push({name:n,email:e});});
+    var bad=sups.filter(function(x){return !x.name||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x.email);});
+    if(bad.length){toast('Each supplier needs a name and a valid email.',true);return Promise.reject(new Error('bad'));}
+    var el=f.elements;
+    var args={contactName:el.contactName.value,contactPhone:el.contactPhone.value,taxRate:el.taxRate.value,waste:el.waste.value,iceCourses:el.iceCourses.value,suppliers:sups};
+    if(el.clientId)args.abc={env:env,clientId:el.clientId.value,shipTo:el.shipTo.value,branch:el.branch.value,branchName:el.branchName.value,secret:el.secret.value};
+    if(el.co_name)Object.assign(args,extraSettingsArgs(f));
+    return call('saveSettings',args).then(function(r){M.settings=r;render();toast('Settings saved');return r;}).catch(function(e){err(e);throw e;});
+  }
+
+  /* ---------- new estimate (address only) ---------- */
+  var COLORS=['Estate Gray','Onyx Black','Driftwood','Teak','Brownwood','Desert Tan','Sand Dune','Quarry Gray','Slatestone Gray','Sierra Gray','Harbor Blue','Aged Copper','Amber','Summer Harvest','Black Sable'];
+  var PITCHES=['2/12','3/12','4/12','5/12','6/12','7/12','8/12','9/12','10/12','11/12','12/12','14/12','16/12'];
+  function newEst(){M.est={type:(M.est&&M.est.type)||'replacement',items:[],address:'',name:'',phone:'',email:'',lat:0,lng:0,roofs:[],layers:1,pick:1,color:'',m:null,busy:false};}
+  function typeSeg(e){return '<div class="seg mt" id="etype">'+[['replacement','Replacement'],['repair','Repair']].map(function(t){return '<button type="button" class="'+(e.type===t[0]?'on':'')+'" data-et="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';}
+  function renderNewRepair(){
+    var e=M.est;
+    var h=bar('<button class="back" data-m="back">'+ICON.back+'Quotes</button><div class="bar-title">New estimate</div>')+'<div class="wrap" id="ew">'+typeSeg(e);
+    h+='<div class="card"><h2>Address</h2><textarea class="in" id="ea" rows="2" placeholder="45 Woodin St, Hamden, CT" style="min-height:64px">'+esc(e.address)+'</textarea></div>';
+    h+='<div class="card"><h2>Repairs <small>tap ⚙ Quote prices to change prices</small></h2><div id="ers"></div>'+addRepairSelect('es')+'<div class="tot mt" id="ert"></div></div>';
+    h+='<div class="card"><h2>Customer <small>optional</small></h2>'+
+      '<label class="f">Name</label><input class="in" data-ef="name" value="'+esc(e.name)+'" autocomplete="off">'+
+      '<div class="row"><div><label class="f">Phone</label><input class="in" data-ef="phone" inputmode="tel" value="'+esc(e.phone)+'"></div><div><label class="f">Email</label><input class="in" data-ef="email" type="email" value="'+esc(e.email)+'"></div></div></div>'+
+      '<button class="btn block" data-m="saveest">Save quote</button>'+
+      '<button class="btn ghost block mt" data-m="saveest" data-v="email">Save &amp; send for signature</button></div>';
+    app.innerHTML=h;
+    var root=document.getElementById('ew');
+    function draw(soft){if(!soft)document.getElementById('ers').innerHTML=e.items.length?itemRows(e.items,'es'):'<p class="hint">Add the repairs from the list below.</p>';
+      var sub=e.items.reduce(function(n,it){return n+(Number(it.qty)||0)*(Number(it.price)||0);},0);var tot=repairTotal(e.items);
+      document.getElementById('ert').innerHTML=(tot>sub&&e.items.length?kv('Minimum service charge applies',''):'')+'<div class="kv grand"><span>Total</span><b class="money">'+money(e.items.length?tot:0)+'</b></div>';}
+    draw();wireItems(root,e.items,'es',draw);
+    root.addEventListener('input',function(ev){var t=ev.target;if(t.id==='ea')e.address=t.value;if(t.hasAttribute('data-ef'))e[t.getAttribute('data-ef')]=t.value;});
+    document.getElementById('etype').onclick=function(ev){var b=ev.target.closest('[data-et]');if(!b)return;e.type=b.getAttribute('data-et');render();};
+  }
+  function estRanges(){return TAKEOFF.priceRanges(M.pricing,M.est.roofs,M.est.layers);}
+  function renderNew(){
+    var e=M.est;var hasKey=M.settings.hasMapsKey;
+    if(e.type==='repair')return renderNewRepair();
+    var h=bar('<button class="back" data-m="back">'+ICON.back+'Quotes</button><div class="bar-title">New estimate</div>')+'<div class="wrap" id="ew">'+typeSeg(e);
+    h+='<div class="card"><h2>Address</h2><textarea class="in" id="ea" rows="2" placeholder="45 Woodin St, Hamden, CT" style="min-height:64px">'+esc(e.address)+'</textarea>'+
+      (hasKey?'<button class="btn block mt" data-m="measure"'+(e.busy?' disabled':'')+'>'+(e.busy?'Measuring…':'Measure roof')+'</button>':
+        '<div class="note">Automatic roof measuring needs a Google Maps key (Quotes › ⚙ Quote prices). For now, type the roof size below.</div>')+
+      (e.m&&e.m.image?'<img class="big mt" src="'+e.m.image+'" alt="Satellite view of '+esc(e.m.address)+'">':'')+
+      (e.m?'<p class="hint">'+(e.m.source==='solar'?'Measured by Google: '+e.m.segments+' roof sections'+(e.m.imageryDate?' · imagery '+esc(month(e.m.imageryDate)):''):'Address found. Enter the roof size.')+'</p>':'')+
+      (e.m&&e.m.note?'<div class="note">'+esc(e.m.note)+'</div>':'')+'</div>';
+    h+='<div class="card"><h2>Roof <small>sloped area, not footprint</small></h2><div id="eroofs">'+
+      (e.roofs.length?e.roofs:[{n:'Main Roof',s:'',p:'6/12'}]).map(function(r,i){
+        return '<div class="row" style="margin-top:'+(i?10:0)+'px"><div style="flex:2"><label class="f">'+esc(r.n||'Roof')+' (sq ft)</label><input class="in money" inputmode="numeric" data-er="s" data-i="'+i+'" value="'+(r.s||'')+'" placeholder="e.g. 2000"></div>'+
+          '<div><label class="f">Pitch</label><select class="in" data-er="p" data-i="'+i+'">'+PITCHES.map(function(p){return '<option'+(p===r.p?' selected':'')+'>'+p+'</option>';}).join('')+(PITCHES.indexOf(r.p)<0&&r.p?'<option selected>'+esc(r.p)+'</option>':'')+'</select></div>'+
+          (i?'<button type="button" class="x" style="flex:0 0 36px;margin-bottom:5px" data-m="rmroof" data-i="'+i+'" aria-label="Remove section">'+ICON.x+'</button>':'')+'</div>';
+      }).join('')+'</div><button class="btn ghost block mt" data-m="addroof">'+ICON.plus+'Add a section (garage, porch…)</button>'+
+      '<label class="f">Layers to tear off</label><div class="seg" id="elay">'+[1,2,3].map(function(n){return '<button type="button" class="'+(e.layers===n?'on':'')+'" data-ly="'+n+'">'+n+'</button>';}).join('')+'</div></div>';
+    h+='<div class="card" id="eprice"></div>';
+    h+='<div class="card"><h2>Customer <small>optional</small></h2>'+
+      '<label class="f">Name</label><input class="in" data-ef="name" value="'+esc(e.name)+'" autocomplete="off">'+
+      '<div class="row"><div><label class="f">Phone</label><input class="in" data-ef="phone" inputmode="tel" value="'+esc(e.phone)+'"></div><div><label class="f">Email</label><input class="in" data-ef="email" type="email" value="'+esc(e.email)+'"></div></div></div>'+
+      '<button class="btn block" data-m="saveest">Save quote</button>'+
+      '<button class="btn ghost block mt" data-m="saveest" data-v="email">Save &amp; email to customer</button>'+
+      '<p class="hint" style="text-align:center;margin-top:14px"><a href="#" data-m="addlink">Have a website quote link? Paste it instead</a></p></div>';
+    app.innerHTML=h;
+    drawEstPrices();
+    if(!e.roofs.length)e.roofs=[{n:'Main Roof',s:0,p:'6/12'}];
+    var wrapEl=document.getElementById('ew');
+    wrapEl.addEventListener('input',function(ev){var t=ev.target;
+      if(t.id==='ea'){e.address=t.value;return;}
+      if(t.hasAttribute('data-ef')){e[t.getAttribute('data-ef')]=t.value;return;}
+      if(t.hasAttribute('data-er')){var r=e.roofs[+t.getAttribute('data-i')];if(!r)return;var k2=t.getAttribute('data-er');r[k2]=k2==='s'?(Number(String(t.value).replace(/[^\d.]/g,''))||0):t.value;drawEstPrices();}
+      if(t.id==='ec'){e.color=t.value;}
+    });
+    wrapEl.addEventListener('change',function(ev){var t=ev.target;if(t.hasAttribute('data-er')){var r=e.roofs[+t.getAttribute('data-i')];if(r){r[t.getAttribute('data-er')]=t.value;drawEstPrices();}}});
+    document.getElementById('etype').onclick=function(ev){var b=ev.target.closest('[data-et]');if(!b)return;e.type=b.getAttribute('data-et');render();};
+    document.getElementById('elay').onclick=function(ev){var b=ev.target.closest('[data-ly]');if(!b)return;e.layers=+b.getAttribute('data-ly');this.querySelectorAll('button').forEach(function(z){z.classList.toggle('on',z===b);});drawEstPrices();};
+  }
+  function drawEstPrices(){
+    var e=M.est;var el=document.getElementById('eprice');if(!el)return;
+    var rg=estRanges();var total=e.roofs.reduce(function(n,r){return n+(Number(r.s)||0);},0);
+    el.innerHTML='<h2>Price <small>'+(total?Math.round(total).toLocaleString()+' sq ft · '+(total/100).toFixed(1)+' squares':'enter the roof size')+'</small></h2>'+
+      '<div class="pkg" id="epk">'+PK.map(function(p,i){var r=rg[i]||[0,0];return '<button type="button" class="'+(i===e.pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b><span class="money">'+(r[1]?money(r[0],false)+'–'+money(r[1],false):'—')+'</span></button>';}).join('')+'</div>'+
+      '<label class="f">Color</label><input class="in" id="ec" list="ecl" maxlength="40" value="'+esc(e.color)+'" placeholder="e.g. Estate Gray"><datalist id="ecl">'+COLORS.map(function(c){return '<option value="'+c+'">';}).join('')+'</datalist>'+
+      (M.pricing.updated?'':'<div class="note">These use starter prices per square. Set your own under ⚙ Quote prices.</div>');
+    document.getElementById('epk').onclick=function(ev){var b=ev.target.closest('[data-pk]');if(!b)return;e.pick=+b.getAttribute('data-pk');this.querySelectorAll('button').forEach(function(z){z.classList.toggle('on',z===b);});};
+  }
+  function measure(){
+    var e=M.est;if(!e.address.trim()){toast('Type the address first.',true);return;}
+    e.busy=true;render();
+    call('measure',{address:e.address}).then(function(m){
+      e.busy=false;e.m=m;e.address=m.address;e.lat=m.lat;e.lng=m.lng;
+      if(m.roofs&&m.roofs.length)e.roofs=m.roofs.map(function(r){return {n:r.n,s:r.s,p:r.p};});
+      render();
+    }).catch(function(er){e.busy=false;render();err(er);});
+  }
+  function saveEst(alsoEmail){
+    var e=M.est;
+    if(e.type==='repair')return saveRepairEst(alsoEmail);
+    var roofs=e.roofs.filter(function(r){return Number(r.s)>0;});
+    if(!e.address.trim()){toast('Type the address first.',true);return;}
+    if(!roofs.length){toast('Enter the roof size (or tap Measure roof).',true);return;}
+    if(alsoEmail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e.email)){toast('Add the customer’s email to send it.',true);return;}
+    var btns=app.querySelectorAll('[data-m=saveest]');btns.forEach(function(b){b.disabled=true;});
+    call('createQuote',{address:e.address,lat:e.lat,lng:e.lng,roofs:roofs,layers:e.layers,pick:e.pick,color:e.color,name:e.name,phone:e.phone,email:e.email})
+      .then(function(r){mergeQ(r);
+        if(alsoEmail)return call('emailQuote',{id:r.id}).then(function(r2){mergeQ(r2);return {r:r2,mailed:true};});
+        return {r:r};})
+      .then(function(o){M.qid=o.r.id;M.view='quote';M.qfilter='new';newEst();render();window.scrollTo(0,0);toast(o.mailed?'Quote saved and emailed':'Quote saved');})
+      .catch(function(er){btns.forEach(function(b){b.disabled=false;});err(er);});
+  }
+
+  function saveRepairEst(send){
+    var e=M.est;var items=e.items.filter(function(it){return (Number(it.qty)||0)>0&&String(it.name||'').trim();});
+    if(!e.address.trim()){toast('Type the address first.',true);return;}
+    if(!items.length){toast('Add at least one repair.',true);return;}
+    if(send&&!validEmail(e.email)){toast('Add the customer\u2019s email to send it.',true);return;}
+    var btns=app.querySelectorAll('[data-m=saveest]');btns.forEach(function(b){b.disabled=true;});
+    call('createQuote',{type:'repair',address:e.address,items:items,name:e.name,phone:e.phone,email:e.email})
+      .then(function(r){mergeQ(r);if(send)return call('sendProposal',{id:r.id,send:'email',email:e.email}).then(function(r2){mergeQ(r2);return {r:r2,mailed:true};});return {r:r};})
+      .then(function(o){M.qid=o.r.id;M.view='quote';M.qfilter='new';newEst();render();window.scrollTo(0,0);toast(o.mailed?'Saved and sent for signature':'Quote saved');})
+      .catch(function(er){btns.forEach(function(b){b.disabled=false;});err(er);});
+  }
+
+  /* ---------- quote prices ---------- */
+  function renderPricing(){
+    var p=M.pricing;var st=(p.steep||[]).slice();while(st.length<3)st.push({from:'',pct:''});
+    function num(name,val,label,pre,suf){return '<div><label class="f">'+label+'</label><input class="in money" inputmode="decimal" name="'+name+'" value="'+(val===''||val==null?'':val)+'"'+(pre?' placeholder="'+pre+'"':'')+'>'+(suf?'<span class="hint">'+suf+'</span>':'')+'</div>';}
+    var h=bar('<button class="back" data-m="back">'+ICON.back+'Quotes</button><div class="bar-title">Quote prices</div>')+'<div class="wrap"><form id="pf">'+
+      '<div class="card"><h2>Price per square <small>installed, before range</small></h2><div class="row">'+
+      p.packages.map(function(pk,i){return num('pk'+i,pk.perSq,pk.label,'$');}).join('')+'</div></div>'+
+      '<div class="card"><h2>Range shown to customers</h2><div class="row">'+num('lowPct',p.lowPct,'Low end %')+num('highPct',p.highPct,'High end %')+'</div>'+
+      '<p class="hint">A $10,000 job shows as $'+(100*p.lowPct).toLocaleString()+'–$'+(100*p.highPct).toLocaleString()+' with these numbers.</p></div>'+
+      '<div class="card"><h2>Adjustments</h2><div class="row">'+num('wastePct',p.wastePct,'Waste %')+num('layerPerSq',p.layerPerSq,'Extra layer $/sq')+'</div>'+
+      '<div class="row">'+num('minJob',p.minJob,'Minimum job $')+num('roundTo',p.roundTo,'Round to $')+'</div>'+
+      '<label class="f">Steep roof charge</label>'+st.map(function(x,i){return '<div class="row" style="margin-top:6px"><div><input class="in money" inputmode="numeric" name="sf'+i+'" value="'+(x.from||'')+'" placeholder="from (e.g. 8)"><span class="hint">pitch /12 and up</span></div><div><input class="in money" inputmode="decimal" name="sp'+i+'" value="'+(x.pct||'')+'" placeholder="+ %"><span class="hint">% more</span></div></div>';}).join('')+'</div>'+
+      '<div class="card" id="pex"></div>'+repairBookCard()+
+      '<div class="card"><h2>Google Maps key <small>'+(M.settings.hasMapsKey?'<span class="pill done">Saved</span>':'for measuring roofs')+'</small></h2>'+
+      '<input class="in" name="mapsKey" autocomplete="off" placeholder="'+(M.settings.hasMapsKey?'Saved. Paste to replace':'Paste your API key')+'">'+
+      '<p class="hint">In Google Cloud console: APIs &amp; Services › Credentials › Create API key. Turn on <b>Geocoding API</b>, <b>Solar API</b> and <b>Maps Static API</b>, and limit the key to those three. Use a new key, not the website one.</p></div>'+
+      '<div class="note">Your website’s instant quote still uses its own prices for now.</div>'+
+      '<button class="btn block" type="submit">Save prices</button></form></div>';
+    app.innerHTML=h;
+    var f=document.getElementById('pf');
+    function read(){var el=f.elements;var o={packages:p.packages.map(function(pk,i){return {perSq:el['pk'+i].value};}),lowPct:el.lowPct.value,highPct:el.highPct.value,wastePct:el.wastePct.value,layerPerSq:el.layerPerSq.value,minJob:el.minJob.value,roundTo:el.roundTo.value,steep:[]};
+      for(var i=0;i<3;i++){if(el['sf'+i].value)o.steep.push({from:el['sf'+i].value,pct:el['sp'+i].value||0});}return o;}
+    function ex(){var o=TAKEOFF.cleanPricing(read());var a=TAKEOFF.priceRanges(o,[{s:2000,p:'6/12'}],1),b=TAKEOFF.priceRanges(o,[{s:2000,p:'10/12'}],2);
+      document.getElementById('pex').innerHTML='<h2>Example</h2>'+kv('2,000 sq ft, 6/12, 1 layer','')+o.packages.map(function(pk,i){return kv(esc(pk.label),'<span class="money">'+money(a[i][0],false)+'–'+money(a[i][1],false)+'</span>');}).join('')+
+        kv('2,000 sq ft, 10/12, 2 layers','')+o.packages.map(function(pk,i){return kv(esc(pk.label),'<span class="money">'+money(b[i][0],false)+'–'+money(b[i][1],false)+'</span>');}).join('');}
+    ex();f.addEventListener('input',ex);
+    f.onsubmit=function(ev){ev.preventDefault();var b=f.querySelector('button[type=submit]');b.disabled=true;
+      var key=f.elements.mapsKey.value.trim();
+      call('savePricing',read()).then(function(np){M.pricing=np;return call('saveRepairs',readRepairBook());}).then(function(rb){M.repairs=rb;return key?call('saveSettings',{mapsKey:key}).then(function(s){M.settings=s;}):null;})
+        .then(function(){render();toast('Prices saved');}).catch(function(er){b.disabled=false;err(er);});};
+  }
+
+  /* ---------- share a quote ---------- */
+  function shareSheet(){
+    var x=q();var digits=String(x.phone||'').replace(/[^\d+]/g,'');
+    var msg='Hi'+(x.name?' '+x.name:'')+', here is your roof estimate from Team Forte: '+x.link;
+    var ov=sheet('<h3>Send quote'+closeBtn()+'</h3>'+
+      '<a class="btn block" href="sms:'+esc(digits)+'?&body='+encodeURIComponent(msg)+'" target="_top">Text it'+(x.phone?' to '+esc(x.phone):'')+'</a>'+
+      '<label class="f">Email</label><div class="row"><input class="in" id="sem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com"><button class="btn dark" id="sesend" style="flex:0 0 auto">Email</button></div>'+
+      '<label class="f">Quote link</label><textarea class="in" id="slink" readonly style="min-height:70px;font-size:13px">'+esc(x.link)+'</textarea>'+
+      '<div class="acts"><button class="btn ghost" id="scopy">Copy link</button><a class="btn ghost" href="'+esc(x.link)+'" target="_blank" rel="noopener">Open quote page</a></div>');
+    ov.querySelector('#scopy').onclick=function(){var t=ov.querySelector('#slink');t.focus();t.select();
+      var done=function(){toast('Link copied');};
+      try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(x.link).then(done,function(){document.execCommand('copy');done();});}else{document.execCommand('copy');done();}}catch(e){toast('Press and hold the link to copy it.');}};
+    ov.querySelector('#sesend').onclick=function(){var b=this;var em=ov.querySelector('#sem').value.trim();b.disabled=true;
+      call('emailQuote',{id:x.id,email:em}).then(function(r){mergeQ(r);closeSheet();render();toast('Quote emailed to '+em);}).catch(function(er){b.disabled=false;err(er);});};
+  }
+
+  /* =================== EXTRAS (repairs, proposals, schedule, profit, inspections, wrap-up, crew) =================== */
+  function role(){return (S.user&&S.user.role)||'owner';}
+  function isOwner(){return role()==='owner';}
+  function proposalUrl(x){return (M.execUrl||EXEC_URL)+'?r=proposal&id='+encodeURIComponent(x.id);}
+  function repairTotal(items){var t=(items||[]).reduce(function(n,it){return n+(Number(it.qty)||0)*(Number(it.price)||0);},0);return Math.round(Math.max(Number(M.repairs.min)||0,t)*100)/100;}
+  function inspOf(x){return (M.inspections||[]).filter(function(i){return i.quoteId===x.id;}).sort(function(a,b){return a.order-b.order;});}
+  function validEmail(e){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(e||''));}
+  function smsHref(phone,body){return 'sms:'+String(phone||'').replace(/[^\d+]/g,'')+'?&body='+encodeURIComponent(body);}
+  function jobProfit(x){
+    var c=x.costs||{};var mine=M.orders.filter(function(o){return o.quoteId===x.id;});
+    var mat=mine.length?mine.reduce(function(n,o){return n+orderSpend(o);},0):TAKEOFF.totals(fresh(x),M.settings.taxRate).total;
+    var labor=(Number(c.crewDays)||0)*(Number(c.crewRate)||0);var other=(Number(c.dumpster)||0)+(Number(c.permit)||0)+(Number(c.other)||0);
+    var rev=Number(x.contractPrice)||0;var profit=rev-mat-labor-other;
+    return {rev:rev,mat:mat,matOrdered:mine.length>0,labor:labor,other:other,profit:profit,margin:rev?Math.round(profit/rev*100):0};
+  }
+
+  /* ----- repair item rows (new estimate + edit sheet) ----- */
+  function itemRows(items,prefix){
+    return items.map(function(it,i){
+      return '<div class="ln" style="cursor:default"><div class="l1">'+(it.custom?'<input class="in" data-'+prefix+'="name" data-i="'+i+'" value="'+esc(it.name)+'" placeholder="Describe the repair" style="min-height:38px;margin-bottom:6px">':'<b>'+esc(it.name)+'</b>')+
+        '<div class="row" style="gap:6px"><input class="in money" style="min-height:38px" inputmode="decimal" data-'+prefix+'="qty" data-i="'+i+'" value="'+it.qty+'" aria-label="Quantity"><span class="hint" style="flex:0 0 auto;align-self:center">'+esc(it.unit)+' ×</span>'+
+        '<input class="in money" style="min-height:38px" inputmode="decimal" data-'+prefix+'="price" data-i="'+i+'" value="'+it.price+'" aria-label="Price"></div></div>'+
+        '<div class="l2 money">'+money((Number(it.qty)||0)*(Number(it.price)||0))+'<span><button type="button" class="x" style="width:30px;height:30px;margin-left:auto;margin-top:6px" data-m="'+prefix+'rm" data-i="'+i+'" aria-label="Remove">'+ICON.x+'</button></span></div></div>';
+    }).join('');
+  }
+  function addRepairSelect(prefix){
+    return '<select class="in mt" data-'+prefix+'add><option value="">+ Add a repair…</option>'+(M.repairs.items||[]).map(function(it){return '<option value="'+esc(it.key)+'">'+esc(it.name)+' · '+money(it.price,false)+'/'+esc(it.unit)+'</option>';}).join('')+'<option value="__custom">Custom item…</option></select>';
+  }
+  function bookItem(key){if(key==='__custom')return {key:'c'+Date.now().toString(36),name:'',unit:'each',qty:1,price:0,custom:true};
+    var b=(M.repairs.items||[]).filter(function(it){return it.key===key;})[0];return b?{key:b.key,name:b.name,unit:b.unit,qty:1,price:b.price}:null;}
+  function wireItems(root,list,prefix,redraw){
+    root.addEventListener('input',function(e){var t=e.target;var k2=t.getAttribute('data-'+prefix);if(!k2)return;var it=list[+t.getAttribute('data-i')];if(!it)return;
+      it[k2]=k2==='name'?t.value:(Number(String(t.value).replace(/[^\d.]/g,''))||0);redraw(true);});
+    root.addEventListener('change',function(e){var t=e.target;if(!t.hasAttribute('data-'+prefix+'add'))return;var it=bookItem(t.value);if(it){list.push(it);redraw();}t.value='';});
+    root.addEventListener('click',function(e){var b=e.target.closest('[data-m="'+prefix+'rm"]');if(!b)return;e.stopPropagation();list.splice(+b.getAttribute('data-i'),1);redraw();});
+  }
+
+  /* ----- repair parts of the quote page ----- */
+  function repairCard(x){
+    var items=x.items||[];var sub=items.reduce(function(n,it){return n+it.qty*it.price;},0);
+    return '<div class="card"><h2>Repairs <small>'+items.length+' item'+(items.length===1?'':'s')+'</small></h2>'+
+      items.map(function(it){return kv(esc(it.name)+'<br><small class="hint">'+it.qty+' '+esc(units(it.unit,it.qty))+' × '+money(it.price)+'</small>','<span class="money">'+money(it.qty*it.price)+'</span>');}).join('')+
+      (sub<x.contractPrice?kv('Minimum service charge',''):'')+
+      '<div class="tot"><div class="kv grand"><span>Total</span><b class="money">'+money(x.contractPrice)+'</b></div></div>'+
+      (x.status==='new'&&!x.signedAt?'<button class="btn ghost block mt" data-m="edititems">Edit repairs</button>':'')+'</div>';
+  }
+  function approveRepairCard(x){
+    return '<div class="card"><h2>Approve job</h2><p class="sub">Approving adds the job to Photos and starts its materials list and job costs. If the customer signs online, this happens on its own.</p>'+
+      '<button class="btn block" data-m="approverep">Approve repair job</button><button class="btn ghost block mt" data-m="archive">Not going ahead</button></div>';
+  }
+  function editItemsSheet(){
+    var x=q();var list=(x.items||[]).map(function(it){return Object.assign({},it);});
+    var ov=sheet('<h3>Edit repairs'+closeBtn()+'</h3><div id="eis"></div>'+addRepairSelect('ei')+'<div class="tot mt" id="eit"></div><button class="btn block mt" id="eisv">Save</button>');
+    function draw(soft){if(!soft)ov.querySelector('#eis').innerHTML=itemRows(list,'ei');ov.querySelector('#eit').innerHTML='<div class="kv grand"><span>Total</span><b class="money">'+money(repairTotal(list))+'</b></div>';}
+    draw();wireItems(ov.querySelector('.sheet'),list,'ei',draw);
+    ov.querySelector('#eisv').onclick=function(){var items=list.filter(function(it){return it.qty>0&&(it.name||'').trim();});if(!items.length){toast('Add at least one repair.',true);return;}
+      closeSheet();saveQ({items:items,contractPrice:repairTotal(items)},'Repairs saved');};
+  }
+
+  /* ----- customer + GoHighLevel ----- */
+  function ghlLine(x){
+    if(!(M.settings.ghl&&M.settings.ghl.connected))return '';
+    if(x.ghlError)return '<div class="note">GoHighLevel: '+esc(x.ghlError)+'<div class="mt"><button class="btn ghost" data-m="ghlsync">Try again</button></div></div>';
+    if(x.ghlOppId)return '<p class="hint">✓ In GoHighLevel (Sales Pipeline)</p>';
+    return '<p class="hint">Not in GoHighLevel yet. <a href="#" data-m="ghlsync">Sync now</a></p>';
+  }
+  function editCustSheet(){
+    var x=q();
+    var ov=sheet('<h3>Customer'+closeBtn()+'</h3><label class="f">Name</label><input class="in" id="cn" value="'+esc(x.name)+'">'+
+      '<div class="row"><div><label class="f">Phone</label><input class="in" id="cp" inputmode="tel" value="'+esc(x.phone)+'"></div><div><label class="f">Email</label><input class="in" id="ce" type="email" value="'+esc(x.email)+'"></div></div>'+
+      '<label class="f">Address</label><input class="in" id="cad" value="'+esc(x.address)+'"><button class="btn block mt" id="csv">Save</button>');
+    ov.querySelector('#csv').onclick=function(){var em=ov.querySelector('#ce').value.trim();if(em&&!validEmail(em)){toast('That email doesn’t look right.',true);return;}
+      closeSheet();saveQ({name:ov.querySelector('#cn').value,phone:ov.querySelector('#cp').value,email:em,address:ov.querySelector('#cad').value},'Saved');};
+  }
+
+  /* ----- proposal / e-signature ----- */
+  function proposalCard(x){
+    var s=M.settings;
+    if(x.signedAt){
+      var dep=Math.round((x.contractPrice||0)*(s.depositPct||0))/100;
+      return '<div class="card"><h2>Signed <span class="pill done">✓ '+dateStr(x.signedAt)+'</span></h2>'+kv('Signed by',esc(x.signerName))+kv('Price','<span class="money">'+money(x.contractPrice)+'</span>')+
+        (dep>0?'<label class="f">Deposit '+money(dep)+'</label><div class="seg" id="depseg">'+[['requested','Waiting'],['paid','Paid']].map(function(d){return '<button type="button" class="'+((x.depositStatus||'requested')===d[0]?'on':'')+'" data-dep="'+d[0]+'">'+d[1]+'</button>';}).join('')+'</div>':'')+
+        '<div class="acts">'+(x.signedPdfId?'<a class="btn ghost" href="https://drive.google.com/file/d/'+esc(x.signedPdfId)+'/view" target="_blank" rel="noopener">Signed copy</a>':'<span></span>')+
+        '<a class="btn ghost" href="'+esc(proposalUrl(x))+'" target="_blank" rel="noopener">Proposal page</a></div></div>';
+    }
+    if(x.status==='done'||x.status==='archived')return '';
+    return '<div class="card"><h2>Online signature</h2><p class="sub" style="margin:0">Send a firm-price proposal the customer can sign on their phone. When they sign, the job is approved for you'+(s.depositPct?' and they can pay the '+s.depositPct+'% deposit':'')+'.</p>'+
+      (x.proposalSentAt?'<p class="hint">Sent '+dateStr(x.proposalSentAt)+'</p>':'')+
+      '<button class="btn block mt" data-m="propose">'+(x.proposalSentAt?'Send again':'Send for signature')+'</button></div>';
+  }
+  function proposeSheet(){
+    var x=q();var rep=x.type==='repair';var pick=x.pick>=0?x.pick:1;
+    var ov=sheet('<h3>Send for signature'+closeBtn()+'</h3>'+
+      (rep?kv('Repair total','<span class="money">'+money(x.contractPrice)+'</span>'):
+        '<label class="f">Package</label><div class="pkg" id="ppk">'+PK.map(function(p,i){return '<button type="button" class="'+(i===pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b><span>'+(range(x,i)||' ')+'</span></button>';}).join('')+'</div>'+
+        '<div class="row"><div><label class="f">Color</label><input class="in" id="pcl" value="'+esc(x.color||'')+'" placeholder="Estate Gray"></div><div><label class="f">Firm price</label><input class="in money" id="ppr" inputmode="decimal" value="'+(x.contractPrice||mid(x,pick)||'')+'"></div></div>')+
+      '<label class="f">Customer email</label><input class="in" id="pem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
+      '<div class="acts"><button class="btn" id="pemail">Email it</button><button class="btn ghost" id="plink">Text or copy link</button></div><div id="pout"></div>');
+    if(!rep)ov.querySelector('#ppk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;var old=pick;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#ppk button').forEach(function(z){z.classList.toggle('on',z===b);});
+      var pr=ov.querySelector('#ppr');if(!Number(pr.value)||Number(pr.value)===mid(x,old))pr.value=mid(x,pick)||'';};
+    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim()};if(!rep){a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=Number(ov.querySelector('#ppr').value)||0;}return a;}
+    ov.querySelector('#pemail').onclick=function(){var b=this;var a=args('email');if(!validEmail(a.email)){toast('Add the customer’s email.',true);return;}b.disabled=true;
+      call('sendProposal',a).then(function(r){mergeQ(r);closeSheet();render();toast('Proposal emailed to '+a.email);}).catch(function(e){b.disabled=false;err(e);});};
+    ov.querySelector('#plink').onclick=function(){var b=this;b.disabled=true;
+      call('sendProposal',args('none')).then(function(r){mergeQ(r);var url=r.proposalUrl;var msg='Hi'+(r.name?' '+r.name.split(' ')[0]:'')+', here is your Team Forte proposal. You can review and sign it here: '+url;
+        ov.querySelector('#pout').innerHTML='<a class="btn block mt" href="'+esc(smsHref(r.phone,msg))+'" target="_top">Text it'+(r.phone?' to '+esc(r.phone):'')+'</a><textarea class="in mt" readonly style="min-height:64px;font-size:13px">'+esc(url)+'</textarea>';
+        render();}).catch(function(e){b.disabled=false;err(e);});};
+  }
+
+  /* ----- schedule + profit ----- */
+  function scheduleCard(x){
+    return '<div class="card"><h2>Schedule</h2><div class="row"><div><label class="f">Install date</label><input class="in" type="date" id="sd" value="'+esc(x.installDate||'')+'"></div>'+
+      '<div><label class="f">Crew</label><input class="in" id="sc" value="'+esc(x.crew||'')+'" placeholder="e.g. Luis + 3"></div></div><button class="btn dark block mt" data-m="savesched">Save schedule</button></div>';
+  }
+  function profitCard(x){
+    if(!x.contractPrice)return '';
+    var p=jobProfit(x);
+    return '<div class="card"><h2>Profit <small>'+(p.matOrdered?'materials from orders':'materials estimated')+'</small></h2>'+
+      kv('Job price','<span class="money">'+money(p.rev,false)+'</span>')+kv('Materials','<span class="money">−'+money(p.mat,false)+'</span>')+
+      kv('Labor','<span class="money">−'+money(p.labor,false)+'</span>')+kv('Dumpster, permit &amp; other','<span class="money">−'+money(p.other,false)+'</span>')+
+      '<div class="tot"><div class="kv grand"><span>Profit</span><b class="money" style="color:'+(p.profit<0?'#B3261E':'var(--green)')+'">'+money(p.profit,false)+' · '+p.margin+'%</b></div></div>'+
+      '<button class="btn ghost block mt" data-m="editcosts">Edit job costs</button></div>';
+  }
+  function costsSheet(){
+    var x=q();var c=x.costs||{crewDays:0,crewRate:M.settings.crewDayRate,dumpster:0,permit:0,other:0,otherNote:''};
+    var ov=sheet('<h3>Job costs'+closeBtn()+'</h3><div class="row"><div><label class="f">Crew days</label><input class="in money" id="kd" inputmode="decimal" value="'+c.crewDays+'"></div><div><label class="f">Cost per crew day</label><input class="in money" id="kr" inputmode="decimal" value="'+c.crewRate+'"></div></div>'+
+      '<div class="row"><div><label class="f">Dumpster</label><input class="in money" id="kdu" inputmode="decimal" value="'+c.dumpster+'"></div><div><label class="f">Permit</label><input class="in money" id="kp" inputmode="decimal" value="'+c.permit+'"></div></div>'+
+      '<div class="row"><div><label class="f">Other</label><input class="in money" id="ko" inputmode="decimal" value="'+c.other+'"></div><div><label class="f">What for</label><input class="in" id="kon" value="'+esc(c.otherNote||'')+'"></div></div>'+
+      '<button class="btn block mt" id="ksv">Save</button>');
+    ov.querySelector('#ksv').onclick=function(){var g=function(id){return Number(ov.querySelector(id).value)||0;};
+      closeSheet();saveQ({costs:{crewDays:g('#kd'),crewRate:g('#kr'),dumpster:g('#kdu'),permit:g('#kp'),other:g('#ko'),otherNote:ov.querySelector('#kon').value}},'Costs saved');};
+  }
+
+  /* ----- inspection photos ----- */
+  function inspectionCard(x){
+    var list=inspOf(x);
+    return '<div class="card"><h2>Inspection photos <small>'+list.length+'</small></h2>'+
+      (list.length?'<div class="grid">'+list.map(function(r){return '<button class="ph" data-m="insp" data-id="'+esc(r.id)+'"><img loading="lazy" src="'+esc(img(r.id,400))+'" alt=""><span class="cap">'+esc(r.tag)+'</span></button>';}).join('')+'</div>':
+        '<p class="hint">Take photos of what you find and tag each one. Turn them into a PDF report for the homeowner.</p>')+
+      '<div class="acts"><button class="btn ghost" data-m="addinsp">'+ICON.cam+'Add photos</button><button class="btn ghost" data-m="report"'+(list.length?'':' disabled')+'>Create report</button></div></div>';
+  }
+  var inspPicker=null;
+  function addInspSheet(quoteId){
+    var ov=sheet('<h3>Inspection photos'+closeBtn()+'</h3><label class="f">What do they show?</label><select class="in" id="it">'+(M.tags||[]).map(function(t){return '<option>'+esc(t)+'</option>';}).join('')+'</select>'+
+      '<label class="f">Note <small>(optional)</small></label><input class="in" id="inote" maxlength="300" placeholder="e.g. Cracked boot over bathroom"><button class="btn block mt" id="igo">'+ICON.cam+'Take or choose photos</button>');
+    ov.querySelector('#igo').onclick=function(){
+      if(!inspPicker){inspPicker=document.createElement('input');inspPicker.type='file';inspPicker.accept='image/*';inspPicker.multiple=true;inspPicker.className='vh';document.body.appendChild(inspPicker);}
+      var tag=ov.querySelector('#it').value,note=ov.querySelector('#inote').value;
+      inspPicker.onchange=function(){var files=Array.prototype.slice.call(inspPicker.files||[],0,20);inspPicker.value='';if(!files.length)return;closeSheet();uploadInsp(quoteId,files,tag,note);};
+      inspPicker.click();
+    };
+  }
+  function uploadInsp(quoteId,files,tag,note){
+    S.upload={total:files.length,done:0,failed:0};drawProg();var errs=[];var seq=Promise.resolve();
+    files.forEach(function(file){seq=seq.then(function(){return shrink(file).then(function(sh){
+      return call('addInspection',{quoteId:quoteId,base64:sh.base64,tag:tag,note:note}).then(function(r){S.prev[r.id]=sh.thumb;(M.inspections=M.inspections||[]).push(r);});
+    }).catch(function(e){S.upload.failed++;errs.push(e.message);}).then(function(){S.upload.done++;drawProg();});});});
+    seq.then(function(){var u=S.upload;S.upload=null;drawProg();render();toast(u.failed?u.failed+' didn’t upload: '+errs[0]:u.total+' photo'+(u.total===1?'':'s')+' added',!!u.failed);});
+  }
+  function inspSheet(id){
+    var r=(M.inspections||[]).filter(function(z){return z.id===id;})[0];if(!r)return;
+    var ov=sheet('<h3>'+esc(r.tag)+closeBtn()+'</h3><img class="big" src="'+esc(img(r.id,1200))+'" alt="">'+
+      '<label class="f">Tag</label><select class="in" id="it2">'+(M.tags||[]).map(function(t){return '<option'+(t===r.tag?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select>'+
+      '<label class="f">Note</label><input class="in" id="in2" maxlength="300" value="'+esc(r.note||'')+'">'+
+      '<div class="acts"><button class="btn danger" id="idel">Delete</button><button class="btn" id="isv">Save</button></div>');
+    ov.querySelector('#isv').onclick=function(){call('saveInspection',{id:r.id,tag:ov.querySelector('#it2').value,note:ov.querySelector('#in2').value}).then(function(n){Object.assign(r,n);closeSheet();render();toast('Saved');}).catch(err);};
+    ov.querySelector('#idel').onclick=function(){call('deleteInspection',{id:r.id}).then(function(){M.inspections=M.inspections.filter(function(z){return z.id!==r.id;});closeSheet();render();toast('Deleted');}).catch(err);};
+  }
+  function reportSheet(){
+    var x=q();
+    var ov=sheet('<h3>Inspection report'+closeBtn()+'</h3><p class="sub">Makes a PDF with all '+inspOf(x).length+' photos and notes, saved in Google Drive.</p>'+
+      '<label class="f">Email it to <small>(optional)</small></label><input class="in" id="rem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
+      '<div class="acts"><button class="btn ghost" id="rmk">Create PDF</button><button class="btn" id="rme">Create &amp; email</button></div><div id="rout"></div>');
+    function go(withEmail,b){var em=ov.querySelector('#rem').value.trim();if(withEmail&&!validEmail(em)){toast('Add a valid email.',true);return;}
+      b.disabled=true;b.textContent='Making PDF…';
+      call('inspectionReport',{quoteId:x.id,email:withEmail?em:''}).then(function(r){
+        var msg='Here are the photos from your roof inspection: '+r.url;
+        ov.querySelector('#rout').innerHTML='<div class="note ok mt">Report ready'+(r.emailed?' and emailed to '+esc(r.emailed):'')+'.</div><div class="acts"><a class="btn ghost" href="'+esc(r.url)+'" target="_blank" rel="noopener">Open PDF</a><a class="btn ghost" href="'+esc(smsHref(x.phone,msg))+'" target="_top">Text link</a></div>';
+        b.textContent='Done';}).catch(function(e){b.disabled=false;b.textContent=withEmail?'Create & email':'Create PDF';err(e);});}
+    ov.querySelector('#rmk').onclick=function(){go(false,this);};
+    ov.querySelector('#rme').onclick=function(){go(true,this);};
+  }
+
+  /* ----- wrap-up: review + warranty ----- */
+  function wrapCard(x){
+    var s=M.settings;var msg='Thanks for choosing Team Forte! If you’re happy with your roof, would you leave us a quick Google review? '+(s.reviewLink||'');
+    return '<div class="card"><h2>Wrap-up</h2>'+
+      kv('Review request',x.reviewAt?'Sent '+dateStr(x.reviewAt):'Not sent')+
+      (s.reviewLink?'<div class="acts">'+(validEmail(x.email)?'<button class="btn ghost" data-m="revmail">Email request</button>':'<span></span>')+'<a class="btn ghost" href="'+esc(smsHref(x.phone,msg))+'" target="_top">Text request</a></div>':'<p class="hint">Add your Google review link in Spending › Settings to send review requests.</p>')+
+      '<div class="toggle" style="margin-top:12px"><div class="tl"><b>Warranty registered</b><span>Owens Corning registration for this roof</span></div><button class="sw'+(x.warrantyDone?' on':'')+'" role="switch" aria-checked="'+(x.warrantyDone?'true':'false')+'" aria-label="Warranty registered" data-m="warranty"></button></div>'+
+      (s.warrantyLink?'<a class="drive" href="'+esc(s.warrantyLink)+'" target="_blank" rel="noopener">'+ICON.eye+'Open warranty registration</a>':'')+'</div>';
+  }
+
+  /* ----- crew ----- */
+  function loadCrew(){return call('crewJobs').then(function(j){applyCrew(j);cacheMerge('crew',j);}).catch(function(e){toast(e.message,true);});}
+  function applyCrew(j){M.crewJobs=j||[];M.tags=M.tags&&M.tags.length?M.tags:['Missing or damaged shingles','Lifted or creased shingles','Pipe boot','Flashing','Chimney','Soft or rotted decking','Valley','Ventilation','Gutters / drip edge','Leak / water stain','Other'];M.crewLoaded=true;}
+  function renderCrew(){
+    if(!M.crewLoaded){app.innerHTML=bar('<div class="brand">JOBS</div>')+'<div class="loading"><div class="spin dk"></div></div>';loadCrew().then(render);return;}
+    if(M.view==='crewjob'){var j=M.crewJobs.filter(function(z){return z.id===M.qid;})[0];if(j)return renderCrewJob(j);M.view='list';}
+    var h=bar('<div class="brand">JOBS</div><button class="link" data-m="crewreload">Refresh</button><button class="link" data-act="logout">Log out</button>')+'<div class="wrap">'+
+      '<p class="sub mt">Hi '+esc(S.user.name)+'. Upcoming jobs, soonest first.</p>';
+    if(!M.crewJobs.length)h+='<div class="empty"><b>No jobs scheduled</b>Approved jobs show up here.</div>';
+    h+=M.crewJobs.map(function(j){
+      return '<button class="q" data-m="crewopen" data-id="'+esc(j.id)+'"><div class="top"><div><div class="nm">'+esc(j.installDate?dateStr(j.installDate):'Not scheduled')+'</div><div class="ad">'+esc(j.address)+'</div></div><span class="pill '+j.status+'">'+ST_LABEL[j.status]+'</span></div>'+
+        '<div class="pills">'+j.scope.slice(0,2).map(function(s){return '<span class="pill">'+esc(s)+'</span>';}).join('')+(j.crew?'<span class="pill">'+esc(j.crew)+'</span>':'')+'</div></button>';
+    }).join('');
+    app.innerHTML=h+'</div>';
+  }
+  function renderCrewJob(j){
+    var h=bar('<button class="back" data-m="crewback">'+ICON.back+'Jobs</button><div class="bar-title">'+esc(String(j.address).split(',')[0])+'</div>')+'<div class="wrap">';
+    h+='<div class="card"><h2>'+esc(j.installDate?dateStr(j.installDate):'Not scheduled')+(j.crew?' <small>'+esc(j.crew)+'</small>':'')+'</h2>'+
+      kv('Address','<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(j.address)+'" target="_blank" rel="noopener">'+esc(j.address)+'</a>')+
+      (j.name?kv('Customer',esc(j.name)):'')+(j.phone?kv('Phone','<a href="tel:'+esc(String(j.phone).replace(/[^\d+]/g,''))+'" target="_top">'+esc(j.phone)+'</a>'):'')+
+      j.scope.map(function(s){return kv('Work',esc(s));}).join('')+
+      (j.roofs||[]).map(function(r){return kv(esc(r.n||'Roof'),Number(r.s||0).toLocaleString()+' sq ft · '+esc(r.p||''));}).join('')+
+      (j.layers>1?kv('Layers to tear off',String(j.layers)):'')+
+      (j.notes?'<div class="note">'+esc(j.notes)+'</div>':'')+'</div>';
+    if(j.materials.length)h+='<div class="card"><h2>Materials</h2>'+j.materials.map(function(m){return kv(esc(m.name),'<span class="money">'+m.qty+' '+esc(units(m.unit,m.qty))+'</span>');}).join('')+'</div>';
+    h+='<div class="card"><h2>Photos &amp; notes</h2><div class="acts">'+(j.photoJobId?'<button class="btn" data-m="crewphotos">Job photos</button>':'<span></span>')+'<button class="btn ghost" data-m="crewinsp">Problem photo</button></div>'+
+      '<label class="f">Note for the office</label><div class="row"><input class="in" id="cnote" maxlength="300" placeholder="e.g. Need 2 more sheets of decking"><button class="btn dark" data-m="crewnote" style="flex:0 0 auto">Send</button></div>'+
+      (j.events||[]).slice().reverse().map(function(e){return '<p class="hint">'+esc(e.e.replace(/^crew: /,''))+' · '+dateStr(e.t)+'</p>';}).join('')+'</div>';
+    app.innerHTML=h+'</div>';
+  }
+
+  /* ----- spending: jobs ----- */
+  function moneyJobs(){
+    var jobs=M.quotes.filter(function(x){return (x.status==='approved'||x.status==='ordered'||x.status==='done')&&x.contractPrice;});
+    if(!jobs.length)return '<div class="empty"><b>No jobs yet</b>Approved jobs with a price show their profit here.</div>';
+    var ym=new Date().toISOString().slice(0,7);var mon={rev:0,profit:0};
+    var rows=jobs.map(function(x){var p=jobProfit(x);if(String(x.approvedAt||x.created).slice(0,7)===ym){mon.rev+=p.rev;mon.profit+=p.profit;}
+      return '<button class="ln" data-m="openjobq" data-id="'+esc(x.id)+'"><div class="l1"><b>'+esc(x.name||x.id)+' · '+esc(townOf(x.address)||'')+'</b><span>'+(x.type==='repair'?'Repair':'Replacement')+' · '+ST_LABEL[x.status]+' · '+money(p.rev,false)+'</span></div>'+
+        '<div class="l2 money" style="color:'+(p.profit<0?'#B3261E':'var(--green)')+'">'+money(p.profit,false)+'<span>'+p.margin+'% margin</span></div></button>';}).join('');
+    return '<div class="stats"><div class="stat"><b class="money">'+k(mon.rev)+'</b><span>Sold this month</span></div><div class="stat"><b class="money">'+k(mon.profit)+'</b><span>Profit (est.)</span></div><div class="stat"><b>'+(mon.rev?Math.round(mon.profit/mon.rev*100):0)+'%</b><span>Margin</span></div></div><div class="card">'+rows+'</div>';
+  }
+
+  /* ----- settings: extra cards ----- */
+  function settingsExtraCards(){
+    var s=M.settings;var c=s.company||{};var g=s.ghl||{};
+    var h='<div class="card"><h2>Company <small>shown on proposals</small></h2>'+
+      '<div class="row"><div><label class="f">Name</label><input class="in" name="co_name" value="'+esc(c.name)+'"></div><div><label class="f">Legal name</label><input class="in" name="co_legal" value="'+esc(c.legal)+'"></div></div>'+
+      '<label class="f">Address</label><input class="in" name="co_address" value="'+esc(c.address)+'">'+
+      '<div class="row"><div><label class="f">Phone</label><input class="in" name="co_phone" value="'+esc(c.phone)+'"></div><div><label class="f">Email</label><input class="in" name="co_email" value="'+esc(c.email)+'"></div></div>'+
+      '<label class="f">CT HIC registration #</label><input class="in" name="co_hic" value="'+esc(c.hic)+'" placeholder="HIC.0000000"></div>'+
+      '<div class="card"><h2>Proposals &amp; deposits</h2><div class="row"><div><label class="f">Deposit %</label><input class="in money" name="depositPct" inputmode="decimal" value="'+(s.depositPct!=null?s.depositPct:30)+'"></div></div>'+
+      '<label class="f">Deposit payment link <small>(GoHighLevel payment link)</small></label><input class="in" name="depositLink" value="'+esc(s.depositLink||'')+'" placeholder="https://…">'+
+      '<p class="hint">In GoHighLevel: Payments › Payment Links. Make a link where the customer types the amount (or one per deposit size) and paste it here.</p>'+
+      '<label class="f">Terms</label><textarea class="in" name="terms" style="min-height:110px">'+esc(s.terms||'')+'</textarea></div>'+
+      '<div class="card"><h2>Job cost defaults</h2><div class="row"><div><label class="f">Cost per crew day</label><input class="in money" name="crewDayRate" inputmode="decimal" value="'+s.crewDayRate+'"></div>'+
+      '<div><label class="f">Dumpster</label><input class="in money" name="dumpster" inputmode="decimal" value="'+s.dumpster+'"></div><div><label class="f">Permit</label><input class="in money" name="permit" inputmode="decimal" value="'+s.permit+'"></div></div></div>'+
+      '<div class="card"><h2>Reviews &amp; warranty</h2><label class="f">Google review link</label><input class="in" name="reviewLink" value="'+esc(s.reviewLink||'')+'" placeholder="https://g.page/r/…/review">'+
+      '<div class="toggle" style="margin-top:12px"><div class="tl"><b>Email a review request automatically</b><span>When a job is marked done and the customer has an email</span></div><button type="button" class="sw'+(s.autoReview!==false?' on':'')+'" role="switch" data-sw="autoReview" aria-checked="'+(s.autoReview!==false)+'" aria-label="Automatic review email"></button></div>'+
+      '<label class="f">Warranty registration link <small>(optional)</small></label><input class="in" name="warrantyLink" value="'+esc(s.warrantyLink||'')+'" placeholder="https://…"></div>';
+    if(isOwner()){
+      h+='<div class="card"><h2>GoHighLevel <small>'+(g.connected?'<span class="pill done">Connected</span>':'<span class="pill">Not connected</span>')+'</small></h2>'+
+        '<p class="hint">GoHighLevel › Settings › Private Integrations › Create. Give it Contacts and Opportunities access (view and edit) and paste the token here.</p>'+
+        '<label class="f">Private integration token</label><input class="in" name="ghlToken" autocomplete="off" placeholder="'+(s.hasGhlToken?'Saved. Paste to replace':'pit-…')+'">'+
+        '<div id="ghlsel">'+kv('Pipeline','Sales Pipeline')+kv('When a quote is sent','Quote Sent')+kv('When a job is approved','Won - Signed &amp; Scheduled')+'</div>'+
+        '<div class="toggle" style="margin-top:8px"><div class="tl"><b>Sync quotes and jobs</b><span>Contacts and deals in your Sales Pipeline</span></div><button type="button" class="sw'+(g.enabled!==false?' on':'')+'" role="switch" data-sw="ghlEnabled" aria-checked="'+(g.enabled!==false)+'" aria-label="Sync with GoHighLevel"></button></div>'+
+        '<button type="button" class="btn ghost block mt" data-m="ghltest">Check connection</button></div>';
+      h+='<div class="card"><h2>People &amp; logins</h2><p class="hint">Your setup passcode is the owner login. Office: everything except logins and keys. Crew: their jobs and photos only, no prices.</p><div id="people"><div class="loading" style="padding:12px"><div class="spin dk"></div></div></div>'+
+        '<div class="acts"><button type="button" class="btn ghost" data-m="addperson">'+ICON.plus+'Add person</button><button type="button" class="btn dark" data-m="savepeople">Save people</button></div></div>';
+    }
+    return h;
+  }
+  function personRow(u){return '<div class="row person" style="margin-top:8px" data-id="'+esc(u.id||'')+'"><input class="in" data-pn placeholder="Name" value="'+esc(u.name||'')+'"><select class="in" data-pr style="flex:0 0 96px"><option value="crew"'+(u.role!=='office'?' selected':'')+'>Crew</option><option value="office"'+(u.role==='office'?' selected':'')+'>Office</option></select><input class="in" data-pp placeholder="PIN" style="flex:0 0 96px" value="'+esc(u.pin||'')+'"></div>';}
+  function loadPeople(){var box=document.getElementById('people');if(!box)return;call('users').then(function(list){box=document.getElementById('people');if(box)box.innerHTML=list.length?list.map(personRow).join(''):'<p class="hint" id="nopeople">No one yet.</p>';}).catch(err);}
+  function extraSettingsArgs(f){
+    var el=f.elements;var sw=function(n){var b=f.querySelector('[data-sw="'+n+'"]');return b?b.classList.contains('on'):undefined;};
+    var a={company:{name:el.co_name.value,legal:el.co_legal.value,address:el.co_address.value,phone:el.co_phone.value,email:el.co_email.value,hic:el.co_hic.value},
+      depositPct:el.depositPct.value,depositLink:el.depositLink.value,terms:el.terms.value,crewDayRate:el.crewDayRate.value,dumpster:el.dumpster.value,permit:el.permit.value,
+      reviewLink:el.reviewLink.value,warrantyLink:el.warrantyLink.value,autoReview:sw('autoReview')};
+    if(el.ghlToken){if(el.ghlToken.value.trim())a.ghlToken=el.ghlToken.value.trim();a.ghl={enabled:sw('ghlEnabled')};
+      ['pipelineId','stageQuote','stageWon'].forEach(function(k2){if(el['g_'+k2])a.ghl[k2]=el['g_'+k2].value;});}
+    return a;
+  }
+
+  /* ----- repair book on the Quote prices screen ----- */
+  function repairBookCard(){
+    var r=M.repairs;
+    return '<div class="card"><h2>Repair prices</h2><div class="row"><div><label class="f">Minimum service charge</label><input class="in money" id="rbmin" inputmode="decimal" value="'+r.min+'"></div></div>'+
+      '<div id="rbrows">'+r.items.map(rbRow).join('')+'</div><button type="button" class="btn ghost block mt" data-m="rbadd">'+ICON.plus+'Add repair</button></div>';
+  }
+  function rbRow(it){return '<div class="row rb" style="margin-top:8px" data-key="'+esc(it.key||'')+'"><input class="in" data-rn value="'+esc(it.name||'')+'" placeholder="Repair"><input class="in" data-ru style="flex:0 0 70px" value="'+esc(it.unit||'each')+'"><input class="in money" data-rp style="flex:0 0 84px" inputmode="decimal" value="'+(it.price!=null?it.price:'')+'" placeholder="$"></div>';}
+  function readRepairBook(){
+    var items=[];document.querySelectorAll('#rbrows .rb').forEach(function(r){var n=r.querySelector('[data-rn]').value.trim();if(!n)return;items.push({key:r.getAttribute('data-key')||'',name:n,unit:r.querySelector('[data-ru]').value.trim()||'each',price:Number(r.querySelector('[data-rp]').value)||0});});
+    return {min:Number((document.getElementById('rbmin')||{}).value)||0,items:items};
+  }
+
+  /* ---------- clicks ---------- */
+  function click(t,ev){
+    if(ev&&t.tagName==='A'&&t.getAttribute('href')==='#')ev.preventDefault();
+    var a=t.getAttribute('data-m');
+    if(a==='retry'){M.failed=false;render();return;}
+    if(a==='editcust'){editCustSheet();return;}
+    if(a==='ghlsync'){call('ghlSyncNow',{id:M.qid}).then(function(r){mergeQ(r);render();toast('Synced to GoHighLevel');}).catch(function(e){load().then(render);err(e);});return;}
+    if(a==='edititems'){editItemsSheet();return;}
+    if(a==='approverep'){t.disabled=true;saveQ({status:'approved'},'Approved').then(function(){M.qfilter='approved';call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);});}).catch(function(){t.disabled=false;});return;}
+    if(a==='propose'){proposeSheet();return;}
+    if(a==='savesched'){saveQ({installDate:document.getElementById('sd').value,crew:document.getElementById('sc').value},'Schedule saved');return;}
+    if(a==='editcosts'){costsSheet();return;}
+    if(a==='addinsp'){addInspSheet(M.qid);return;}
+    if(a==='insp'){inspSheet(t.getAttribute('data-id'));return;}
+    if(a==='report'){reportSheet();return;}
+    if(a==='revmail'){t.disabled=true;call('reviewEmail',{id:M.qid}).then(function(r){mergeQ(r);render();toast('Review request sent');}).catch(function(e){t.disabled=false;err(e);});return;}
+    if(a==='warranty'){var wx=q();saveQ({warrantyDone:!wx.warrantyDone},!wx.warrantyDone?'Warranty marked registered':'Saved');return;}
+    if(a==='openjobq'){S.tab='quotes';store('tfp_tab','quotes');M.qid=t.getAttribute('data-id');M.view='quote';render();window.scrollTo(0,0);return;}
+    if(a==='crewopen'){M.qid=t.getAttribute('data-id');M.view='crewjob';render();window.scrollTo(0,0);return;}
+    if(a==='crewback'){M.view='list';render();window.scrollTo(0,0);return;}
+    if(a==='crewreload'){M.crewLoaded=false;render();return;}
+    if(a==='crewphotos'){var cj=M.crewJobs.filter(function(z){return z.id===M.qid;})[0];S.tab='photos';store('tfp_tab','photos');S.jobId=cj.photoJobId;S.view='job';
+      if(!S.jobs.some(function(j){return j.id===cj.photoJobId;}))call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);render();});render();window.scrollTo(0,0);return;}
+    if(a==='crewinsp'){addInspSheet(M.qid);return;}
+    if(a==='crewnote'){var ni=document.getElementById('cnote');var nv=ni.value.trim();if(!nv)return;t.disabled=true;
+      call('crewNote',{id:M.qid,note:nv}).then(function(){var cj2=M.crewJobs.filter(function(z){return z.id===M.qid;})[0];cj2.events=(cj2.events||[]).concat([{e:'crew: '+nv+' ('+S.user.name+')',t:new Date().toISOString()}]);render();toast('Sent to the office');}).catch(function(e){t.disabled=false;err(e);});return;}
+    if(a==='ghltest'){var gf=document.getElementById('sf');t.disabled=true;
+      saveSettings(gf,(document.querySelector('#aenv .on')||{getAttribute:function(){return 'sandbox';}}).getAttribute('data-env')).then(function(){return call('ghlPipelines');}).then(function(list){
+        var g=M.settings.ghl||{};var box=document.getElementById('ghlsel');
+        function sel(name,opts,cur){return '<select class="in" name="'+name+'">'+opts.map(function(o){return '<option value="'+esc(o.id)+'"'+(o.id===cur?' selected':'')+'>'+esc(o.name)+'</option>';}).join('')+'</select>';}
+        var pl=list.filter(function(x){return x.id===g.pipelineId;})[0]||list[0];
+        if(box&&pl)box.innerHTML='<label class="f">Pipeline</label>'+sel('g_pipelineId',list,g.pipelineId)+'<label class="f">When a quote is sent</label>'+sel('g_stageQuote',pl.stages,g.stageQuote)+'<label class="f">When a job is approved</label>'+sel('g_stageWon',pl.stages,g.stageWon);
+        toast('GoHighLevel is connected');}).catch(function(e){if(e.message!=='bad')err(e);}).then(function(){var b=document.querySelector('[data-m=ghltest]');if(b)b.disabled=false;});return;}
+    if(a==='addperson'){var pb=document.getElementById('people');var np=document.getElementById('nopeople');if(np)np.remove();pb.insertAdjacentHTML('beforeend',personRow({role:'crew'}));return;}
+    if(a==='savepeople'){var ppl=[];document.querySelectorAll('#people .person').forEach(function(r){var nm=r.querySelector('[data-pn]').value.trim(),pn=r.querySelector('[data-pp]').value.trim();if(!nm&&!pn)return;ppl.push({id:r.getAttribute('data-id')||undefined,name:nm,role:r.querySelector('[data-pr]').value,pin:pn});});
+      t.disabled=true;call('saveUsers',{users:ppl}).then(function(){loadPeople();toast('People saved');}).catch(err).then(function(){t.disabled=false;});return;}
+    if(a==='rbadd'){document.getElementById('rbrows').insertAdjacentHTML('beforeend',rbRow({unit:'each'}));return;}
+    if(a==='newest'){newEst();M.view='new';render();window.scrollTo(0,0);var ea=document.getElementById('ea');if(ea)ea.focus();return;}
+    if(a==='pricing'){M.view='pricing';render();window.scrollTo(0,0);return;}
+    if(a==='measure'){measure();return;}
+    if(a==='addroof'){M.est.roofs.push({n:M.est.roofs.length===1?'Garage':'Section '+(M.est.roofs.length+1),s:0,p:'4/12'});render();return;}
+    if(a==='rmroof'){M.est.roofs.splice(+t.getAttribute('data-i'),1);render();return;}
+    if(a==='saveest'){saveEst(t.getAttribute('data-v')==='email');return;}
+    if(a==='share'){shareSheet();return;}
+    if(a==='qf'){M.qfilter=t.getAttribute('data-v');render();return;}
+    if(a==='addlink'){addLinkSheet();return;}
+    if(a==='openq'){M.qid=t.getAttribute('data-id');M.view='quote';M.draft=null;render();window.scrollTo(0,0);return;}
+    if(a==='back'){M.view='list';render();window.scrollTo(0,0);return;}
+    if(a==='approve'){approve();return;}
+    if(a==='archive'){confirmBox('Archive this quote?','It will be hidden from your Quotes list. Orders already placed are kept.','Archive').then(function(ok){if(!ok)return;
+      call('deleteQuote',{id:M.qid}).then(function(){M.quotes=M.quotes.filter(function(x){return x.id!==M.qid;});M.view='list';render();toast('Archived');}).catch(err);});return;}
+    if(a==='recalc'){recalc();return;}
+    if(a==='line'){lineSheet(+t.getAttribute('data-i'));return;}
+    if(a==='addline'){addLineSheet();return;}
+    if(a==='editjob'){editJobSheet();return;}
+    if(a==='status'){saveQ({status:t.getAttribute('data-v')},t.getAttribute('data-v')==='done'?'Marked done':'Reopened');return;}
+    if(a==='photos'){var x=q();S.tab='photos';store('tfp_tab','photos');S.jobId=x.photoJobId;S.view='job';
+      if(!S.jobs.some(function(j){return j.id===x.photoJobId;}))call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);render();});render();window.scrollTo(0,0);return;}
+    if(a==='order'){orderSheet(t.getAttribute('data-v'));return;}
+    if(a==='openo'){orderDetail(t.getAttribute('data-id'));return;}
+    if(a==='mtab'){M.money=t.getAttribute('data-v');render();return;}
+    if(a==='price'){priceSheet(t.getAttribute('data-k'));return;}
+    if(a==='refresh'){t.disabled=true;t.textContent='Refreshing…';call('refreshPrices').then(function(r){return load().then(function(){render();toast(r.updated+' prices updated'+(r.failed.length?', '+r.failed.length+' failed':''));});}).catch(function(e){render();err(e);});return;}
+    if(a==='settings'){M.mview='settings';render();window.scrollTo(0,0);return;}
+    if(a==='mhome'){M.mview='home';render();window.scrollTo(0,0);return;}
+    if(a==='addsup'){document.getElementById('sups').insertAdjacentHTML('beforeend',supRow({name:'',email:''}));return;}
+    if(a==='abctest'){var f=document.getElementById('sf');t.disabled=true;
+      saveSettings(f,document.querySelector('#aenv .on').getAttribute('data-env')).then(function(){return call('abcTest');}).then(function(r){toast('ABC login works ('+(r.env==='production'?'Live':'Test')+')');})
+        .catch(function(e){if(e.message!=='bad')err(e);}).then(function(){var b=document.querySelector('[data-m=abctest]');if(b)b.disabled=false;});return;}
+    if(a==='branches'){var box=document.getElementById('brs');box.innerHTML='<div class="loading" style="padding:16px"><div class="spin dk"></div></div>';
+      saveSettings(document.getElementById('sf'),document.querySelector('#aenv .on').getAttribute('data-env')).then(function(){return call('abcBranches',{state:'CT'});}).then(function(list){
+        box=document.getElementById('brs');
+        box.innerHTML=list.length?list.map(function(b){return '<button type="button" class="res" data-m="pickbr" data-n="'+esc(b.number)+'" data-nm="'+esc(b.name||b.city)+'"><b>'+esc(b.name||'Branch '+b.number)+'</b><span>#'+esc(b.number)+' · '+esc(b.city)+'</span></button>';}).join(''):'<p class="hint">No branches found.</p>';
+      }).catch(function(e){var bx=document.getElementById('brs');if(bx)bx.innerHTML='';if(e.message!=='bad')err(e);});return;}
+    if(a==='pickbr'){var fm=document.getElementById('sf');fm.elements.branch.value=t.getAttribute('data-n');fm.elements.branchName.value=t.getAttribute('data-nm');document.getElementById('brs').innerHTML='';toast('Branch picked. Tap Save settings.');return;}
+    if(a==='hook'){t.disabled=true;call('abcRegisterWebhook').then(function(r){M.settings=r;render();toast('Order updates turned on');}).catch(function(e){t.disabled=false;err(e);});return;}
+    if(a==='disc'){confirmBox('Disconnect ABC Supply?','Your ABC login is removed from the app. Prices and past orders stay.','Disconnect').then(function(ok){if(!ok)return;
+      call('saveSettings',{abc:{disconnect:true}}).then(function(r){M.settings=r;render();toast('Disconnected');}).catch(err);});return;}
+  }
+
+  return {
+    render:renderMat, click:click, load:load, loadCrew:loadCrew, apply:apply, applyCrew:applyCrew,
+    reset:function(){M.loaded=false;M.quotes=[];M.orders=[];M.prices=[];M.view='list';M.mview='home';},
+    home:function(){M.view='list';M.mview='home';},
+    newCount:function(){return M.quotes.filter(function(x){return x.status==='new';}).length;}
+  };
+})();
+
+
+/* ---------- start ---------- */
+function cacheMerge(part,d){var c=cacheGet('boot');if(c){c[part]=d;cacheSet('boot',c);}}
+if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+var saved=load('tfp_pass');
+if(saved){S.pass=saved;boot();}else{render();}
+})();
+</script>
+</body>
+</html>
