@@ -471,7 +471,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='3';
+var APP_VERSION='4';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -1464,7 +1464,8 @@ var MAT=(function(){
         });
       });
     }).catch(function(er){
-      if(er&&er.message==='KEY_BLOCKED')throw new Error('Google blocked the Maps key on the app. In Google Cloud, add teamsforte.github.io/* to the key’s website restrictions.');
+      if(er&&/API key not valid|API_KEY_INVALID|InvalidKey/i.test(String(er.message||er)))throw new Error('The saved Google key isn’t right. Go to Quote prices and tap “Use my website’s key”.');
+      if(er&&er.message==='KEY_BLOCKED')throw new Error('Google turned down the Maps key on the app. Under Quote prices, tap “Use my website’s key”. If it still fails, add teamsforte.github.io/* to that key’s website restrictions in Google Cloud.');
       throw er;
     });
   }
@@ -1527,6 +1528,7 @@ var MAT=(function(){
       '<div class="card" id="pex"></div>'+repairBookCard()+
       '<div class="card"><h2>Google Maps key <small>'+(M.settings.hasMapsKey?'<span class="pill done">Saved</span>':'for measuring roofs')+'</small></h2>'+
       '<input class="in" name="mapsKey" autocomplete="off" placeholder="'+(M.settings.hasMapsKey?'Saved. Paste to replace':'Paste your API key')+'">'+
+      '<button type="button" class="btn ghost mt" id="webkey" style="width:100%">Use my website’s key</button>'+
       '<p class="hint">In Google Cloud console: APIs &amp; Services › Credentials › Create API key. Paste the same key your website’s instant quote uses, and in Google Cloud add <b>teamsforte.github.io/*</b> to that key’s website restrictions. The app then measures roofs on your phone exactly like the website does.</p></div>'+
       '<div class="note">Your website’s instant quote still uses its own prices for now.</div>'+
       '<button class="btn block" type="submit">Save prices</button></form></div>';
@@ -1541,7 +1543,10 @@ var MAT=(function(){
     f.onsubmit=function(ev){ev.preventDefault();var b=f.querySelector('button[type=submit]');b.disabled=true;
       var key=f.elements.mapsKey.value.trim();
       call('savePricing',read()).then(function(np){M.pricing=np;return call('saveRepairs',readRepairBook());}).then(function(rb){M.repairs=rb;return key?call('saveSettings',{mapsKey:key}).then(function(s){M.settings=s;}):null;})
-        .then(function(){render();toast('Prices saved');}).catch(function(er){b.disabled=false;err(er);});};
+        .then(function(){render();toast('Prices saved');if(key)setTimeout(function(){location.reload();},900);}).catch(function(er){b.disabled=false;err(er);});};
+    var wk=document.getElementById('webkey');if(wk)wk.onclick=function(){wk.disabled=true;wk.textContent='Getting the key…';
+      call('useWebsiteKey',{}).then(function(s){M.settings=s;toast('Key saved. Roof measuring is ready.');setTimeout(function(){location.reload();},900);})
+        .catch(function(er){wk.disabled=false;wk.textContent='Use my website’s key';err(er);});};
   }
 
   /* ---------- share a quote ---------- */
