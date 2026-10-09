@@ -2118,7 +2118,7 @@ e.lowSlopePct +
 '</p><div class="tf-actions"><button class="tf-btn" id="tfq-next"></button>' +
 `<button class="tf-link" id="tfq-wrong">This doesn't look right</button></div>`),
 paint(),
-(i("tfq-next").onclick = () => _(o.rep ? "repadjust" : "issue")),
+(i("tfq-next").onclick = () => _(o.rep ? "repadjust" : "layers")),
 (i("tfq-wrong").onclick = () => _("manual")));
 }),
 (k.manual = function () {
@@ -2201,7 +2201,7 @@ if (!e.slope) {
 i("tfq-err").textContent = "Please choose how steep your roof is.";
 return;
 }
-((o.roof = le()), _(o.rep ? "repadjust" : "issue"));
+((o.roof = le()), _(o.rep ? "repadjust" : "layers"));
 }));
 }));
 function Q(e, s, t, a, r, n) {
@@ -2258,7 +2258,7 @@ he(),
 Q(
 "layers",
 "How many layers of shingles are on it now?",
-"Question 2 of 3 \xB7 Extra layers cost more to remove.",
+"Question 1 of 2 \xB7 Extra layers cost more to remove.",
 [
 { v: "1", t: "One layer", icon: w.layers },
 { v: "2+", t: "Two or more layers", icon: w.layers },
@@ -2269,14 +2269,14 @@ s: "No problem, we'll check at inspection",
 icon: w.help,
 },
 ],
-"issue",
+he(),
 "timeline",
 )),
 (k.timeline = () =>
 Q(
 "timeline",
 "When are you hoping to get it done?",
-"Question 3 of 3",
+"Question 2 of 2",
 [
 { v: "ASAP", t: "As soon as possible", icon: w.bolt },
 { v: "1-3 months", t: "In the next 1\u20133 months", icon: w.cal },
