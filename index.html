@@ -471,7 +471,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='2';
+var APP_VERSION='3';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -1361,7 +1361,7 @@ var MAT=(function(){
     h+='<div class="card"><h2>Address</h2><textarea class="in" id="ea" rows="2" placeholder="45 Woodin St, Hamden, CT" style="min-height:64px">'+esc(e.address)+'</textarea>'+
       (hasKey?'<button class="btn block mt" data-m="measure"'+(e.busy?' disabled':'')+'>'+(e.busy?'Measuring…':'Measure roof')+'</button>':
         '<div class="note">Automatic roof measuring needs a Google Maps key (Quotes › ⚙ Quote prices). For now, type the roof size below.</div>')+
-      (e.m&&e.m.image?'<img class="big mt" src="'+e.m.image+'" alt="Satellite view of '+esc(e.m.address)+'">':'')+
+      (e.m&&e.m.image?'<img class="big mt" src="'+e.m.image+'" alt="Satellite view of '+esc(e.m.address)+'">':(e.m&&e.m.map?'<div id="emap" class="mt" style="height:240px;border-radius:12px;overflow:hidden;background:#dde2e8" role="img" aria-label="Satellite view of '+esc(e.m.address)+'"></div>':''))+
       (e.m?'<p class="hint">'+(e.m.source==='solar'?'Measured by Google: '+e.m.segments+' roof sections'+(e.m.imageryDate?' · imagery '+esc(month(e.m.imageryDate)):''):'Address found. Enter the roof size.')+'</p>':'')+
       (e.m&&e.m.note?'<div class="note">'+esc(e.m.note)+'</div>':'')+'</div>';
     h+='<div class="card"><h2>Roof <small>sloped area, not footprint</small></h2><div id="eroofs">'+
@@ -1379,7 +1379,7 @@ var MAT=(function(){
       '<button class="btn ghost block mt" data-m="saveest" data-v="email">Save &amp; email to customer</button>'+
       '<p class="hint" style="text-align:center;margin-top:14px"><a href="#" data-m="addlink">Have a website quote link? Paste it instead</a></p></div>';
     app.innerHTML=h;
-    drawEstPrices();
+    drawEstPrices();drawEstMap();
     if(!e.roofs.length)e.roofs=[{n:'Main Roof',s:0,p:'6/12'}];
     var wrapEl=document.getElementById('ew');
     wrapEl.addEventListener('input',function(ev){var t=ev.target;
@@ -1401,10 +1401,84 @@ var MAT=(function(){
       (M.pricing.updated?'':'<div class="note">These use starter prices per square. Set your own under ⚙ Quote prices.</div>');
     document.getElementById('epk').onclick=function(ev){var b=ev.target.closest('[data-pk]');if(!b)return;e.pick=+b.getAttribute('data-pk');this.querySelectorAll('button').forEach(function(z){z.classList.toggle('on',z===b);});};
   }
+  /* ----- roof measuring on the phone (same method as the website instant quote) ----- */
+  var mapsP=null;
+  function canMeasureHere(){return !!(M.settings&&M.settings.mapsKey)&&!/googleusercontent\.com$|script\.google\.com$/.test(location.hostname);}
+  function loadMaps(){
+    if(window.google&&google.maps&&google.maps.importLibrary)return Promise.resolve();
+    if(mapsP)return mapsP;
+    mapsP=new Promise(function(ok,bad){
+      window.__tfAppMaps=function(){ok();};
+      window.gm_authFailure=function(){bad(new Error('KEY_BLOCKED'));};
+      var s=document.createElement('script');
+      s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(M.settings.mapsKey)+'&v=weekly&loading=async&callback=__tfAppMaps';
+      s.async=true;s.onerror=function(){mapsP=null;bad(new Error('No signal. Try again when you have signal.'));};
+      document.head.appendChild(s);
+    });
+    return mapsP;
+  }
+  function findPlace(address){
+    return google.maps.importLibrary('places').then(function(lib){
+      return lib.Place.searchByText({textQuery:address,fields:['location','formattedAddress'],maxResultCount:1,region:'us'})
+        .then(function(r){var p=r&&r.places&&r.places[0];if(p&&p.location)return p;throw 0;})
+        .catch(function(){
+          return lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({input:address,includedRegionCodes:['us']}).then(function(r){
+            var s=r&&r.suggestions&&r.suggestions[0];if(!s||!s.placePrediction)throw new Error('Couldn’t find that address. Check the street and town.');
+            var p=s.placePrediction.toPlace();return p.fetchFields({fields:['location','formattedAddress']}).then(function(){return p;});
+          });
+        });
+    });
+  }
+  function parseSolar(j){
+    var sp=j&&j.solarPotential,segs=(sp&&sp.roofSegmentStats)||[];
+    if(!segs.length)return null;
+    var sum=segs.reduce(function(h,p){return h+((p.stats&&p.stats.areaMeters2)||0);},0);
+    var area=(sp.wholeRoofStats&&sp.wholeRoofStats.areaMeters2)||sum;
+    var flatLim=Math.atan(2/12)*180/Math.PI,n=0,d=0,low=0,big=null;
+    segs.forEach(function(h){var a=(h.stats&&h.stats.areaMeters2)||0,b=h.pitchDegrees||0;
+      if(b<flatLim)low+=a;else{n+=a;d+=a*b;}
+      if(!big||a>((big.stats&&big.stats.areaMeters2)||0))big=h;});
+    var deg=n?d/n:(big.pitchDegrees||0);
+    var dt=j.imageryDate;
+    return {s:Math.round(area*10.7639),p:Math.round(Math.tan(deg*Math.PI/180)*12)+'/12',f:segs.length,
+      lowPct:sum?Math.round(low/sum*100):0,date:dt&&dt.year?dt.year+'-'+('0'+(dt.month||1)).slice(-2):'',quality:j.imageryQuality||''};
+  }
+  function measureHere(address){
+    return loadMaps().then(function(){return findPlace(address);}).then(function(p){
+      var lat=p.location.lat(),lng=p.location.lng();
+      var out={address:String(p.formattedAddress||address).replace(/, USA$/,''),lat:lat,lng:lng,roofs:[],segments:0,source:'none',note:'',imageryDate:'',quality:'',image:'',map:true};
+      var url='https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude='+lat.toFixed(7)+'&location.longitude='+lng.toFixed(7)+'&requiredQuality=LOW&key='+encodeURIComponent(M.settings.mapsKey);
+      return fetch(url).then(function(r){
+        if(r.status===404){out.note='Google has no roof data for this address. Type the roof size below.';return out;}
+        if(r.status===403){out.note='Google blocked roof measuring for this key on the app. In Google Cloud, add teamsforte.github.io/* to the key’s website restrictions.';return out;}
+        if(!r.ok){out.note='Couldn’t measure the roof right now ('+r.status+'). Type the roof size below.';return out;}
+        return r.json().then(function(j){
+          var m=parseSolar(j);
+          if(!m){out.note='Google has no roof sections for this address. Type the roof size below.';return out;}
+          out.roofs=[{n:'Main Roof',s:m.s,p:m.p,f:m.f}];out.segments=m.f;out.source='solar';out.imageryDate=m.date;out.quality=m.quality;
+          if(m.lowPct>15)out.note='About '+m.lowPct+'% of this roof is low-slope or flat. Check if it needs a different roof system.';
+          if(j.center){var dLat=(j.center.latitude-lat)*111320,dLng=(j.center.longitude-lng)*111320*Math.cos(lat*Math.PI/180);
+            if(Math.sqrt(dLat*dLat+dLng*dLng)>30)out.note=(out.note?out.note+' ':'')+'The closest building Google found is not right at the address pin. Check the map.';
+            out.lat=j.center.latitude;out.lng=j.center.longitude;}
+          return out;
+        });
+      });
+    }).catch(function(er){
+      if(er&&er.message==='KEY_BLOCKED')throw new Error('Google blocked the Maps key on the app. In Google Cloud, add teamsforte.github.io/* to the key’s website restrictions.');
+      throw er;
+    });
+  }
+  function drawEstMap(){
+    var e=M.est,el=document.getElementById('emap');
+    if(!el||!e.m||!(window.google&&google.maps&&google.maps.Map))return;
+    var c={lat:+e.m.lat,lng:+e.m.lng};
+    var map=new google.maps.Map(el,{mapTypeId:'satellite',center:c,zoom:20,tilt:0,disableDefaultUI:true,zoomControl:true,gestureHandling:'cooperative'});
+    new google.maps.Marker({map:map,position:c});
+  }
   function measure(){
     var e=M.est;if(!e.address.trim()){toast('Type the address first.',true);return;}
     e.busy=true;render();
-    call('measure',{address:e.address}).then(function(m){
+    (canMeasureHere()?measureHere(e.address):call('measure',{address:e.address})).then(function(m){
       e.busy=false;e.m=m;e.address=m.address;e.lat=m.lat;e.lng=m.lng;
       if(m.roofs&&m.roofs.length)e.roofs=m.roofs.map(function(r){return {n:r.n,s:r.s,p:r.p,f:r.f};});
       render();
@@ -1453,7 +1527,7 @@ var MAT=(function(){
       '<div class="card" id="pex"></div>'+repairBookCard()+
       '<div class="card"><h2>Google Maps key <small>'+(M.settings.hasMapsKey?'<span class="pill done">Saved</span>':'for measuring roofs')+'</small></h2>'+
       '<input class="in" name="mapsKey" autocomplete="off" placeholder="'+(M.settings.hasMapsKey?'Saved. Paste to replace':'Paste your API key')+'">'+
-      '<p class="hint">In Google Cloud console: APIs &amp; Services › Credentials › Create API key. Turn on <b>Geocoding API</b>, <b>Solar API</b> and <b>Maps Static API</b>, and limit the key to those three. Use a new key, not the website one.</p></div>'+
+      '<p class="hint">In Google Cloud console: APIs &amp; Services › Credentials › Create API key. Paste the same key your website’s instant quote uses, and in Google Cloud add <b>teamsforte.github.io/*</b> to that key’s website restrictions. The app then measures roofs on your phone exactly like the website does.</p></div>'+
       '<div class="note">Your website’s instant quote still uses its own prices for now.</div>'+
       '<button class="btn block" type="submit">Save prices</button></form></div>';
     app.innerHTML=h;
