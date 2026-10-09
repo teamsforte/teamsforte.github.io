@@ -471,7 +471,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='4';
+var APP_VERSION='5';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -1363,6 +1363,9 @@ var MAT=(function(){
         '<div class="note">Automatic roof measuring needs a Google Maps key (Quotes › ⚙ Quote prices). For now, type the roof size below.</div>')+
       (e.m&&e.m.image?'<img class="big mt" src="'+e.m.image+'" alt="Satellite view of '+esc(e.m.address)+'">':(e.m&&e.m.map?'<div id="emap" class="mt" style="height:240px;border-radius:12px;overflow:hidden;background:#dde2e8" role="img" aria-label="Satellite view of '+esc(e.m.address)+'"></div>':''))+
       (e.m?'<p class="hint">'+(e.m.source==='solar'?'Measured by Google: '+e.m.segments+' roof sections'+(e.m.imageryDate?' · imagery '+esc(month(e.m.imageryDate)):''):'Address found. Enter the roof size.')+'</p>':'')+
+      (e.m&&e.m.extras&&e.m.extras.length?'<div class="note">Also on the property and added below: '+e.m.extras.map(function(x){return '<b>'+esc(x.n)+'</b> '+x.s.toLocaleString()+' sq ft'+(x.est?' (size from the building outline, pitch estimated)':'')+', ~'+x.dist+' ft '+esc(x.dir);}).join('; ')+'. Remove any you’re not quoting.</div>':'')+
+      (e.m&&e.m.flat&&e.m.flat.length?'<div class="note">Flat roof'+(e.m.flat.length>1?'s':'')+' on the lot, not priced: '+e.m.flat.map(function(x){return esc(x.n)+' '+x.s.toLocaleString()+' sq ft';}).join('; ')+'.</div>':'')+
+      (e.m&&e.m.nearby&&e.m.nearby.length?'<p class="hint">Nearby roofs (property lines unknown):</p>'+e.m.nearby.map(function(x,i){return '<button class="btn ghost block mt" data-m="addnear" data-i="'+i+'">'+ICON.plus+'Add '+esc(x.n)+' · '+x.s.toLocaleString()+' sq ft, ~'+x.dist+' ft '+esc(x.dir)+'</button>';}).join(''):'')+
       (e.m&&e.m.note?'<div class="note">'+esc(e.m.note)+'</div>':'')+'</div>';
     h+='<div class="card"><h2>Roof <small>sloped area, not footprint</small></h2><div id="eroofs">'+
       (e.roofs.length?e.roofs:[{n:'Main Roof',s:'',p:'6/12'}]).map(function(r,i){
@@ -1443,25 +1446,598 @@ var MAT=(function(){
     return {s:Math.round(area*10.7639),p:Math.round(Math.tan(deg*Math.PI/180)*12)+'/12',f:segs.length,
       lowPct:sum?Math.round(low/sum*100):0,date:dt&&dt.year?dt.year+'-'+('0'+(dt.month||1)).slice(-2):'',quality:j.imageryQuality||''};
   }
+
+  /* ----- all roofs on the property: same code as the website instant quote (team-forte.com/instant-quote) ----- */
+  function TFRoofScan(key){
+    const v = { googleApiKey: key, solarMinQuality: "LOW", findOtherRoofs: true, parcelLookup: true,
+      parcelServiceUrl: "https://services3.arcgis.com/3FL1kr7L4LvwA2Kb/arcgis/rest/services/Connecticut_CAMA_and_Parcel_Layer_2024/FeatureServer/0",
+      footprintServiceUrl: "https://services3.arcgis.com/3FL1kr7L4LvwA2Kb/arcgis/rest/services/2D_Building_Footprints/FeatureServer/0",
+      otherRoofMaxDistanceFt: 200, otherRoofMaxShown: 6 };
+    const L = false, oe = 10.7639,
+      ae = (e) => new Promise((s) => setTimeout(s, e)),
+      R = (e) => Math.tan((e * Math.PI) / 180) * 12,
+      H = (e) => (Math.atan(e / 12) * 180) / Math.PI;
+    const o = { address: null, parcel: null, extras: [] };
+function V(e) {
+const s = e && e.solarPotential,
+t = (s && s.roofSegmentStats) || [];
+if (!t.length) throw new Error("no-segments");
+let a = (s.wholeRoofStats && s.wholeRoofStats.areaMeters2) || 0;
+const r = t.reduce(
+(h, p) => h + ((p.stats && p.stats.areaMeters2) || 0),
+0,
+);
+a || (a = r);
+let n = 0,
+d = 0,
+u = 0,
+l = null;
+t.forEach((h) => {
+const p = (h.stats && h.stats.areaMeters2) || 0,
+b = h.pitchDegrees || 0;
+(b < H(2) ? (u += p) : ((n += p), (d += p * b)),
+(!l || p > ((l.stats && l.stats.areaMeters2) || 0)) && (l = h));
+});
+const g = n ? d / n : l.pitchDegrees || 0,
+f = e.imageryDate;
+return {
+areaSqft: Math.round(a * oe),
+pitchDeg: g,
+pitch12: Math.round(R(g)),
+facets: t.length,
+lowSlopePct: r ? Math.round((u / r) * 100) : 0,
+quality: e.imageryQuality || "",
+imageryDate: f
+? new Date(f.year, (f.month || 1) - 1, f.day || 1).toLocaleDateString(
+"en-US",
+{ month: "short", year: "numeric" },
+)
+: "",
+source: "satellite",
+segments: t
+.filter((h) => h.boundingBox && h.center)
+.map((h) => ({
+box: h.boundingBox,
+center: h.center,
+azimuth: h.azimuthDegrees || 0,
+pitch: h.pitchDegrees || 0,
+ground: (h.stats && h.stats.groundAreaMeters2) || 0,
+})),
+buildingBox: e.boundingBox || null,
+groundSqft: Math.round(
+((s.wholeRoofStats && s.wholeRoofStats.groundAreaMeters2) ||
+t.reduce((h, p) => h + ((p.stats && p.stats.groundAreaMeters2) || 0), 0)) * oe,
+),
+name: e.name || "",
+center: e.center || null,
+};
+}
+async function ie(e, s) {
+const t =
+"https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=" +
+e.toFixed(7) +
+"&location.longitude=" +
+s.toFixed(7) +
+"&requiredQuality=" +
+encodeURIComponent(v.solarMinQuality) +
+"&key=" +
+encodeURIComponent(v.googleApiKey),
+a = await fetch(t);
+if (!a.ok) throw new Error("solar-" + a.status);
+return V(await a.json());
+}
+/* ---------- All roofs on the property (main house, detached garage, barn, shed) ---------- */
+const XR = { lat: 110540, lng: (la) => 111320 * Math.cos((la * Math.PI) / 180) };
+function xCenter(r) {
+if (r.center) return { lat: r.center.latitude, lng: r.center.longitude };
+if (r.buildingBox) {
+const b = r.buildingBox;
+return {
+lat: (b.sw.latitude + b.ne.latitude) / 2,
+lng: (b.sw.longitude + b.ne.longitude) / 2,
+};
+}
+return { lat: o.address.lat, lng: o.address.lng };
+}
+function xDist(a, b) {
+const dy = (b.lat - a.lat) * XR.lat,
+dx = (b.lng - a.lng) * XR.lng(a.lat);
+return { m: Math.sqrt(dx * dx + dy * dy), deg: ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360 };
+}
+const XDIRS = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"],
+ORD = ["Main Roof", "Second Roof", "Third Roof", "Fourth Roof", "Fifth Roof", "Sixth Roof", "Seventh Roof"];
+function xKind(sqft) {
+return sqft < 260 ? "Shed" : sqft < 1100 ? "Garage" : sqft < 1900 ? "Barn" : "Outbuilding";
+}
+// Slope categories. Homeowners see the satellite pick and may only choose a steeper one.
+const SLOPES = [
+{ id: "flat", t: "Flat", max: 1, rep: 1 },
+{ id: "shallow", t: "Shallow", max: 4, rep: 3 },
+{ id: "medium", t: "Medium", max: 8, rep: 6 },
+{ id: "steep", t: "Steep", max: 99, rep: 10 },
+];
+function slopeOf(p12) {
+return SLOPES.find((q) => p12 <= q.max).id;
+}
+function slopeIdx(id) {
+return SLOPES.findIndex((q) => q.id === id);
+}
+function satInit(r) {
+r.sat ||
+(r.sat = {
+pitch12: r.pitch12,
+pitchDeg: r.pitchDeg,
+areaSqft: r.areaSqft,
+ground: r.groundSqft || Math.round(r.areaSqft * Math.cos((r.pitchDeg * Math.PI) / 180)),
+slope: r.noSat ? "medium" : slopeOf(r.pitch12),
+});
+r.slope || (r.slope = r.sat.slope);
+return r;
+}
+function setSlope(r, id) {
+satInit(r);
+if (!r.noSat && slopeIdx(id) < slopeIdx(r.sat.slope)) return;
+r.slope = id;
+if (id === r.sat.slope) {
+((r.pitch12 = r.sat.pitch12), (r.pitchDeg = r.sat.pitchDeg), (r.areaSqft = r.sat.areaSqft));
+return;
+}
+const p = SLOPES[slopeIdx(id)].rep,
+d = H(p);
+((r.pitch12 = p),
+(r.pitchDeg = d),
+(r.areaSqft = Math.max(r.sat.areaSqft, Math.round(r.sat.ground / Math.cos((d * Math.PI) / 180)))));
+}
+function xMake(roof, main, how) {
+const d = xDist(xCenter(main), xCenter(roof));
+return {
+key: roof.name || "x" + Math.random().toString(36).slice(2),
+roof: satInit(roof),
+distFt: Math.round((d.m * 3.28084) / 5) * 5,
+dir: XDIRS[Math.round(d.deg / 45) % 8],
+kind: xKind(roof.areaSqft),
+include: !1,
+how: how,
+};
+}
+function xNumber() {
+o.extras.forEach((x, n) => {
+x.num = n + 2;
+x.label || (x.label = ORD[n + 1] || "Roof " + (n + 2));
+});
+}
+// Connecticut statewide parcel (property line) layer, public ArcGIS service.
+async function fetchParcel(lat, lng) {
+if (v.parcelLookup === !1 || !v.parcelServiceUrl) return null;
+const u =
+v.parcelServiceUrl +
+"/query?" +
+new URLSearchParams({
+geometry: lng.toFixed(7) + "," + lat.toFixed(7),
+geometryType: "esriGeometryPoint",
+inSR: "4326",
+spatialRel: "esriSpatialRelIntersects",
+outFields: "Parcel_ID",
+returnGeometry: "true",
+outSR: "4326",
+f: "json",
+});
+const r = await Promise.race([fetch(u), ae(5e3).then(() => null)]);
+if (!r || !r.ok) return null;
+const j = await r.json(),
+f = (j.features || [])[0];
+if (!f || !f.geometry || !f.geometry.rings || !f.geometry.rings.length) return null;
+return {
+id: (f.attributes && f.attributes.Parcel_ID) || "",
+rings: f.geometry.rings.map((g) => g.map((q) => ({ lat: q[1], lng: q[0] }))),
+};
+}
+function inParcel(p, pc) {
+let inside = !1;
+pc.rings.forEach((g) => {
+for (let a = 0, b = g.length - 1; a < g.length; b = a++) {
+const A = g[a],
+B = g[b];
+A.lat > p.lat != B.lat > p.lat &&
+p.lng < ((B.lng - A.lng) * (p.lat - A.lat)) / (B.lat - A.lat) + A.lng &&
+(inside = !inside);
+}
+});
+return inside;
+}
+function inBox(p, b) {
+return b && p.lat >= b.sw.latitude && p.lat <= b.ne.latitude && p.lng >= b.sw.longitude && p.lng <= b.ne.longitude;
+}
+function ringXY(g) {
+// local meters relative to the first vertex (avoids float precision loss)
+const o0 = g[0],
+kx = XR.lng(o0.lat);
+return g.map((q) => [(q.lng - o0.lng) * kx, (q.lat - o0.lat) * XR.lat]);
+}
+function ringArea(g) {
+const p = ringXY(g);
+let A = 0;
+for (let a = 0, b = p.length - 1; a < p.length; b = a++) A += p[b][0] * p[a][1] - p[a][0] * p[b][1];
+return Math.abs(A / 2);
+}
+function ringCentroid(g) {
+const p = ringXY(g),
+o0 = g[0];
+let x = 0,
+y = 0,
+A = 0;
+for (let a = 0, b = p.length - 1; a < p.length; b = a++) {
+const f = p[b][0] * p[a][1] - p[a][0] * p[b][1];
+((A += f), (x += (p[b][0] + p[a][0]) * f), (y += (p[b][1] + p[a][1]) * f));
+}
+return A ? { lat: o0.lat + y / (3 * A) / XR.lat, lng: o0.lng + x / (3 * A) / XR.lng(o0.lat) } : o0;
+}
+// Connecticut statewide 2D building footprints (2023 lidar), public ArcGIS service.
+async function fetchFootprints(pc) {
+if (!v.footprintServiceUrl) return null;
+const all = pc.rings.flat(),
+pad = 2e-4,
+env = {
+xmin: Math.min(...all.map((q) => q.lng)) - pad,
+ymin: Math.min(...all.map((q) => q.lat)) - pad,
+xmax: Math.max(...all.map((q) => q.lng)) + pad,
+ymax: Math.max(...all.map((q) => q.lat)) + pad,
+spatialReference: { wkid: 4326 },
+},
+body = new URLSearchParams({
+geometry: JSON.stringify(env),
+geometryType: "esriGeometryEnvelope",
+inSR: "4326",
+spatialRel: "esriSpatialRelIntersects",
+outFields: "OBJECTID",
+returnGeometry: "true",
+outSR: "4326",
+f: "json",
+});
+const r = await Promise.race([fetch(v.footprintServiceUrl + "/query", { method: "POST", body: body }), ae(5e3).then(() => null)]);
+if (!r || !r.ok) return null;
+const j = await r.json();
+if (!j.features) return null;
+return j.features
+.filter((f) => f.geometry && f.geometry.rings && f.geometry.rings.length)
+.map((f) => {
+const rings = f.geometry.rings.map((g) => g.map((q) => ({ lat: q[1], lng: q[0] }))),
+outer = rings.reduce((a, b) => (ringArea(b) > ringArea(a) ? b : a));
+return { id: f.attributes.OBJECTID, rings: rings, c: ringCentroid(outer), groundSqft: Math.round(ringArea(outer) * oe) };
+});
+}
+function hull(pts) {
+const p = pts.slice().sort((a, b) => a.lng - b.lng || a.lat - b.lat),
+cr = (O2, A, B) => (A.lng - O2.lng) * (B.lat - O2.lat) - (A.lat - O2.lat) * (B.lng - O2.lng),
+lo = [],
+up = [];
+p.forEach((q) => {
+for (; lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0; ) lo.pop();
+lo.push(q);
+});
+p.slice()
+.reverse()
+.forEach((q) => {
+for (; up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], q) <= 0; ) up.pop();
+up.push(q);
+});
+return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+function segDistM(p, A, B) {
+const kx = XR.lng(p.lat),
+ax = (A.lng - p.lng) * kx,
+ay = (A.lat - p.lat) * XR.lat,
+bx = (B.lng - p.lng) * kx,
+by = (B.lat - p.lat) * XR.lat,
+dx = bx - ax,
+dy = by - ay,
+t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy || 1)));
+return Math.hypot(ax + t * dx, ay + t * dy);
+}
+// Part of the lidar building outline the satellite roof data doesn't cover
+// (often an attached/adjacent garage or addition). Rasterizes the outline on a
+// 0.5 m grid, removes cells under the satellite roof facets, keeps the largest
+// leftover patch. Returns a roof or null.
+function uncoveredPart(main, fp) {
+const sg = main.groundSqft || 0;
+if (!sg || fp.groundSqft - sg < 80 || !(main.segments || []).length) return null;
+const outer = fp.rings.reduce((a, b) => (ringArea(b) > ringArea(a) ? b : a)),
+o0 = outer[0],
+kx = XR.lng(o0.lat),
+P = (q) => [(q.lng - o0.lng) * kx, (q.lat - o0.lat) * XR.lat],
+poly = outer.map(P),
+boxes = main.segments.map((q) => {
+const a = P({ lat: q.box.sw.latitude, lng: q.box.sw.longitude }),
+b = P({ lat: q.box.ne.latitude, lng: q.box.ne.longitude });
+return [a[0] - 0.8, a[1] - 0.8, b[0] + 0.8, b[1] + 0.8];
+}),
+inPoly = (x, y) => {
+let c2 = !1;
+for (let a = 0, b = poly.length - 1; a < poly.length; b = a++) {
+const A = poly[a],
+B = poly[b];
+A[1] > y != B[1] > y && x < ((B[0] - A[0]) * (y - A[1])) / (B[1] - A[1]) + A[0] && (c2 = !c2);
+}
+return c2;
+},
+st = 0.5,
+xs = poly.map((q) => q[0]),
+ys = poly.map((q) => q[1]),
+x0 = Math.min(...xs),
+y0 = Math.min(...ys),
+W = Math.ceil((Math.max(...xs) - x0) / st),
+Hh = Math.ceil((Math.max(...ys) - y0) / st);
+if (W * Hh > 4e5) return null;
+const grid = new Uint8Array(W * Hh);
+for (let r = 0; r < Hh; r++)
+for (let q = 0; q < W; q++) {
+const x = x0 + (q + 0.5) * st,
+y = y0 + (r + 0.5) * st;
+inPoly(x, y) && !boxes.some((b) => x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]) && (grid[r * W + q] = 1);
+}
+let best = null;
+const seen = new Uint8Array(W * Hh);
+for (let k = 0; k < W * Hh; k++) {
+if (!grid[k] || seen[k]) continue;
+const stack = [k],
+cells = [];
+for (seen[k] = 1; stack.length; ) {
+const c3 = stack.pop();
+cells.push(c3);
+const r = Math.floor(c3 / W),
+q = c3 % W;
+[
+[1, 0],
+[-1, 0],
+[0, 1],
+[0, -1],
+].forEach(([dr, dq]) => {
+const rr = r + dr,
+qq = q + dq,
+kk = rr * W + qq;
+rr >= 0 && rr < Hh && qq >= 0 && qq < W && grid[kk] && !seen[kk] && ((seen[kk] = 1), stack.push(kk));
+});
+}
+(!best || cells.length > best.length) && (best = cells);
+}
+if (!best) return null;
+const g = Math.round(best.length * st * st * oe);
+if (g < 100) return null;
+const pts = [];
+best.forEach((c3) => {
+const r = Math.floor(c3 / W),
+q = c3 % W;
+[
+[0, 0],
+[1, 0],
+[0, 1],
+[1, 1],
+].forEach(([a, b]) =>
+pts.push({ lat: o0.lat + (y0 + (r + a) * st) / XR.lat, lng: o0.lng + (x0 + (q + b) * st) / kx }),
+);
+});
+const h = hull(pts),
+d = H(6),
+cc = ringCentroid(h);
+return {
+areaSqft: Math.round(g / Math.cos((d * Math.PI) / 180)),
+pitchDeg: d,
+pitch12: 6,
+facets: 2,
+lowSlopePct: 0,
+quality: "",
+imageryDate: "",
+source: "footprint",
+noSat: !0,
+segments: [],
+footprint: { rings: [h] },
+buildingBox: fpBox({ rings: [h] }),
+groundSqft: g,
+name: "part-" + fp.id,
+center: { latitude: cc.lat, longitude: cc.lng },
+};
+}
+function fpBox(fp) {
+const all = fp.rings.flat();
+return {
+sw: { latitude: Math.min(...all.map((q) => q.lat)), longitude: Math.min(...all.map((q) => q.lng)) },
+ne: { latitude: Math.max(...all.map((q) => q.lat)), longitude: Math.max(...all.map((q) => q.lng)) },
+};
+}
+async function scanExtras(main) {
+o.parcel = null;
+if (v.findOtherRoofs === !1) return [];
+if (L) {
+o.parcel = { id: "demo", rings: [] };
+return [
+{
+key: "demo-garage",
+roof: satInit({ areaSqft: 610, pitchDeg: 26.57, pitch12: 6, facets: 2, lowSlopePct: 0, quality: "DEMO", imageryDate: "", source: "demo", segments: [], buildingBox: null, groundSqft: 545 }),
+distFt: 55, dir: "east", kind: "Garage", include: !0, how: "parcel",
+},
+{
+key: "demo-shed",
+roof: satInit({ areaSqft: 150, pitchDeg: 18.43, pitch12: 3, facets: 2, lowSlopePct: 0, quality: "DEMO", imageryDate: "", source: "demo", segments: [], buildingBox: null, groundSqft: 142 }),
+distFt: 90, dir: "southeast", kind: "Shed", include: !0, how: "parcel",
+},
+];
+}
+const c = xCenter(main);
+let pc = null;
+try {
+// The lot must contain the measured house; the address point can land across the street.
+pc = await fetchParcel(o.address.lat, o.address.lng);
+(pc && inParcel(c, pc)) || (pc = await fetchParcel(c.lat, c.lng));
+pc && !inParcel(c, pc) && (pc = null);
+} catch (q) {
+console.warn("[TFQ] parcel", q);
+}
+o.parcel = pc;
+// 1) Best: building outlines from the state's lidar footprints inside the property lines
+if (pc) {
+let fps = null;
+try {
+fps = await fetchFootprints(pc);
+} catch (q) {
+console.warn("[TFQ] footprints", q);
+}
+if (fps && fps.length) {
+const lot = fps.filter((f) => inParcel(f.c, pc) && f.groundSqft >= 60),
+inside = (p, f) => inParcel(p, { rings: f.rings }),
+mainFp =
+lot.find((f) => inside(c, f)) ||
+lot.slice().sort((a, b) => xDist(c, a.c).m - xDist(c, b.c).m).find((f) => xDist(c, f.c).m < 12);
+let part = mainFp ? uncoveredPart(main, mainFp) : null;
+// Outline the house with the lidar shape, unless part of it is split off as its own roof
+mainFp && !part && (main.footprint = mainFp);
+const others = lot.filter((f) => f !== mainFp).sort((a, b) => xDist(c, a.c).m - xDist(c, b.c).m).slice(0, v.otherRoofMaxShown || 6);
+const out = await Promise.all(
+others.map(async (f) => {
+let r = null;
+try {
+r = await ie(f.c.lat, f.c.lng);
+} catch (q) {}
+if (!(r && r.name && r.name !== main.name && (inside(xCenter(r), f) || xDist(xCenter(r), f.c).m < 3))) {
+// No satellite slope for this building: size it from the lidar outline at a typical 6/12
+const d = H(6);
+r = {
+areaSqft: Math.round(f.groundSqft / Math.cos((d * Math.PI) / 180)),
+pitchDeg: d,
+pitch12: 6,
+facets: 2,
+lowSlopePct: 0,
+quality: "",
+imageryDate: "",
+source: "footprint",
+noSat: !0,
+segments: [],
+buildingBox: fpBox(f),
+groundSqft: f.groundSqft,
+name: "fp-" + f.id,
+center: { latitude: f.c.lat, longitude: f.c.lng },
+};
+} else r.groundSqft = r.groundSqft || f.groundSqft;
+r.footprint = f;
+const x = xMake(r, main, "parcel");
+return ((x.include = !0), x);
+}),
+);
+if (part) {
+// If the satellite has this section as its own building, use its real slope and size
+let sp = null;
+try {
+sp = await ie(part.center.latitude, part.center.longitude);
+} catch (q) {}
+sp &&
+sp.name &&
+sp.name !== main.name &&
+(inParcel(xCenter(sp), { rings: part.footprint.rings }) || xDist(xCenter(sp), xCenter(part)).m < 4) &&
+((sp.footprint = part.footprint), (sp.groundSqft = sp.groundSqft || part.groundSqft), (part = sp));
+const x = xMake(part, main, "parcel");
+((x.include = !0), part.noSat && (x.kind = "Attached section"), out.unshift(x));
+}
+return out;
+}
+}
+// 2) Fallback: probe around the house with the Solar API
+let rad = 14;
+if (main.buildingBox) {
+const b = main.buildingBox;
+rad = xDist({ lat: b.sw.latitude, lng: b.sw.longitude }, { lat: b.ne.latitude, lng: b.ne.longitude }).m / 2;
+}
+let pts = [];
+if (pc) {
+const all = pc.rings.flat(),
+la0 = Math.min(...all.map((q) => q.lat)),
+la1 = Math.max(...all.map((q) => q.lat)),
+ln0 = Math.min(...all.map((q) => q.lng)),
+ln1 = Math.max(...all.map((q) => q.lng)),
+hM = (la1 - la0) * XR.lat,
+wM = (ln1 - ln0) * XR.lng(la0);
+let step = Math.max(6, Math.sqrt((hM * wM) / 40));
+const grid = () => {
+const g = [];
+for (let y = step / 2; y < hM; y += step)
+for (let x = step / 2; x < wM; x += step) {
+const p = { lat: la0 + y / XR.lat, lng: ln0 + x / XR.lng(la0) };
+inParcel(p, pc) && !inBox(p, main.buildingBox) && g.push(p);
+}
+return g;
+};
+pts = grid();
+for (; pts.length > 24; ) ((step *= 1.2), (pts = grid()));
+pts = pts.map((p) => [p.lat, p.lng]);
+} else {
+[rad + 12, rad + 32].forEach((dm) => {
+for (let k = 0; k < 8; k++) {
+const a = ((k * 45 + (dm > rad + 20 ? 22.5 : 0)) * Math.PI) / 180;
+pts.push([c.lat + (dm * Math.cos(a)) / XR.lat, c.lng + (dm * Math.sin(a)) / XR.lng(c.lat)]);
+}
+});
+}
+const got = await Promise.race([
+Promise.all(pts.map((p) => ie(p[0], p[1]).catch(() => null))),
+ae(9e3).then(() => []),
+]);
+const maxM = (v.otherRoofMaxDistanceFt || 200) / 3.28084,
+seen = new Set([main.name || "main"]),
+out = [];
+(got || []).forEach((r) => {
+if (!r || !r.name || seen.has(r.name)) return;
+seen.add(r.name);
+if (r.areaSqft < 80) return;
+const x = xMake(r, main, pc ? "parcel" : "nearby");
+if (pc) {
+if (!inParcel(xCenter(r), pc)) return;
+x.include = !0;
+} else if (x.distFt / 3.28084 > maxM) return;
+out.push(x);
+});
+return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6);
+}
+
+    return {
+      solar: ie,
+      scan: async function (main, address) { o.address = address; const x = await scanExtras(main); return { extras: x, parcel: o.parcel }; }
+    };
+  }
+  function roofName(kind, used){ var n=kind||'Roof'; used[n]=(used[n]||0)+1; return used[n]>1?n+' '+used[n]:n; }
   function measureHere(address){
+    var scan=null;
     return loadMaps().then(function(){return findPlace(address);}).then(function(p){
       var lat=p.location.lat(),lng=p.location.lng();
-      var out={address:String(p.formattedAddress||address).replace(/, USA$/,''),lat:lat,lng:lng,roofs:[],segments:0,source:'none',note:'',imageryDate:'',quality:'',image:'',map:true};
-      var url='https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude='+lat.toFixed(7)+'&location.longitude='+lng.toFixed(7)+'&requiredQuality=LOW&key='+encodeURIComponent(M.settings.mapsKey);
-      return fetch(url).then(function(r){
-        if(r.status===404){out.note='Google has no roof data for this address. Type the roof size below.';return out;}
-        if(r.status===403){out.note='Google blocked roof measuring for this key on the app. In Google Cloud, add teamsforte.github.io/* to the key’s website restrictions.';return out;}
-        if(!r.ok){out.note='Couldn’t measure the roof right now ('+r.status+'). Type the roof size below.';return out;}
-        return r.json().then(function(j){
-          var m=parseSolar(j);
-          if(!m){out.note='Google has no roof sections for this address. Type the roof size below.';return out;}
-          out.roofs=[{n:'Main Roof',s:m.s,p:m.p,f:m.f}];out.segments=m.f;out.source='solar';out.imageryDate=m.date;out.quality=m.quality;
-          if(m.lowPct>15)out.note='About '+m.lowPct+'% of this roof is low-slope or flat. Check if it needs a different roof system.';
-          if(j.center){var dLat=(j.center.latitude-lat)*111320,dLng=(j.center.longitude-lng)*111320*Math.cos(lat*Math.PI/180);
-            if(Math.sqrt(dLat*dLat+dLng*dLng)>30)out.note=(out.note?out.note+' ':'')+'The closest building Google found is not right at the address pin. Check the map.';
-            out.lat=j.center.latitude;out.lng=j.center.longitude;}
+      var out={address:String(p.formattedAddress||address).replace(/, USA$/,''),lat:lat,lng:lng,roofs:[],segments:0,source:'none',note:'',imageryDate:'',quality:'',image:'',map:true,extras:[],nearby:[],flat:[],shapes:[],parcel:null};
+      scan=TFRoofScan(M.settings.mapsKey);
+      return scan.solar(lat,lng).then(function(main){
+        if(!main||!main.areaSqft){out.note='Google has no roof sections for this address. Type the roof size below.';return out;}
+        var sum=(main.segments||[]).length;
+        out.roofs=[{n:'Main Roof',s:main.areaSqft,p:Math.round(main.pitch12)+'/12',f:main.facets}];out.segments=main.facets;out.source='solar';
+        out.imageryDate=main.imageryDate||'';out.quality=main.quality||'';
+        if(main.lowSlopePct>15)out.note='About '+main.lowSlopePct+'% of this roof is low-slope or flat. Check if it needs a different roof system.';
+        if(main.center){var dLat=(main.center.latitude-lat)*111320,dLng=(main.center.longitude-lng)*111320*Math.cos(lat*Math.PI/180);
+          if(Math.sqrt(dLat*dLat+dLng*dLng)>30)out.note=(out.note?out.note+' ':'')+'The closest building Google found is not right at the address pin. Check the map.';
+          out.lat=main.center.latitude;out.lng=main.center.longitude;}
+        if(main.areaSqft<300)return out;
+        // Other roofs on the lot (detached garage, barn, shed, attached section), like the website
+        return scan.scan(main,{lat:lat,lng:lng}).then(function(res){
+          var used={};
+          out.parcel=res.parcel&&res.parcel.rings&&res.parcel.rings.length?res.parcel.rings:null;
+          if(main.footprint&&main.footprint.rings)out.shapes.push({rings:main.footprint.rings,label:'Main Roof',main:true});
+          (res.extras||[]).forEach(function(x){
+            var r=x.roof,name=roofName(x.kind,used),row={n:name,s:r.areaSqft,p:Math.round(r.pitch12)+'/12',f:r.facets||2};
+            var info={n:name,s:r.areaSqft,p:row.p,dist:x.distFt,dir:x.dir,est:!!r.noSat,row:row};
+            if(r.footprint&&r.footprint.rings)out.shapes.push({rings:r.footprint.rings,label:name});
+            if(r.slope==='flat'||r.pitch12<=1){out.flat.push(info);return;}
+            if(x.include){out.roofs.push(row);out.extras.push(info);}else out.nearby.push(info);
+          });
           return out;
-        });
+        }).catch(function(){return out;});
+      }).catch(function(er){
+        var st=/solar-(\d+)/.exec(String(er&&er.message||''));
+        if(st&&st[1]==='404'){out.note='Google has no roof data for this address. Type the roof size below.';return out;}
+        if(st&&st[1]==='403'){out.note='Google blocked roof measuring for this key on the app. In Google Cloud, add teamsforte.github.io/* to the key’s website restrictions.';return out;}
+        if(st){out.note='Couldn’t measure the roof right now ('+st[1]+'). Type the roof size below.';return out;}
+        throw er;
       });
     }).catch(function(er){
       if(er&&/API key not valid|API_KEY_INVALID|InvalidKey/i.test(String(er.message||er)))throw new Error('The saved Google key isn’t right. Go to Quote prices and tap “Use my website’s key”.');
@@ -1474,7 +2050,12 @@ var MAT=(function(){
     if(!el||!e.m||!(window.google&&google.maps&&google.maps.Map))return;
     var c={lat:+e.m.lat,lng:+e.m.lng};
     var map=new google.maps.Map(el,{mapTypeId:'satellite',center:c,zoom:20,tilt:0,disableDefaultUI:true,zoomControl:true,gestureHandling:'cooperative'});
-    new google.maps.Marker({map:map,position:c});
+    var b=new google.maps.LatLngBounds(),any=false;
+    if(e.m.parcel){new google.maps.Polygon({map:map,paths:e.m.parcel,strokeColor:'#FFFFFF',strokeOpacity:.9,strokeWeight:2,fillOpacity:0,clickable:false});}
+    (e.m.shapes||[]).forEach(function(sh){new google.maps.Polygon({map:map,paths:sh.rings,strokeColor:sh.main?'#9E1B0F':'#FFB020',strokeWeight:2,fillColor:sh.main?'#E8412E':'#FFB020',fillOpacity:.35,clickable:false});
+      sh.rings.forEach(function(g){g.forEach(function(q){b.extend(q);any=true;});});});
+    if(any){b.extend(c);map.fitBounds(b,30);google.maps.event.addListenerOnce(map,'idle',function(){if(map.getZoom()>20)map.setZoom(20);});}
+    else new google.maps.Marker({map:map,position:c});
   }
   function measure(){
     var e=M.est;if(!e.address.trim()){toast('Type the address first.',true);return;}
@@ -1895,6 +2476,7 @@ var MAT=(function(){
     if(a==='measure'){measure();return;}
     if(a==='addroof'){M.est.roofs.push({n:M.est.roofs.length===1?'Garage':'Section '+(M.est.roofs.length+1),s:0,p:'4/12'});render();return;}
     if(a==='rmroof'){M.est.roofs.splice(+t.getAttribute('data-i'),1);render();return;}
+    if(a==='addnear'){var nx=M.est.m&&M.est.m.nearby&&M.est.m.nearby[+t.getAttribute('data-i')];if(nx){M.est.roofs.push({n:nx.row.n,s:nx.row.s,p:nx.row.p,f:nx.row.f});M.est.m.nearby.splice(+t.getAttribute('data-i'),1);}render();return;}
     if(a==='saveest'){saveEst(t.getAttribute('data-v')==='email');return;}
     if(a==='share'){shareSheet();return;}
     if(a==='qf'){M.qfilter=t.getAttribute('data-v');render();return;}
