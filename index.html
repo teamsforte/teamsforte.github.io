@@ -110,6 +110,17 @@ textarea.in{min-height:84px;resize:vertical}
 .big{width:100%;border-radius:12px;background:var(--slate);display:block;max-height:52vh;object-fit:contain}
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .acts .btn{min-height:44px;font-size:14px;padding:0 10px}
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.ctile{display:block;text-align:left;min-width:0}
+.ctile img{width:100%;aspect-ratio:1;border-radius:10px;display:block;background:#333}
+.ctile span{display:block;font-size:12px;font-weight:700;margin-top:5px;line-height:1.25}
+.ctile.on img{outline:3px solid var(--red);outline-offset:2px}
+.cbig{aspect-ratio:1;object-fit:cover;max-height:none}
+.vizov{position:fixed;inset:0;z-index:60;background:#fff;overflow:auto;-webkit-overflow-scrolling:touch}
+.vizbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:var(--navy);color:#fff}
+.vizbar span{flex:1;font-size:12px;opacity:.75}
+.vizbody{padding:0 8px calc(16px + env(safe-area-inset-bottom))}
+#visualizer iframe{width:100% !important;border:0}
 @keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 /* progress + toast */
@@ -471,7 +482,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='5';
+var APP_VERSION='7';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -936,7 +947,7 @@ var MAT=(function(){
     var dep=M.quotes.filter(function(x){return x.signedAt&&x.depositStatus==='requested';}).length;
     var h=bar('<div class="brand">QUOTES</div><button class="icon-btn" data-m="pricing" aria-label="Quote prices">'+GEAR+'</button><button class="icon-btn" data-m="newest" style="margin-left:10px">'+ICON.plus+'New estimate</button>')+'<div class="wrap">'+
       '<div class="chips mt">'+[['new','New'],['approved','Approved'],['ordered','Ordered'],['done','Done']].map(function(f){
-        return '<button class="chip'+(M.qfilter===f[0]?' on':'')+'" data-m="qf" data-v="'+f[0]+'">'+f[1]+(counts[f[0]]?' ('+counts[f[0]]+')':'')+'</button>';}).join('')+'</div>'+
+        return '<button class="chip'+(M.qfilter===f[0]?' on':'')+'" data-m="qf" data-v="'+f[0]+'">'+f[1]+(counts[f[0]]?' ('+counts[f[0]]+')':'')+'</button>';}).join('')+'<button class="chip" data-m="colors">Shingle colors</button></div>'+
       (warr?'<div class="note">'+warr+' finished job'+(warr===1?'':'s')+' still need'+(warr===1?'s':'')+' the warranty registered. See Done.</div>':'')+
       (dep?'<div class="note">'+dep+' signed job'+(dep===1?' is':'s are')+' waiting on a deposit.</div>':'');
     if(!list.length){
@@ -1330,7 +1341,120 @@ var MAT=(function(){
   }
 
   /* ---------- new estimate (address only) ---------- */
-  var COLORS=['Estate Gray','Onyx Black','Driftwood','Teak','Brownwood','Desert Tan','Sand Dune','Quarry Gray','Slatestone Gray','Sierra Gray','Harbor Blue','Aged Copper','Amber','Summer Harvest','Black Sable'];
+    /* ----- Shingle color book: drawn samples of each Owens Corning color we offer (approximate on screen) ----- */
+  var COLOR_BOOK=[
+    {pkg:0,name:'Oakridge',colors:['Onyx Black','Estate Gray','Driftwood','Brownwood','Teak','Desert Tan']},
+    {pkg:1,name:'Duration',colors:['Onyx Black','Estate Gray','Driftwood','Brownwood','Teak','Williamsburg Gray','Slatestone Gray','Peppercorn','Colonial Slate','Sierra Gray','Harbor Blue','Chateau Green','Midnight Plum','Desert Rose','Sand Castle','Terra Cotta']},
+    {pkg:2,name:'Duration FLEX',colors:['Onyx Black','Black Sable','Estate Gray','Driftwood','Brownwood','Teak','Summer Harvest']}
+  ];
+  /* granule blends per color: main tones first, accent tones last */
+  var COLOR_TONES={
+    'Onyx Black':['#1c1e20','#25272a','#2e3033','#3a3c3f','#46484b'],
+    'Black Sable':['#24211e','#2f2b27','#3b3530','#4a4239','#5a4e42'],
+    'Estate Gray':['#3a3d3e','#4b4f50','#5d6162','#707475','#858989','#2f3132'],
+    'Driftwood':['#3a3631','#4f4740','#665a4e','#7d6e5d','#94846f','#5e4436','#6c6e6c'],
+    'Brownwood':['#2f2420','#3f2f28','#523c32','#664a3c','#7a5a47','#3b3330'],
+    'Teak':['#352c27','#463a33','#58493f','#6b594c','#7e6a5a','#3e3836'],
+    'Desert Tan':['#5d4c3f','#73604f','#8a7460','#a08872','#b59d85','#655a52'],
+    'Williamsburg Gray':['#36383c','#45474c','#55585d','#66696e','#787b80','#4d4746'],
+    'Slatestone Gray':['#464b4c','#575d5e','#696f70','#7c8282','#8f9494','#4f4b48'],
+    'Peppercorn':['#2e2e2b','#3d3d39','#4d4d48','#5f5f59','#73736c','#3a3532'],
+    'Colonial Slate':['#3f3a37','#514a46','#645b56','#776d66','#5a453d','#8a817a'],
+    'Sierra Gray':['#6b6c68','#7d7e7a','#90918c','#a2a39e','#b5b6b0','#5d5b57'],
+    'Harbor Blue':['#2c363e','#3a4650','#495762','#5a6974','#6d7c86','#3d3f43'],
+    'Chateau Green':['#26332c','#33433a','#41544a','#50655a','#62776b','#3a3a34'],
+    'Midnight Plum':['#2f2e35','#3d3b44','#4c4954','#5c5864','#4a3a43','#6c6873'],
+    'Desert Rose':['#4f3a31','#644a3f','#7a5b4d','#8f6d5d','#a4806e','#5a4a44'],
+    'Sand Castle':['#706352','#857765','#998b78','#ad9f8b','#c1b39e','#655e57'],
+    'Terra Cotta':['#5c3328','#723f32','#88503f','#9c604d','#b0725d','#4a3a33'],
+    'Summer Harvest':['#54473e','#6a5b4f','#807061','#968574','#ac9a87','#6b4c3e']
+  };
+  var swatchCache={};
+  function seedRand(str){var h=1779033703^str.length;for(var i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+    return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);var t=(h^=h>>>16)>>>0;return t/4294967296;};}
+  function hexRgb(hx){var n=parseInt(hx.slice(1),16);return [n>>16&255,n>>8&255,n&255];}
+  /* Draws laminated architectural shingles: 5 courses of random-width tabs, each tab a blend of the color's granules */
+  function drawShingles(name,w,h){
+    var key=name+'|'+w+'x'+h;if(swatchCache[key])return swatchCache[key];
+    var tones=(COLOR_TONES[name]||COLOR_TONES['Estate Gray']).map(hexRgb),rnd=seedRand(name);
+    var cv=document.createElement('canvas');cv.width=w;cv.height=h;var ctx=cv.getContext('2d');var im=ctx.createImageData(w,h),d=im.data;
+    var rows=5,rh=h/rows,courses=[];
+    for(var r=0;r<rows;r++){var x=-Math.round(rnd()*w*0.12),tabs=[];
+      while(x<w){var tw=Math.round(w*(0.11+rnd()*0.14));var t=Math.floor(rnd()*(tones.length));if(rnd()<0.12)t=tones.length-1-Math.floor(rnd()*2);
+        tabs.push({x0:x,x1:x+tw,tone:t,lean:(rnd()-0.5)*0.12,band:rnd()<0.45?0.25+rnd()*0.3:0,bandTone:Math.floor(rnd()*2),mix:rnd()});x+=tw;}
+      courses.push(tabs);}
+    for(var y=0;y<h;y++){var r2=Math.min(rows-1,Math.floor(y/rh)),ty=(y-r2*rh)/rh,tabs2=courses[r2];
+      for(var xx=0;xx<w;xx++){
+        var tab=null,edge=99;
+        for(var k=0;k<tabs2.length;k++){var tb=tabs2[k],off=tb.lean*ty*rh,a=tb.x0+off,b=tb.x1+(k+1<tabs2.length?tabs2[k+1].lean*ty*rh:0);
+          if(xx>=a&&xx<b){tab=tb;edge=Math.min(xx-a,b-xx);break;}}
+        if(!tab)tab=tabs2[tabs2.length-1];
+        var base=tones[tab.tone];
+        /* lamination shadow band at the top of some tabs */
+        if(tab.band&&ty<tab.band)base=tones[tab.bandTone];
+        var c0=base;
+        /* granule speckle from the other tones */
+        var rr=rnd();
+        if(rr<0.10)c0=tones[Math.floor(rnd()*tones.length)];
+        var n=(rnd()-0.5)*26,shade=1;
+        if(ty>0.93)shade=0.45;               /* course shadow line */
+        else if(ty<0.06)shade=0.82;          /* overlap shade */
+        if(edge<1.2)shade*=0.55;             /* gap between tabs */
+        shade*=1-0.10*ty*tab.mix;            /* slight blend down each tab */
+        var p=(y*w+xx)*4;
+        d[p]=Math.max(0,Math.min(255,(c0[0]+n)*shade));d[p+1]=Math.max(0,Math.min(255,(c0[1]+n)*shade));d[p+2]=Math.max(0,Math.min(255,(c0[2]+n)*shade));d[p+3]=255;
+      }}
+    ctx.putImageData(im,0,0);
+    var url=cv.toDataURL('image/jpeg',0.86);swatchCache[key]=url;return url;
+  }
+
+
+  /* Owens Corning's free Design EyeQ® widget (owenscorning.com/roofing/widgets/designeyeq) */
+  function openVisualizer(){
+    var zip=((M.est&&M.est.address||'').match(/\b(\d{5})\b/)||[])[1]||'06037';
+    var ov=document.getElementById('vizov');
+    if(!ov){
+      ov=document.createElement('div');ov.id='vizov';ov.className='vizov';
+      ov.innerHTML='<div class="vizbar"><b>Roof visualizer</b><span>Design EyeQ® by Owens Corning</span><button class="x" id="vizx" aria-label="Close">'+ICON.x+'</button></div>'+
+        '<div class="vizbody"><p class="hint" style="margin:10px 2px">Take or upload a photo of the customer’s house, or pick a sample home, then try Owens Corning colors.</p><div id="visualizer" data-zip="'+zip+'"></div><p class="hint" id="vizerr" style="display:none">The visualizer didn’t load. Check your signal and try again.</p></div>';
+      document.body.appendChild(ov);
+      var s=document.createElement('script');s.src='https://apis.owenscorning.com/client/widget.js';s.async=true;
+      s.onerror=function(){var e=document.getElementById('vizerr');if(e)e.style.display='block';ov.remove();toast('The visualizer didn’t load. Check your signal and try again.',true);document.body.style.overflow='';};
+      document.body.appendChild(s);
+      ov.querySelector('#vizx').onclick=function(){ov.style.display='none';document.body.style.overflow='';};
+    }
+    ov.style.display='block';ov.scrollTop=0;document.body.style.overflow='hidden';
+  }
+  function colorBook(pkg,onPick,current){
+    var cur=COLOR_BOOK[pkg]?pkg:1,ov=null;
+    function list(){
+      var b=COLOR_BOOK[cur];
+      ov.querySelector('.sheet').innerHTML='<div class="grab"></div><h3>Shingle colors'+closeBtn()+'</h3>'+
+        '<div class="seg" id="cbk">'+COLOR_BOOK.map(function(x,i){return '<button type="button" class="'+(i===cur?'on':'')+'" data-cb="'+i+'">'+esc(x.name)+'</button>';}).join('')+'</div>'+
+        '<button type="button" class="btn ghost block mt" data-viz>'+ICON.plus+'See colors on a house (Owens Corning visualizer)</button>'+
+        '<p class="hint">Owens Corning '+esc(b.name)+' · '+b.colors.length+' colors. Tap one to show it big.</p>'+
+        '<div class="cgrid">'+b.colors.map(function(n){return '<button type="button" class="ctile'+(n===current?' on':'')+'" data-cn="'+esc(n)+'"><img src="'+drawShingles(n,240,240)+'" alt=""><span>'+esc(n)+'</span></button>';}).join('')+'</div>'+
+        '<p class="hint mt">Drawn samples are close, not exact. Confirm with the real sample board.</p>';
+    }
+    function big(n){
+      var b=COLOR_BOOK[cur],i=b.colors.indexOf(n),prev=b.colors[(i+b.colors.length-1)%b.colors.length],next=b.colors[(i+1)%b.colors.length];
+      ov.querySelector('.sheet').innerHTML='<div class="grab"></div><h3>'+esc(n)+closeBtn()+'</h3>'+
+        '<img class="big cbig" src="'+drawShingles(n,720,720)+'" alt="'+esc(n)+' shingle sample">'+
+        '<p class="hint">Owens Corning '+esc(b.name)+' · '+esc(n)+'. Colors on screen are close, not exact.</p>'+
+        '<div class="acts"><button type="button" class="btn ghost" data-cn="'+esc(prev)+'">‹ '+esc(prev)+'</button><button type="button" class="btn ghost" data-cn="'+esc(next)+'">'+esc(next)+' ›</button></div>'+
+        '<div class="acts"><button type="button" class="btn ghost" data-cball>All colors</button>'+(onPick?'<button type="button" class="btn" data-cuse="'+esc(n)+'">Use this color</button>':'<button type="button" class="btn" data-close>Done</button>')+'</div>';
+    }
+    ov=sheet('');list();
+    ov.addEventListener('click',function(ev){
+      var t=ev.target.closest('[data-cb],[data-cn],[data-cball],[data-cuse],[data-viz]');if(!t)return;
+      if(t.hasAttribute('data-viz')){closeSheet();openVisualizer();return;}
+      if(t.hasAttribute('data-cb')){cur=+t.getAttribute('data-cb');list();return;}
+      if(t.hasAttribute('data-cn')){big(t.getAttribute('data-cn'));ov.querySelector('.sheet').scrollTop=0;return;}
+      if(t.hasAttribute('data-cball')){list();return;}
+      if(t.hasAttribute('data-cuse')){var n=t.getAttribute('data-cuse');closeSheet();if(onPick)onPick(n,cur);}
+    });
+  }
+  var COLORS=COLOR_BOOK.reduce(function(a,b){b.colors.forEach(function(c){if(a.indexOf(c)<0)a.push(c);});return a;},[]);
   var PITCHES=['2/12','3/12','4/12','5/12','6/12','7/12','8/12','9/12','10/12','11/12','12/12','14/12','16/12'];
   function newEst(){M.est={type:(M.est&&M.est.type)||'replacement',items:[],address:'',name:'',phone:'',email:'',lat:0,lng:0,roofs:[],layers:1,pick:1,color:'',m:null,busy:false};}
   function typeSeg(e){return '<div class="seg mt" id="etype">'+[['replacement','Replacement'],['repair','Repair']].map(function(t){return '<button type="button" class="'+(e.type===t[0]?'on':'')+'" data-et="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';}
@@ -1400,9 +1524,10 @@ var MAT=(function(){
     var rg=estRanges();var total=e.roofs.reduce(function(n,r){return n+(Number(r.s)||0);},0);
     el.innerHTML='<h2>Price <small>'+(total?Math.round(total).toLocaleString()+' sq ft · '+(total/100).toFixed(1)+' squares':'enter the roof size')+'</small></h2>'+
       '<div class="pkg" id="epk">'+PK.map(function(p,i){var r=rg[i]||[0,0];return '<button type="button" class="'+(i===e.pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b><span class="money">'+(r[1]?money(r[0],false)+'–'+money(r[1],false):'—')+'</span></button>';}).join('')+'</div>'+
-      '<label class="f">Color</label><input class="in" id="ec" list="ecl" maxlength="40" value="'+esc(e.color)+'" placeholder="e.g. Estate Gray"><datalist id="ecl">'+COLORS.map(function(c){return '<option value="'+c+'">';}).join('')+'</datalist>'+
+      '<label class="f">Color</label><div class="row"><div style="flex:2"><input class="in" id="ec" list="ecl" maxlength="40" value="'+esc(e.color)+'" placeholder="e.g. Estate Gray"></div><div><button type="button" class="btn ghost block" id="ecb" style="min-height:44px">'+(e.color&&COLOR_TONES[e.color]?'<img src="'+drawShingles(e.color,60,60)+'" alt="" style="width:22px;height:22px;border-radius:5px;margin-right:6px;vertical-align:middle">':'')+'Show colors</button></div></div><datalist id="ecl">'+COLORS.map(function(c){return '<option value="'+c+'">';}).join('')+'</datalist>'+
       (M.pricing.updated?'':'<div class="note">These use starter prices per square. Set your own under ⚙ Quote prices.</div>');
     document.getElementById('epk').onclick=function(ev){var b=ev.target.closest('[data-pk]');if(!b)return;e.pick=+b.getAttribute('data-pk');this.querySelectorAll('button').forEach(function(z){z.classList.toggle('on',z===b);});};
+    document.getElementById('ecb').onclick=function(){colorBook(e.pick,function(n,pk){e.color=n;e.pick=pk;drawEstPrices();},e.color);};
   }
   /* ----- roof measuring on the phone (same method as the website instant quote) ----- */
   var mapsP=null;
@@ -2474,6 +2599,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='newest'){newEst();M.view='new';render();window.scrollTo(0,0);var ea=document.getElementById('ea');if(ea)ea.focus();return;}
     if(a==='pricing'){M.view='pricing';render();window.scrollTo(0,0);return;}
     if(a==='measure'){measure();return;}
+    if(a==='colors'){colorBook(1,null,'');return;}
     if(a==='addroof'){M.est.roofs.push({n:M.est.roofs.length===1?'Garage':'Section '+(M.est.roofs.length+1),s:0,p:'4/12'});render();return;}
     if(a==='rmroof'){M.est.roofs.splice(+t.getAttribute('data-i'),1);render();return;}
     if(a==='addnear'){var nx=M.est.m&&M.est.m.nearby&&M.est.m.nearby[+t.getAttribute('data-i')];if(nx){M.est.roofs.push({n:nx.row.n,s:nx.row.s,p:nx.row.p,f:nx.row.f});M.est.m.nearby.splice(+t.getAttribute('data-i'),1);}render();return;}
