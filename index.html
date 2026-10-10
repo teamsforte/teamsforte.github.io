@@ -482,7 +482,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='7';
+var APP_VERSION='8';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -1410,7 +1410,34 @@ var MAT=(function(){
 
 
   /* Owens Corning's free Design EyeQ® widget (owenscorning.com/roofing/widgets/designeyeq) */
-  function openVisualizer(){
+  var vizCtx=null,vizGuess='';
+  /* If the visualizer ever reports a color to this page, remember it to suggest it */
+  window.addEventListener('message',function(ev){
+    var host='';try{host=new URL(ev.origin).hostname;}catch(e){return;}
+    if(!/(^|\.)owenscorning\.com$/.test(host))return;
+    var s='';try{s=typeof ev.data==='string'?ev.data:JSON.stringify(ev.data);}catch(e){return;}
+    COLORS.forEach(function(c){if(s.indexOf(c)>=0)vizGuess=c;});
+  });
+  /* After the visualizer: one tap to put the customer's color on the estimate */
+  function askVizColor(pkg,onPick){
+    var cur=COLOR_BOOK[pkg]?pkg:1,ov=sheet('');
+    function draw(){
+      var b=COLOR_BOOK[cur];
+      ov.querySelector('.sheet').innerHTML='<div class="grab"></div><h3>Which color did they like?'+closeBtn()+'</h3>'+
+        '<div class="seg" id="vbk">'+COLOR_BOOK.map(function(x,i){return '<button type="button" class="'+(i===cur?'on':'')+'" data-cb="'+i+'">'+esc(x.name)+'</button>';}).join('')+'</div>'+
+        (vizGuess?'<p class="hint">The visualizer showed <b>'+esc(vizGuess)+'</b>.</p>':'<p class="hint">Tap the color to put it on the estimate.</p>')+
+        '<div class="cgrid">'+b.colors.map(function(n){return '<button type="button" class="ctile'+(n===vizGuess?' on':'')+'" data-vpick="'+esc(n)+'"><img src="'+drawShingles(n,240,240)+'" alt=""><span>'+esc(n)+'</span></button>';}).join('')+'</div>'+
+        '<button type="button" class="btn ghost block mt" data-close>Skip</button>';
+    }
+    draw();
+    ov.addEventListener('click',function(ev){
+      var t=ev.target.closest('[data-cb],[data-vpick]');if(!t)return;
+      if(t.hasAttribute('data-cb')){cur=+t.getAttribute('data-cb');draw();return;}
+      var n=t.getAttribute('data-vpick');closeSheet();onPick(n,cur);toast('Color set: '+n);
+    });
+  }
+  function openVisualizer(pkg,onPick){
+    vizCtx=onPick?{pkg:pkg,onPick:onPick}:null;
     var zip=((M.est&&M.est.address||'').match(/\b(\d{5})\b/)||[])[1]||'06037';
     var ov=document.getElementById('vizov');
     if(!ov){
@@ -1421,7 +1448,7 @@ var MAT=(function(){
       var s=document.createElement('script');s.src='https://apis.owenscorning.com/client/widget.js';s.async=true;
       s.onerror=function(){var e=document.getElementById('vizerr');if(e)e.style.display='block';ov.remove();toast('The visualizer didn’t load. Check your signal and try again.',true);document.body.style.overflow='';};
       document.body.appendChild(s);
-      ov.querySelector('#vizx').onclick=function(){ov.style.display='none';document.body.style.overflow='';};
+      ov.querySelector('#vizx').onclick=function(){ov.style.display='none';document.body.style.overflow='';if(vizCtx){var c=vizCtx;vizCtx=null;askVizColor(c.pkg,c.onPick);}};
     }
     ov.style.display='block';ov.scrollTop=0;document.body.style.overflow='hidden';
   }
@@ -1447,7 +1474,7 @@ var MAT=(function(){
     ov=sheet('');list();
     ov.addEventListener('click',function(ev){
       var t=ev.target.closest('[data-cb],[data-cn],[data-cball],[data-cuse],[data-viz]');if(!t)return;
-      if(t.hasAttribute('data-viz')){closeSheet();openVisualizer();return;}
+      if(t.hasAttribute('data-viz')){closeSheet();openVisualizer(cur,onPick);return;}
       if(t.hasAttribute('data-cb')){cur=+t.getAttribute('data-cb');list();return;}
       if(t.hasAttribute('data-cn')){big(t.getAttribute('data-cn'));ov.querySelector('.sheet').scrollTop=0;return;}
       if(t.hasAttribute('data-cball')){list();return;}
