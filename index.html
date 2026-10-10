@@ -121,6 +121,8 @@ textarea.in{min-height:84px;resize:vertical}
 .vizbar span{flex:1;font-size:12px;opacity:.75}
 .vizbody{padding:0 8px calc(16px + env(safe-area-inset-bottom))}
 #visualizer iframe{width:100% !important;border:0}
+.shov{flex-direction:column;overflow:hidden}
+.ocf{flex:1;width:100%;border:0;min-height:0;background:#fff}
 @keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 /* progress + toast */
@@ -482,7 +484,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='8';
+var APP_VERSION='9';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -1436,6 +1438,23 @@ var MAT=(function(){
       var n=t.getAttribute('data-vpick');closeSheet();onPick(n,cur);toast('Color set: '+n);
     });
   }
+  /* Owens Corning's free Shingle Widget (owenscorning.com/roofing/widgets/shingle-widget): real color photos */
+  var OC_LINES=['oakridge','trudefinition-duration','trudefinition-duration-flex'];
+  function ocSite(){return 'sitedomain='+encodeURIComponent(location.hostname)+'&sitepath='+encodeURIComponent(location.pathname)+'&siteurl='+encodeURIComponent(location.origin+location.pathname);}
+  function openShinglePhotos(pkg,onPick){
+    var cur=COLOR_BOOK[pkg]?pkg:1;
+    vizCtx=onPick?{pkg:cur,onPick:onPick}:null;
+    var ov=document.getElementById('shov');
+    if(!ov){ov=document.createElement('div');ov.id='shov';ov.className='vizov shov';document.body.appendChild(ov);}
+    function draw(){
+      ov.innerHTML='<div class="vizbar"><b>Color photos</b><span>by Owens Corning</span><button class="x" id="shx" aria-label="Close">'+ICON.x+'</button></div>'+
+        '<div class="seg" id="shk" style="margin:8px 8px 0">'+COLOR_BOOK.map(function(x,i){return '<button type="button" class="'+(i===cur?'on':'')+'" data-sk="'+i+'">'+esc(x.name)+'</button>';}).join('')+'</div>'+
+        '<iframe class="ocf" title="Owens Corning '+esc(COLOR_BOOK[cur].name)+' colors" src="https://www.owenscorning.com/public_widgets/shingle/'+OC_LINES[cur]+'?view=shingle&style=default&layout=stacked&allowedcolors=&widget=true&'+ocSite()+'"></iframe>';
+      ov.querySelector('#shk').onclick=function(ev){var b=ev.target.closest('[data-sk]');if(!b)return;cur=+b.getAttribute('data-sk');if(vizCtx)vizCtx.pkg=cur;draw();};
+      ov.querySelector('#shx').onclick=function(){ov.style.display='none';ov.innerHTML='';document.body.style.overflow='';if(vizCtx){var c=vizCtx;vizCtx=null;askVizColor(c.pkg,c.onPick);}};
+    }
+    draw();ov.style.display='flex';document.body.style.overflow='hidden';
+  }
   function openVisualizer(pkg,onPick){
     vizCtx=onPick?{pkg:pkg,onPick:onPick}:null;
     var zip=((M.est&&M.est.address||'').match(/\b(\d{5})\b/)||[])[1]||'06037';
@@ -1458,7 +1477,7 @@ var MAT=(function(){
       var b=COLOR_BOOK[cur];
       ov.querySelector('.sheet').innerHTML='<div class="grab"></div><h3>Shingle colors'+closeBtn()+'</h3>'+
         '<div class="seg" id="cbk">'+COLOR_BOOK.map(function(x,i){return '<button type="button" class="'+(i===cur?'on':'')+'" data-cb="'+i+'">'+esc(x.name)+'</button>';}).join('')+'</div>'+
-        '<button type="button" class="btn ghost block mt" data-viz>'+ICON.plus+'See colors on a house (Owens Corning visualizer)</button>'+
+        '<div class="acts" style="margin-top:4px"><button type="button" class="btn ghost" data-ocp>Real color photos</button><button type="button" class="btn ghost" data-viz>See it on a house</button></div>'+
         '<p class="hint">Owens Corning '+esc(b.name)+' · '+b.colors.length+' colors. Tap one to show it big.</p>'+
         '<div class="cgrid">'+b.colors.map(function(n){return '<button type="button" class="ctile'+(n===current?' on':'')+'" data-cn="'+esc(n)+'"><img src="'+drawShingles(n,240,240)+'" alt=""><span>'+esc(n)+'</span></button>';}).join('')+'</div>'+
         '<p class="hint mt">Drawn samples are close, not exact. Confirm with the real sample board.</p>';
@@ -1473,7 +1492,8 @@ var MAT=(function(){
     }
     ov=sheet('');list();
     ov.addEventListener('click',function(ev){
-      var t=ev.target.closest('[data-cb],[data-cn],[data-cball],[data-cuse],[data-viz]');if(!t)return;
+      var t=ev.target.closest('[data-cb],[data-cn],[data-cball],[data-cuse],[data-viz],[data-ocp]');if(!t)return;
+      if(t.hasAttribute('data-ocp')){closeSheet();openShinglePhotos(cur,onPick);return;}
       if(t.hasAttribute('data-viz')){closeSheet();openVisualizer(cur,onPick);return;}
       if(t.hasAttribute('data-cb')){cur=+t.getAttribute('data-cb');list();return;}
       if(t.hasAttribute('data-cn')){big(t.getAttribute('data-cn'));ov.querySelector('.sheet').scrollTop=0;return;}
