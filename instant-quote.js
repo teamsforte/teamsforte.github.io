@@ -1892,13 +1892,13 @@ await N();
 let x = null;
 if (!u) {
 // Typed without picking a suggestion: search the whole address first so the right town is kept
-// (e.g. "161 Main St, East Berlin" must not become Berlin 06037).
+// (e.g. "12 Main St, East Berlin" must not become Berlin 06037).
 try {
 const { Place: PL } = await google.maps.importLibrary("places");
 const sr = await PL.searchByText({ textQuery: p, fields: ["formattedAddress", "location", "addressComponents"], maxResultCount: 1, region: "us", locationBias: v.business.searchBias });
 const sp = sr && sr.places && sr.places[0];
 if (sp && sp.location) {
-// The typed text must name the town (or ZIP), otherwise we'd be guessing which "161 Main St" they mean
+// The typed text must name the town (or ZIP), otherwise we'd be guessing which "Main St" they mean
 const lt = p.toLowerCase(), fa = String(sp.formattedAddress || ""), town = (fa.split(",")[1] || "").trim().toLowerCase(),
 loc = ((sp.addressComponents || []).find((C) => C.types.includes("locality")) || {}).longText || "",
 zip = (fa.match(/\b\d{5}\b/) || [""])[0];
@@ -1947,7 +1947,7 @@ _("confirm"));
 (console.warn("[TFQ] address", x),
 (t.textContent =
 x && x.message === "need-town"
-? "Please add your town, for example: 161 Main St, East Berlin."
+? "Please add your town, for example: 25 Elm St, Berlin."
 : "We couldn't find that address. Try picking it from the list as you type."),
 (b.disabled = !1),
 (b.textContent = "Get my instant quote"));
