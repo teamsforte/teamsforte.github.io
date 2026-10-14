@@ -484,7 +484,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='9';
+var APP_VERSION='10';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -965,7 +965,8 @@ var MAT=(function(){
           (x.type==='repair'?'<span class="pill">Repair · '+(x.items||[]).length+' item'+((x.items||[]).length===1?'':'s')+'</span>':'<span class="pill">'+Math.round(sqft(x)).toLocaleString()+' sq ft</span>')+
           (x.signedAt?'<span class="pill done">✓ Signed</span>':x.proposalSentAt?'<span class="pill">Sent for signature</span>':'')+
           (pk?'<span class="pill">OC '+esc(pk.label)+(x.color?' · '+esc(x.color):'')+'</span>':'')+
-          '<span class="pill">'+(x.source==='app'?'App estimate · ':'')+esc(x.id)+' · '+dateStr(x.created)+'</span></div></button>';
+          (x.lead&&x.lead.inspectionDay?'<span class="pill" style="background:#FFE8E3;color:#B4321F">Inspection requested</span>':'')+
+          '<span class="pill">'+(x.source==='app'?'App estimate · ':x.source==='website'?'Website · ':'')+esc(x.id)+' · '+dateStr(x.created)+'</span></div></button>';
       }).join('');
     }
     app.innerHTML=h+'</div>';
@@ -988,6 +989,10 @@ var MAT=(function(){
       (x.phone?kv('Phone','<a href="tel:'+esc(x.phone.replace(/[^\d+]/g,''))+'" target="_top">'+esc(x.phone)+'</a>'):'')+
       (x.email?kv('Email','<a href="mailto:'+esc(x.email)+'" target="_top">'+esc(x.email)+'</a>'):'')+
       kv('Address','<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.address||(x.lat+','+x.lng))+'" target="_blank" rel="noopener">'+esc(x.address||'Map')+'</a>')+
+      (x.lead?(x.lead.inspectionDay?kv('Inspection request','<b>'+esc(x.lead.inspectionDay+(x.lead.inspectionWindow?', '+x.lead.inspectionWindow:''))+'</b>'):'')+
+        (x.lead.package?kv('Picked',esc(x.lead.package+(x.lead.color?' · '+x.lead.color:''))):'')+
+        (x.lead.timeline?kv('Timeline',esc(x.lead.timeline)):'')+(x.lead.layers?kv('Shingle layers',esc(x.lead.layers)):'')+
+        (x.lead.notes?kv('Notes',esc(x.lead.notes)):'')+(x.lead.smsUpdates?kv('Texts OK',esc(x.lead.smsUpdates)):''):'')+
       kv('Quote',esc(x.id)+' · '+dateStr(x.created))+
       (x.roofs||[]).map(function(r){return kv(esc(r.n||'Roof'),Math.round(r.s).toLocaleString()+' sq ft · '+esc(r.p||'pitch ?'));}).join('')+
       (x.layers>1?kv('Layers to tear off',String(x.layers)):'')+

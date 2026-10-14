@@ -46,6 +46,9 @@ window.TFQ_CONFIG = {
   // when a visitor measures a roof but leaves before giving contact info. Leave "" to turn off.
   ghlUnfinishedWebhookUrl: "https://services.leadconnectorhq.com/hooks/ySsyazNWRWtwaoThE5Ij/webhook-trigger/80f63207-e35b-449d-bc1f-b9569fa44712",
 
+  // Team Forte app (Google Apps Script): every lead also shows up in the app's Quotes. Leave "" to turn off.
+  appLeadUrl: "https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec?r=quote",
+
   pricing: {
     // Installed price per roofing square (100 sq ft, measured area + waste), including
     // 1-layer tear-off, underlayment, ice & water shield, drip edge, ridge vent, permit and cleanup.
@@ -1350,8 +1353,22 @@ eventID: o.quoteId + "-" + e,
 } catch {}
 }
 }
+// Send the lead to the Team Forte app too (contact details go in the POST body, not the link)
+function toApp(e) {
+if (P || o.spam || !v.appLeadUrl) return;
+try {
+const s = Z(e),
+body = JSON.stringify({ event: e, link: s.quote_url || "", name: s.full_name || "", phone: s.phone || "", email: s.email || "", timeline: s.timeline || "", layers: s.shingle_layers || "", package: s.selected_package || "", color: s.shingle_color || "", inspectionDay: s.inspection_day || "", inspectionWindow: s.inspection_window || "", notes: s.customer_notes || "", smsUpdates: s.sms_transactional_consent || "", smsMarketing: s.sms_marketing_consent || "", rep: s.rep_name || "" });
+if (!s.quote_url) return;
+(navigator.sendBeacon && navigator.sendBeacon(v.appLeadUrl, new Blob([body], { type: "text/plain" }))) ||
+fetch(v.appLeadUrl, { method: "POST", mode: "no-cors", body: body, keepalive: !0 }).catch(() => {});
+} catch (q) {
+console.warn("[TFQ] app lead", q);
+}
+}
 async function U(e) {
 e !== "quote_abandoned" && (o.leadSent = !0);
+e !== "quote_abandoned" && toApp(e);
 const s = Z(e);
 if (
 ((o.lastPayload = s),
@@ -2374,6 +2391,7 @@ i("tfq-hp") && i("tfq-hp").value && ((o.spam = !0), (o.sendLeads = !1));
 const r = o.quote.totals[Math.min(1, o.quote.totals.length - 1)];
 j("Lead", { value: r.base, currency: "USD" });
 }
+toApp("prices_viewed");
 _("results");
 }));
 }),
