@@ -47,6 +47,19 @@
     '.tfg-body h3{font-size:17px;font-weight:800;margin:0;color:var(--tfg-ink);line-height:1.3;text-transform:none;letter-spacing:0}' +
     '.tfg-meta{font-size:13px;color:var(--tfg-muted);margin:0}' +
     '.tfg-view{margin-top:auto;padding-top:8px;font-size:14px;font-weight:700;color:var(--tfg-red)}' +
+    '.tfg-card.tfg-hasba{cursor:default}.tfg-card.tfg-hasba:hover .tfg-img img{transform:none}' +
+    'button.tfg-view{appearance:none;-webkit-appearance:none;background:none;border:0;margin:auto 0 0;padding:10px 0 2px;text-align:left;font:inherit;font-size:14px;font-weight:700;color:var(--tfg-red);cursor:pointer;align-self:flex-start}' +
+    'button.tfg-view:hover{text-decoration:underline}button.tfg-view:focus-visible{outline:2px solid var(--tfg-red);outline-offset:3px;border-radius:4px}' +
+    '.tfg-ba{--p:50%;position:absolute;inset:0;touch-action:pan-y;cursor:ew-resize;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;outline:none}' +
+    '.tfg-ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}' +
+    '.tfg-ba .tfg-ba-b{clip-path:inset(0 calc(100% - var(--p)) 0 0);-webkit-clip-path:inset(0 calc(100% - var(--p)) 0 0)}' +
+    '.tfg-ba-h{position:absolute;top:0;bottom:0;left:var(--p);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.35);pointer-events:none}' +
+    '.tfg-ba-k{position:absolute;top:50%;left:clamp(23px,var(--p),calc(100% - 23px));width:42px;height:42px;margin:-21px 0 0 -21px;pointer-events:none;border-radius:50%;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:var(--tfg-red)}' +
+    '.tfg-ba-k svg{width:22px;height:22px}' +
+    '.tfg-ba:focus-visible .tfg-ba-k{box-shadow:0 0 0 3px var(--tfg-red),0 3px 12px rgba(0,0,0,.35)}' +
+    '.tfg-ba-l{position:absolute;bottom:10px;background:rgba(19,32,47,.82);color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;padding:4px 9px;border-radius:4px;text-transform:uppercase;pointer-events:none;transition:opacity .2s}' +
+    '.tfg-ba-l.b{left:10px}.tfg-ba-l.a{right:10px;background:var(--tfg-red)}' +
+    '.tfg-ba.lo .tfg-ba-l.b,.tfg-ba.hi .tfg-ba-l.a{opacity:0}' +
     '.tfg-more{text-align:center;margin-top:24px}' +
     '.tfg-btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 26px;border-radius:10px;border:0;background:var(--tfg-red);color:#fff;font:inherit;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;transition:background .15s}' +
     '.tfg-btn:hover{background:var(--tfg-red-dk);color:#fff}' +
@@ -168,7 +181,7 @@
       limit: parseInt(el.getAttribute('data-limit'), 10) || (el.getAttribute('data-featured') === 'true' ? 6 : 9),
       tabs: el.getAttribute('data-tabs') !== 'false',
       title: el.getAttribute('data-title') || '',
-      subtitle: el.getAttribute('data-subtitle') || '',
+      subtitle: (el.getAttribute('data-subtitle') || '').replace(/Tap a job to see the before and after\.?/i, 'Slide any photo to see the before and after.'),
       more: el.getAttribute('data-more-href') || '',
       ctaText: el.getAttribute('data-cta-text') || 'Get a Free Inspection',
       ctaHref: el.getAttribute('data-cta-href') || 'tel:+18608549335',
@@ -215,7 +228,9 @@
           h += '<div class="tfg-more"><a class="tfg-btn" href="' + esc(o.more) + '">See all our work</a></div>';
         }
         root.innerHTML = h;
+        baHint(root);
       }
+      baWire(root);
       root.addEventListener('click', function (e) {
         var t = e.target.closest ? e.target.closest('[data-tab],[data-more],[data-job]') : null;
         if (!t) return;
@@ -238,6 +253,7 @@
 
   function card(j) {
     var pair = pairOf(j);
+    if (pair) return baCard(j, pair);
     var visual = pair
       ? '<div class="tfg-split"><div>' + imgTag(pair.before.id, 600, 'Before: ' + j.title) + '<span>Before</span></div><div>' + imgTag(pair.after.id, 600, 'After: ' + j.title) + '<span>After</span></div></div>'
       : imgTag(j.cover, 900, j.title);
@@ -246,6 +262,83 @@
       '<div class="tfg-img">' + visual + '<span class="tfg-badge">' + esc(j.service) + '</span></div>' +
       '<div class="tfg-body"><h3>' + esc(j.title) + '</h3>' + (meta(j) ? '<p class="tfg-meta">' + esc(meta(j)) + '</p>' : '') +
       '<span class="tfg-view">' + (pair ? 'See before &amp; after' : 'View ' + n + ' photo' + (n === 1 ? '' : 's')) + ' \u2192</span></div></button>';
+  }
+
+  /* Before & after right on the card: drag (or use the arrow keys) to compare. "View all photos" opens the viewer. */
+  function baCard(j, pair) {
+    var n = j.photos.length;
+    var arrows = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg>';
+    return '<div class="tfg-card tfg-hasba">' +
+      '<div class="tfg-img"><div class="tfg-ba" role="slider" tabindex="0" aria-label="' + esc('Before and after: ' + j.title + '. Drag or use arrow keys to compare.') + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-valuetext="50% before">' +
+        imgTag(pair.after.id, 900, 'After: ' + j.title, 'tfg-ba-a') + imgTag(pair.before.id, 900, 'Before: ' + j.title, 'tfg-ba-b') +
+        '<span class="tfg-ba-l b">Before</span><span class="tfg-ba-l a">After</span>' +
+        '<span class="tfg-ba-h"></span><span class="tfg-ba-k">' + arrows + '</span></div>' +
+        '<span class="tfg-badge">' + esc(j.service) + '</span></div>' +
+      '<div class="tfg-body"><h3>' + esc(j.title) + '</h3>' + (meta(j) ? '<p class="tfg-meta">' + esc(meta(j)) + '</p>' : '') +
+      '<button type="button" class="tfg-view" data-job="' + esc(j.id) + '">View all ' + n + ' photo' + (n === 1 ? '' : 's') + ' →</button></div></div>';
+  }
+  function baSet(ba, p) {
+    p = Math.max(0, Math.min(100, p));
+    ba.style.setProperty('--p', p + '%');
+    ba.setAttribute('aria-valuenow', String(Math.round(p)));
+    ba.setAttribute('aria-valuetext', Math.round(p) + '% before');
+    ba.classList.toggle('lo', p < 12); ba.classList.toggle('hi', p > 88);
+    ba._p = p;
+  }
+  function baWire(root) {
+    var drag = null;
+    function posOf(ba, x) { var r = ba.getBoundingClientRect(); return (x - r.left) / r.width * 100; }
+    root.addEventListener('pointerdown', function (e) {
+      var ba = e.target.closest ? e.target.closest('.tfg-ba') : null;
+      if (!ba || e.button > 0) return;
+      ba._stop = true;
+      drag = { ba: ba, x: e.clientX, y: e.clientY, id: e.pointerId, live: e.pointerType === 'mouse' };
+      if (drag.live) { try { ba.setPointerCapture(e.pointerId); } catch (er) { /* ok */ } baSet(ba, posOf(ba, e.clientX)); e.preventDefault(); }
+    });
+    root.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.live) {
+        /* touch: only take over once the finger moves sideways; up/down stays a page scroll */
+        var dx = Math.abs(e.clientX - drag.x), dy = Math.abs(e.clientY - drag.y);
+        if (dx < 6 && dy < 6) return;
+        if (dy > dx) { drag = null; return; }
+        drag.live = true; try { drag.ba.setPointerCapture(e.pointerId); } catch (er) { /* ok */ }
+      }
+      baSet(drag.ba, posOf(drag.ba, e.clientX));
+    });
+    function end(e) { if (drag && (!e || e.pointerId === drag.id)) { if (!drag.live && e && e.type === 'pointerup') baSet(drag.ba, posOf(drag.ba, e.clientX)); drag = null; } }
+    root.addEventListener('pointerup', end);
+    root.addEventListener('pointercancel', function () { drag = null; });
+    root.addEventListener('keydown', function (e) {
+      var ba = e.target.closest ? e.target.closest('.tfg-ba') : null; if (!ba) return;
+      var p = ba._p == null ? 50 : ba._p, k = e.key;
+      if (k === 'ArrowLeft' || k === 'ArrowDown') p -= 5; else if (k === 'ArrowRight' || k === 'ArrowUp') p += 5;
+      else if (k === 'Home') p = 0; else if (k === 'End') p = 100; else return;
+      e.preventDefault(); ba._stop = true; baSet(ba, p);
+    });
+    root.addEventListener('dragstart', function (e) { if (e.target.closest && e.target.closest('.tfg-ba')) e.preventDefault(); });
+  }
+  /* A small one-time nudge when a slider first scrolls into view, so visitors see it moves. */
+  function baHint(root) {
+    var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var list = root.querySelectorAll('.tfg-ba');
+    Array.prototype.forEach.call(list, function (ba) { baSet(ba, 50); });
+    if (calm || !('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return; io.unobserve(en.target);
+        var ba = en.target, t0 = null;
+        setTimeout(function () {
+          function step(t) {
+            if (ba._stop) return; if (t0 === null) t0 = t;
+            var k = (t - t0) / 1400; if (k >= 1) { baSet(ba, 50); return; }
+            baSet(ba, 50 - 18 * Math.sin(k * Math.PI * 2)); requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+        }, 350);
+      });
+    }, { threshold: 0.6 });
+    Array.prototype.forEach.call(list, function (ba) { io.observe(ba); });
   }
 
   /* ---------------- job viewer ---------------- */
