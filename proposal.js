@@ -79,20 +79,54 @@
     'Hail or wind damage': 'Storm damage weakens shingles, and it may be covered by homeowner’s insurance.'
   };
 
+  /* What happens if a problem is left alone (shown under each inspection photo) */
+  var WAIT_INFO = {
+    'Missing or damaged shingles': 'Water reaches the wood deck. Rotted decking turns a roof job into a bigger repair.',
+    'Lifted or creased shingles': 'The next strong wind can tear them off and open the roof to rain.',
+    'Granule loss / worn shingles': 'Shingles get brittle and start to curl and crack. Leaks usually follow.',
+    'Pipe boot': 'Water runs down the pipe into the attic and ceiling, often unnoticed for months.',
+    'Flashing': 'Water gets behind walls and siding, where rot and mold grow out of sight.',
+    'Chimney': 'Leaks around the chimney can stain ceilings and rot the framing around it.',
+    'Soft or rotted decking': 'The soft area spreads, and it can sag or fail under snow load.',
+    'Valley': 'Valley leaks get worse fast because so much water runs through them.',
+    'Ventilation': 'Shingles age years faster, and winter ice dams can push water under the roof.',
+    'Gutters / drip edge': 'The roof edge and fascia boards rot, and water spills behind the gutters.',
+    'Leak / water stain': 'Insulation, drywall and framing keep soaking up water with every storm.',
+    'Hail or wind damage': 'Insurance claims have deadlines, and damaged shingles keep breaking down.'
+  };
+  /* Talking points shown only in presenter mode (Notes button or N key) */
+  var NOTES = {
+    cover: 'Thank them for their time. “Before we talk numbers, let me show you what we found and exactly how we’d do the job.”',
+    today: 'Walk through size, pitch and layers. Point out the garage or extra roofs. “This is measured from satellite and checked on your roof today.”',
+    found: 'Go photo by photo and let them react. Tie each one to what happens if they wait.',
+    work: '“These are recent jobs by the same crew that would do your roof.”',
+    why: 'Licensed and insured, honest advice, real reviews. Keep it short.',
+    system: 'This answers “why are you more?” Ask: “Did the other quote include ice & water, new flashing, ridge vent and the permit?”',
+    compare: 'Point to the middle column: “Most homeowners pick this one. It’s the best value for the money.”',
+    price: 'Show the price, then stop talking. Ask: “Which one feels right for your home?” Mention the price-lock date.',
+    color: 'Let them pick. Offer to bring real samples before ordering.',
+    steps: 'Explain what happens after they say yes, and give them a realistic install window.',
+    faq: 'Answer anything open. Offer to text the link so a spouse can see it too.',
+    sign: '“If everything looks right, I can lock this in today.” Hand them the tablet to sign.'
+  };
+
   /* Owens Corning packages (same as the website instant quote) */
   var PKGS = [
     { label: 'Good', name: 'Owens Corning® Oakridge®', ribbon: 'Best value',
       desc: 'Owens Corning’s most affordable architectural shingle. A big step up from 3-tab.',
       specs: ['Limited Lifetime shingle warranty*', 'Wind: 110 MPH (130 MPH with special installation)*', 'StreakGuard® algae resistance*'],
-      colors: ['Onyx Black', 'Estate Gray', 'Driftwood', 'Brownwood', 'Teak', 'Desert Tan'] },
+      colors: ['Onyx Black', 'Estate Gray', 'Driftwood', 'Brownwood', 'Teak', 'Desert Tan'],
+      cmp: { wind: '110 MPH (130 with special install)*', impact: '—', look: 'Classic architectural', cold: '—', best: 'Best value' } },
     { label: 'Better', name: 'Owens Corning® Duration®', ribbon: 'Most popular',
       desc: 'Owens Corning’s best-selling shingle, with TruDefinition® color and SureNail® Technology.',
       specs: ['Limited Lifetime shingle warranty*', 'Wind: up to 160 MPH with OC starter and hip & ridge*', 'Class 3 impact resistance'],
-      colors: ['Onyx Black', 'Estate Gray', 'Driftwood', 'Brownwood', 'Teak', 'Williamsburg Gray', 'Slatestone Gray', 'Peppercorn', 'Colonial Slate', 'Sierra Gray', 'Harbor Blue', 'Chateau Green', 'Midnight Plum', 'Desert Rose', 'Sand Castle', 'Terra Cotta'] },
+      colors: ['Onyx Black', 'Estate Gray', 'Driftwood', 'Brownwood', 'Teak', 'Williamsburg Gray', 'Slatestone Gray', 'Peppercorn', 'Colonial Slate', 'Sierra Gray', 'Harbor Blue', 'Chateau Green', 'Midnight Plum', 'Desert Rose', 'Sand Castle', 'Terra Cotta'],
+      cmp: { wind: 'Up to 160 MPH*', impact: 'Class 3', look: 'TruDefinition® color', cold: '—', best: 'Most homes' } },
     { label: 'Best', name: 'Owens Corning® Duration FLEX®', ribbon: 'Top protection',
       desc: 'SBS-modified shingle that stays flexible in the cold, with the highest impact rating.',
       specs: ['Limited Lifetime shingle warranty*', 'Wind: up to 160 MPH with OC starter and hip & ridge*', 'UL 2218 Class 4 impact rating. May qualify for an insurance discount'],
-      colors: ['Onyx Black', 'Black Sable', 'Estate Gray', 'Driftwood', 'Brownwood', 'Teak', 'Summer Harvest'] }
+      colors: ['Onyx Black', 'Black Sable', 'Estate Gray', 'Driftwood', 'Brownwood', 'Teak', 'Summer Harvest'],
+      cmp: { wind: 'Up to 160 MPH*', impact: 'Class 4 (highest)', look: 'TruDefinition® color', cold: 'Stays flexible (SBS)', best: 'Hail & harsh winters' } }
   ];
 
   /* ------------------------------------------------------------------ shingle swatches (drawn, approximate) */
@@ -251,14 +285,51 @@
     '#tfp .ok{animation:tfpup .6s cubic-bezier(.2,.75,.2,1) both}#tfp .okchk{width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:10px;animation:tfppop .6s cubic-bezier(.3,1.6,.5,1) both}' +
     '#tfp .okchk svg{width:24px;height:24px;stroke-dasharray:30;stroke-dashoffset:30;animation:tfpdraw .5s .25s ease forwards}@keyframes tfpdraw{to{stroke-dashoffset:0}}' +
     '#tfp .faq details p{animation:tfpup .35s ease both}' +
+    '#tfp .layers .lay{animation:tfpdrop .6s cubic-bezier(.2,.75,.2,1) both}@keyframes tfpdrop{from{opacity:0;transform:translateY(-26px)}to{opacity:1;transform:none}}' +
     '@media (prefers-reduced-motion:reduce){#tfp .rv{opacity:1;transform:none;transition:none}#tfp *{animation:none!important;transition:none!important}}' +
+    /* v2: magazine layouts */
+    '#tfp .split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:32px;align-items:center}#tfp .split.rev{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}' +
+    '#tfp .media{position:relative;border-radius:20px;overflow:hidden;background:#cfd6de;min-height:360px;box-shadow:0 20px 50px rgba(19,32,47,.18)}#tfp .media>.mapbox,#tfp .media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}' +
+    '#tfp .media .cap{position:absolute;left:12px;bottom:12px;background:rgba(19,32,47,.82);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:6px 12px;z-index:2}' +
+    '#tfp .cover{background:var(--navy);color:#fff}#tfp .cover .s{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:36px;align-items:center;padding-top:56px;padding-bottom:56px}' +
+    '#tfp .cover h1{color:#fff;font-size:clamp(34px,4.6vw,60px)}#tfp .cover .lead{color:#dbe2eb}#tfp .cover .k{color:#ff8274}#tfp .cover .media{min-height:420px;box-shadow:0 30px 60px rgba(0,0,0,.35)}' +
+    '#tfp .cover .s>div:first-child>*{animation:tfpup .8s cubic-bezier(.2,.75,.2,1) both}#tfp .cover .s>div:first-child>*:nth-child(2){animation-delay:.1s}#tfp .cover .s>div:first-child>*:nth-child(3){animation-delay:.2s}#tfp .cover .s>div:first-child>*:nth-child(4){animation-delay:.3s}#tfp .cover .s>div:first-child>*:nth-child(5){animation-delay:.4s}' +
+    '#tfp .cover .media{animation:tfpin2 1s cubic-bezier(.2,.75,.2,1) .15s both}@keyframes tfpin2{from{opacity:0;transform:scale(.96) translateY(14px)}to{opacity:1;transform:none}}' +
+    '#tfp .stats.two{grid-template-columns:repeat(2,1fr)}#tfp .rlist{margin-top:14px;display:grid;gap:8px}#tfp .rlist div{display:flex;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px}' +
+    '#tfp .rlist i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}' +
+    '#tfp .wait{font-size:13px;color:#B42318;margin:8px 0 0;padding-top:8px;border-top:1px dashed #F3C1BA}#tfp .wait b{font-weight:800}' +
+    '#tfp .find{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}#tfp .find .card.ph img{height:260px}' +
+    '#tfp .mag{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;gap:14px;height:440px}#tfp .mag .card{position:relative}#tfp .mag .card:first-child{grid-row:1/3}#tfp .mag .card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}' +
+    '#tfp .mag .card .in{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(10,16,24,.85),transparent);color:#fff;padding:30px 16px 14px}#tfp .mag .card .in h3{color:#fff}#tfp .mag .card .in .m{color:#dbe2eb}' +
+    '#tfp .plus{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}#tfp .plus span{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--navy)}#tfp .plus svg{width:14px;height:14px;color:var(--green)}' +
+    '#tfp.pres .cover.slide>.s{display:grid;align-content:center}@media(min-width:861px){#tfp.pres .sys{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center}}#tfp .sys .layers{max-width:460px;margin:0 auto}#tfp.pres .numl{gap:8px}#tfp.pres .numl .li p{font-size:13.5px}' +
+    '#tfp .swipe{display:none;font-size:13px;color:var(--muted);margin:-6px 0 8px}@media(max-width:600px){#tfp .swipe{display:block}}#tfp .cmpw{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:16px}@media(max-width:600px){#tfp .cmp{min-width:500px;font-size:13px}#tfp .cmp th:first-child,#tfp .cmp td:first-child{width:92px}#tfp .cmp th,#tfp .cmp td{padding:10px 8px}#tfp .cmp th:first-child,#tfp .cmp td:first-child{position:sticky;left:0;background:#fff;z-index:1}#tfp .nav .dots{gap:4px;flex-wrap:nowrap}#tfp .nav .dots i{width:6px;height:6px}#tfp .nav .dots i.on{width:14px}}' +
+    '#tfp .layers{width:100%;height:auto;display:block}#tfp .numl{counter-reset:nl;display:grid;gap:10px}#tfp .numl .li i{background:var(--navy);font-style:normal;font-weight:800;font-size:13px}' +
+    '#tfp .cmp{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;font-size:15px}' +
+    '#tfp .cmp th,#tfp .cmp td{padding:13px 14px;text-align:center;border-bottom:1px solid var(--line)}#tfp .cmp th:first-child,#tfp .cmp td:first-child{text-align:left;color:var(--muted);font-weight:600;width:26%}' +
+    '#tfp .cmp thead th{background:var(--bg);font-size:13px;color:var(--navy)}#tfp .cmp thead th b{display:block;font-size:16px}#tfp .cmp .rec{background:#FFF4F2}#tfp .cmp thead .rec{background:var(--red);color:#fff}' +
+    '#tfp .cmp tr:last-child td{border-bottom:0}#tfp .cmp .pr2{font-size:22px;font-weight:800;color:var(--navy)}#tfp .cmp .yes{color:var(--green);font-weight:800}' +
+    '#tfp .lock{display:inline-flex;align-items:center;gap:8px;background:#FFF4F2;border:1px solid #FFD3CC;color:#B42318;font-weight:700;font-size:14px;border-radius:999px;padding:7px 14px;margin:0 0 16px}' +
+    /* presenter mode */
+    '#tfp .ptools{display:none}#tfp.pres .ptools{display:flex;gap:8px}#tfp .ptools button{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px}' +
+    '#tfp .notes{position:fixed;left:16px;bottom:78px;max-width:min(560px,calc(100vw - 32px));background:rgba(19,32,47,.95);color:#fff;border-radius:16px;padding:14px 18px 16px;font-size:16px;line-height:1.5;z-index:40;box-shadow:0 20px 50px rgba(0,0,0,.35);display:none}' +
+    '#tfp .notes.on{display:block;animation:tfpup .25s ease both}#tfp .notes small{display:block;color:#ff8274;font-weight:800;letter-spacing:.12em;font-size:11px;margin-bottom:4px}' +
+    '#tfp .menu{position:fixed;inset:0;background:rgba(10,16,24,.75);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}#tfp .menu.on{display:flex}' +
+    '#tfp .menu>div{background:#fff;border-radius:20px;padding:18px;max-width:760px;width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}' +
+    '#tfp .menu button{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px 14px;font-weight:700;color:var(--navy)}#tfp .menu button span{display:block;font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.1em}' +
+    '#tfp .menu button.on{border-color:var(--red);background:#FFF4F2}' +
+    /* bigger type when presenting */
+    '#tfp.pres .s{max-width:1240px;padding:40px 32px}#tfp.pres h2{font-size:clamp(30px,3.3vw,50px)}#tfp.pres .lead{font-size:clamp(17px,1.5vw,22px)}#tfp.pres .li h3{font-size:clamp(16px,1.35vw,20px)}#tfp.pres .li p{font-size:clamp(14px,1.1vw,17px)}' +
+    '#tfp.pres .stat b{font-size:clamp(34px,3.6vw,56px)}#tfp.pres .opt .pr{font-size:clamp(30px,3vw,46px)}#tfp.pres .cmp{font-size:clamp(14px,1.2vw,18px)}#tfp.pres .media{min-height:min(62vh,560px)}#tfp.pres .mag{height:min(64vh,560px)}' +
+    '#tfp.pres .cover .s{min-height:100%;padding:40px 32px}#tfp.pres .cover.slide.on{display:flex;align-items:center}#tfp.pres .cover .media{min-height:min(66vh,600px)}' +
+    '@media(max-width:860px){#tfp .split,#tfp .split.rev,#tfp .cover .s{grid-template-columns:1fr}#tfp .media{min-height:260px}#tfp .cover .media{min-height:280px;order:-1}#tfp .find{grid-template-columns:1fr}#tfp .mag{grid-template-columns:1fr;grid-template-rows:none;height:auto}#tfp .mag .card{height:220px}#tfp .mag .card:first-child{grid-row:auto;height:260px}#tfp .cmp th,#tfp .cmp td{padding:10px 8px;font-size:13px}}' +
     /* payments */
     '#tfp .paybar{max-width:980px;margin:16px auto 0;padding:0 16px}#tfp .paybar>div{border-radius:14px;padding:16px 18px;font-size:15px}#tfp .paybar .good{background:#E5F6EC;border:1px solid #BFE6CF;color:#145C34}#tfp .paybar .wait{background:#FFF7E6;border:1px solid #FDE3A7;color:#7A4B00}' +
     '#tfp .inv{max-width:620px;margin:0 auto;padding:36px 16px 60px}#tfp .inv .sum .r.due{font-size:18px}#tfp .paid-ln{color:var(--green);font-weight:700}#tfp .secure{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}' +
     /* present mode: one slide at a time */
     '#tfp.pres{height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}#tfp.pres .deck{flex:1;position:relative;overflow:hidden}' +
     '#tfp.pres .slide{position:absolute;inset:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}#tfp.pres .slide.on{display:block;animation:tfpin .25s ease}' +
-    '#tfp.pres .slide>.s{min-height:100%;display:flex;flex-direction:column;justify-content:center;border:0}#tfp.pres .hero.slide{display:none}#tfp.pres .hero.slide.on{display:flex;align-items:center}#tfp.pres .hero .s{width:100%}' +
+    '#tfp.pres .slide>.s{min-height:100%;display:flex;flex-direction:column;justify-content:center;border:0}#tfp.pres .hero.slide{display:none}#tfp.pres .hero.slide.on{display:flex;align-items:center}#tfp.pres .hero .s{width:100%}#tfp.pres .cover.slide{display:none}#tfp.pres .cover .s{width:100%}' +
     '#tfp.pres .foot{display:none}@keyframes tfpin{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}' +
     '#tfp .nav{display:none}#tfp.pres .nav{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-top:1px solid var(--line);padding:10px 14px}' +
     '#tfp .nav button{border:0;border-radius:12px;padding:12px 18px;font-weight:800;font-size:15px;display:inline-flex;align-items:center;gap:6px}#tfp .nav .pv{background:var(--bg);color:var(--navy)}#tfp .nav .nx{background:var(--red);color:#fff}' +
@@ -358,10 +429,92 @@
     if (!S.wired) wire();
   }
 
+  /* ------------------------------------------------------------------ their house: Street View + satellite */
+  function loadMaps() {
+    if (window.google && google.maps && google.maps.StreetViewService) return Promise.resolve();
+    if (S.mapsP) return S.mapsP;
+    if (!D.mapsKey || !(D.lat && D.lng)) return Promise.reject(new Error('nomap'));
+    S.mapsP = new Promise(function (ok, bad) {
+      var cb = '__tfpMaps' + Date.now(); window[cb] = function () { ok(); };
+      var sc = document.createElement('script'); sc.async = true; sc.onerror = function () { bad(new Error('maps')); };
+      sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(D.mapsKey) + '&v=weekly&libraries=geometry&callback=' + cb;
+      document.head.appendChild(sc); setTimeout(function () { bad(new Error('maps timeout')); }, 15000);
+    });
+    return S.mapsP;
+  }
+  function decodePoly(str) {
+    var pts = [], i = 0, lat = 0, lng = 0; str = String(str || '');
+    while (i < str.length) { var r = [0, 0]; for (var k = 0; k < 2; k++) { var sh = 0, res = 0, b; do { b = str.charCodeAt(i++) - 63; res |= (b & 31) << sh; sh += 5; } while (b >= 32 && i <= str.length); r[k] = (res & 1) ? ~(res >> 1) : (res >> 1); } lat += r[0]; lng += r[1]; pts.push({ lat: lat / 1e5, lng: lng / 1e5 }); }
+    return pts;
+  }
+  var ROOF_COLORS = ['#FF5440', '#FDB022', '#38BDF8', '#A78BFA', '#34D399', '#F472B6'];
+  function initCover() {
+    var el = root.querySelector('#tfp-sv'); if (!el || el.__done) return; el.__done = true;
+    loadMaps().then(function () {
+      var house = new google.maps.LatLng(D.lat, D.lng);
+      new google.maps.StreetViewService().getPanorama({ location: house, radius: 70, source: google.maps.StreetViewSource.OUTDOOR, preference: google.maps.StreetViewPreference.NEAREST }, function (data, st) {
+        if (st === 'OK' && data && data.location) {
+          var heading = google.maps.geometry.spherical.computeHeading(data.location.latLng, house);
+          el.innerHTML = ''; var box = document.createElement('div'); box.className = 'mapbox'; el.appendChild(box);
+          new google.maps.StreetViewPanorama(box, { pano: data.location.pano, pov: { heading: heading, pitch: 6 }, zoom: 0.6, disableDefaultUI: true, clickToGo: false, scrollwheel: false, linksControl: false, panControl: false, addressControl: false, motionTracking: false, showRoadLabels: false });
+          el.insertAdjacentHTML('beforeend', '<span class="cap">Your home</span>');
+        } else satellite(el, 20, false);
+      });
+    }).catch(function () { /* keep the photo */ });
+  }
+  function initRoofMap() {
+    var el = root.querySelector('#tfp-map'); if (!el || el.__done) return; el.__done = true;
+    loadMaps().then(function () { satellite(el, 20, true); }).catch(function () {});
+  }
+  function satellite(el, zoom, outlines) {
+    el.innerHTML = ''; var box = document.createElement('div'); box.className = 'mapbox'; el.appendChild(box);
+    var c = { lat: D.lat, lng: D.lng };
+    var map = new google.maps.Map(box, { center: c, zoom: zoom, mapTypeId: 'satellite', tilt: 0, disableDefaultUI: true, gestureHandling: 'cooperative', keyboardShortcuts: false });
+    var b = new google.maps.LatLngBounds(), any = false;
+    if (outlines) D.roofs.forEach(function (r, i) {
+      var rings = Array.isArray(r.o) ? r.o : (r.o ? [r.o] : []);
+      rings.forEach(function (enc) { var path = decodePoly(enc); if (path.length < 3) return; path.forEach(function (p) { b.extend(p); any = true; });
+        new google.maps.Polygon({ map: map, paths: path, strokeColor: ROOF_COLORS[i % 6], strokeWeight: 3, fillColor: ROOF_COLORS[i % 6], fillOpacity: 0.28, clickable: false }); });
+    });
+    if (any) { map.fitBounds(b, 40); google.maps.event.addListenerOnce(map, 'idle', function () { if (map.getZoom() > 21) map.setZoom(21); }); }
+    else new google.maps.Marker({ map: map, position: c });
+    el.insertAdjacentHTML('beforeend', '<span class="cap">' + (outlines ? (any ? 'Measured roof areas' : 'Your roof from above') : 'Your home from above') + '</span>');
+  }
+  function initMapsFor(sec) { if (sec === 'cover') initCover(); if (sec === 'today') initRoofMap(); }
+
+  /* Layered roof illustration for "what's included" */
+  function layersSvg() {
+    var L = [['#C9A574', 'Wood deck'], ['#2B3440', 'Ice & water barrier'], ['#9FB2C4', 'Synthetic underlayment'], ['#B8BEC4', 'Drip edge & flashing'], ['#4A4F55', 'Owens Corning shingles'], ['#1F252B', 'Ridge vent & caps']];
+    var h = '<svg class="layers" viewBox="0 0 620 400" role="img" aria-label="Layers of your new roof">';
+    L.forEach(function (l, i) {
+      var y = 330 - i * 46, x = 30 + i * 22, w = 300 - (i === 5 ? 170 : 0), xs = i === 5 ? x + 85 : x;
+      h += '<g class="lay" style="animation-delay:' + (i * 0.12) + 's"><polygon points="' + [xs, y, xs + w, y, xs + w + 110, y - 70, xs + 110, y - 70].join(',') + '" fill="' + l[0] + '" stroke="#fff" stroke-width="2" opacity="0.97"/>' +
+        (i === 4 ? '<path d="M' + (xs + 20) + ' ' + (y - 14) + ' h' + (w + 60) + ' M' + (xs + 38) + ' ' + (y - 32) + ' h' + (w + 60) + ' M' + (xs + 56) + ' ' + (y - 50) + ' h' + (w + 60) + '" stroke="#6B7178" stroke-width="2"/>' : '') +
+        '<circle cx="' + (xs + w + 132) + '" cy="' + (y - 34) + '" r="15" fill="#FF5440"/><text x="' + (xs + w + 132) + '" y="' + (y - 29) + '" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="Montserrat,Arial">' + (i + 1) + '</text></g>';
+    });
+    return h + '</svg>';
+  }
+
+  /* ------------------------------------------------------------------ presenter mode */
+  function presenterTools() {
+    if (!PRESENT) return;
+    var bar0 = root.querySelector('.bar-in'); if (!bar0 || bar0.querySelector('.ptools')) return;
+    bar0.insertAdjacentHTML('beforeend', '<div class="ptools"><button type="button" data-ui="menu">Slides</button><button type="button" data-ui="notes">Notes</button></div>');
+    root.insertAdjacentHTML('beforeend', '<div class="notes" id="tfp-notes"></div><div class="menu" id="tfp-menu"><div></div></div>');
+  }
+  function syncPresenter() {
+    if (!PRESENT) return;
+    var n = root.querySelector('#tfp-notes'), sec = S.secs[S.slide];
+    if (n) n.innerHTML = '<small>NOTES · ' + (S.slide + 1) + '/' + S.secs.length + '</small>' + esc(NOTES[sec] || 'Let them look, and ask what questions they have.');
+    var m = root.querySelector('#tfp-menu>div');
+    if (m) m.innerHTML = root.querySelectorAll('.slide').length ? Array.prototype.map.call(root.querySelectorAll('.slide'), function (sl, i) {
+      return '<button type="button" data-goto="' + i + '"' + (i === S.slide ? ' class="on"' : '') + '><span>' + (i + 1) + '</span>' + esc(sl.getAttribute('data-t') || '') + '</button>'; }).join('') : '';
+  }
+
   /* ------------------------------------------------------------------ animation */
-  var RV_SEL = '.slide .k,.slide h2,.slide .lead,.stat,.roofs,.card,.li,.tl li,.opt,.dep,.fin,.sw,.viz,.rate,.q,.faq details,.ask,.sum,.terms,.certs';
+  var RV_SEL = '.slide .k,.slide h2,.slide .lead,.stat,.roofs,.rlist,.card,.li,.tl li,.opt,.dep,.fin,.sw,.viz,.rate,.q,.faq details,.ask,.sum,.terms,.certs,.media,.cmp,.lock';
   function markRv(scope, done) {
-    (scope || root).querySelectorAll(RV_SEL).forEach(function (el) { if (el.closest('.hero')) return; el.classList.add('rv'); if (done || CALM) el.classList.add('in'); });
+    (scope || root).querySelectorAll(RV_SEL).forEach(function (el) { if (el.closest('.hero') || el.closest('.cover')) return; el.classList.add('rv'); if (done || CALM) el.classList.add('in'); });
   }
   function reveal(els) {
     var k = 0;
@@ -434,13 +587,15 @@
   function build() {
     var secs = [], first = esc(D.first || '');
     var hero = D.insp.length ? D.insp[0].id : (D.jobs.length ? D.jobs[0].cover : '');
-    /* 1. cover */
-    secs.push(['cover', '<section class="hero slide" data-t="Welcome">' + (hero ? img(hero, 1600, '', 'bgi') : '') + '<div class="s">' +
+    var house = D.mapsKey && D.lat && D.lng;
+    /* 1. cover: their house */
+    secs.push(['cover', '<section class="cover slide" data-t="Welcome"><div class="s"><div>' +
       '<p class="k">' + (D.type === 'repair' ? 'Your repair plan' : 'Your roof plan') + '</p><h1>' + (first ? 'Prepared for ' + first : 'Your Team Forte proposal') + '</h1>' +
       '<p class="lead">' + esc(D.address) + '</p>' +
       '<div class="chips"><span class="chip">' + esc(D.date) + '</span><span class="chip">Proposal ' + esc(D.id) + '</span><span class="chip">Licensed & insured' + (D.company.hic ? ' · CT ' + esc(D.company.hic) : '') + '</span></div>' +
-      (PRESENT ? '' : '<p style="margin-top:26px"><a class="btn" href="#tfp-sign" data-go="sign">' + (D.signed ? 'See your signed proposal' : 'Skip to my price') + '</a></p>') + '</div></section>']);
-    /* 2. roof today */
+      (PRESENT ? '' : '<p style="margin-top:26px"><a class="btn" href="#tfp-sign" data-go="sign">' + (D.signed ? 'See your signed proposal' : 'Skip to my price') + '</a></p>') + '</div>' +
+      '<div class="media" id="' + (house ? 'tfp-sv' : 'tfp-hero') + '">' + (hero ? img(hero, 1600, '') : '') + '</div></div></section>']);
+    /* 2. roof today: satellite + stats */
     if (D.type !== 'repair' && D.roofs.length) {
       var area = D.roofs.reduce(function (n, r) { return n + (Number(r.s) || 0); }, 0);
       var problems = {}; D.insp.forEach(function (x) { if (x.tag && x.tag !== 'Other') problems[x.tag] = 1; });
@@ -448,64 +603,91 @@
       var tiles = [[area.toLocaleString('en-US'), 'sq ft of roof'], [String(Math.ceil(area / 100 * 1.1)), 'squares to install (with waste)'],
         [esc(D.roofs[0].p || '–'), 'main roof pitch'], [String(D.layers || 1), (D.layers > 1 ? 'layers' : 'layer') + ' to tear off']];
       if (np) tiles[1] = [String(np), np === 1 ? 'problem found' : 'problems found'];
-      secs.push(['today', '<section class="slide"><div class="s"><p class="k">Your roof today</p><h2>What we measured</h2>' +
-        '<div class="stats">' + tiles.map(function (t) { return '<div class="stat"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>'; }).join('') + '</div>' +
-        (D.roofs.length > 1 ? '<div class="roofs">' + D.roofs.map(function (r) { return '<b>' + esc(r.n) + '</b> ' + Number(r.s).toLocaleString('en-US') + ' sq ft' + (r.p ? ', ' + esc(r.p) + ' pitch' : ''); }).join(' · ') + '</div>' : '') +
-        '</div></section>']);
+      var statsHtml = '<div class="stats two">' + tiles.map(function (t) { return '<div class="stat"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>'; }).join('') + '</div>' +
+        '<div class="rlist">' + D.roofs.map(function (r, k) { return '<div><span><i style="background:' + ROOF_COLORS[k % 6] + '"></i><b>' + esc(r.n) + '</b></span><span>' + Number(r.s).toLocaleString('en-US') + ' sq ft' + (r.p ? ' · ' + esc(r.p) : '') + '</span></div>'; }).join('') + '</div>';
+      secs.push(['today', '<section class="slide" data-t="Your roof"><div class="s"><p class="k">Your roof today</p><h2>What we measured</h2>' +
+        (house ? '<div class="split"><div class="media" id="tfp-map"></div><div>' + statsHtml + '</div></div>' : statsHtml) + '</div></section>']);
     }
-    /* 3. what we found */
+    /* 3. what we found + what happens if you wait */
     if (D.insp.length) {
       var shown = D.insp.slice(0, 8);
-      secs.push(['found', '<section class="slide"><div class="s"><p class="k">From your inspection</p><h2>What we found on your roof</h2>' +
-        '<p class="lead">' + D.insp.length + ' photo' + (D.insp.length > 1 ? 's' : '') + ' from our visit. Here is what they mean for your home.</p><div class="grid2">' +
+      secs.push(['found', '<section class="slide" data-t="What we found"><div class="s"><p class="k">From your inspection</p><h2>What we found on your roof</h2>' +
+        '<p class="lead">' + D.insp.length + ' photo' + (D.insp.length > 1 ? 's' : '') + ' from our visit, what they mean, and what happens if they’re left alone.</p><div class="find">' +
         shown.map(function (x) {
-          var info = TAG_INFO[x.tag] || '';
-          var body = (x.tag && x.tag !== 'Other' ? '<span class="tag">' + esc(x.tag) + '</span>' : '') + (x.note ? '<p class="note">' + esc(x.note) + '</p>' : '') + (info ? '<p class="why">' + esc(info) + '</p>' : '');
+          var info = TAG_INFO[x.tag] || '', wait = WAIT_INFO[x.tag] || '';
+          var body = (x.tag && x.tag !== 'Other' ? '<span class="tag">' + esc(x.tag) + '</span>' : '') + (x.note ? '<p class="note">' + esc(x.note) + '</p>' : '') + (info ? '<p class="why">' + esc(info) + '</p>' : '') +
+            (wait ? '<p class="wait"><b>If you wait:</b> ' + esc(wait) + '</p>' : '');
           return '<div class="card ph">' + img(x.id, 1000, x.tag) + (body ? '<div class="in">' + body + '</div>' : '') + '</div>';
         }).join('') + '</div>' + (D.insp.length > shown.length ? '<p class="m" style="margin-top:12px">+ ' + (D.insp.length - shown.length) + ' more photos in your inspection report.</p>' : '') + '</div></section>']);
     }
-    /* 4. recent work */
+    /* 4. recent work: magazine layout */
     if (D.jobs.length) {
-      secs.push(['work', '<section class="slide"><div class="s"><p class="k">Our work</p><h2>Recent Team Forte roofs</h2><p class="lead">Real jobs by our crews, start to finish.</p><div class="grid3">' +
-        D.jobs.slice(0, 3).map(function (j) { return '<div class="card job">' + img(j.cover, 900, j.title) + '<div class="in"><h3>' + esc(j.title) + '</h3><div class="m">' + esc([j.town, j.date].filter(Boolean).join(' · ')) + '</div></div></div>'; }).join('') +
+      var js = D.jobs.slice(0, 3);
+      secs.push(['work', '<section class="slide" data-t="Our work"><div class="s"><p class="k">Our work</p><h2>Recent Team Forte roofs</h2><p class="lead">Real jobs by our crews, start to finish.</p>' +
+        '<div class="' + (js.length === 3 ? 'mag' : 'grid' + Math.max(2, js.length)) + '">' +
+        js.map(function (j) { return '<div class="card job">' + img(j.cover, 1200, j.title) + '<div class="in"><h3>' + esc(j.title) + '</h3><div class="m">' + esc([j.town, j.date].filter(Boolean).join(' · ')) + '</div></div></div>'; }).join('') +
         '</div></div></section>']);
     }
     /* 5. why us + reviews */
-    secs.push(['why', '<section class="slide"><div class="s"><p class="k">Why Team Forte</p><h2>Why Connecticut homeowners choose us</h2>' +
-      '<div class="list">' + COPY.why.map(function (w) { return '<div class="li"><i>' + ICON.check + '</i><div><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></div></div>'; }).join('') + '</div>' +
-      (COPY.certs.length ? '<div class="certs">' + COPY.certs.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
-      '<div class="revs"><div class="rate"><div class="st">' + ICON.star + ICON.star + ICON.star + ICON.star + ICON.star + '</div>' + COPY.reviews.summary.map(function (x, i) { return i ? '<div>' + esc(x) + '</div>' : '<div><b>' + esc(x) + '</b></div>'; }).join('') +
+    secs.push(['why', '<section class="slide" data-t="Why Team Forte"><div class="s"><p class="k">Why Team Forte</p><h2>Why Connecticut homeowners choose us</h2>' +
+      '<div class="split"><div class="list" style="grid-template-columns:1fr">' + COPY.why.map(function (w) { return '<div class="li"><i>' + ICON.check + '</i><div><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></div></div>'; }).join('') +
+      (COPY.certs.length ? '<div class="certs">' + COPY.certs.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') + '</div>' +
+      '<div><div class="rate"><div class="st">' + ICON.star + ICON.star + ICON.star + ICON.star + ICON.star + '</div>' + COPY.reviews.summary.map(function (x, i) { return i ? '<div>' + esc(x) + '</div>' : '<div><b>' + esc(x) + '</b></div>'; }).join('') +
       '<div style="margin-top:10px"><a href="' + esc(COPY.reviews.link) + '" target="_blank" rel="noopener" style="color:#fff">Read the reviews ↗</a></div></div>' +
-      '<div class="qs">' + COPY.reviews.quotes.map(function (r) { return '<div class="q">“' + esc(r.text) + '”<small>' + esc(r.who) + ' · ' + esc(r.job) + ' · Thumbtack</small></div>'; }).join('') + '</div></div></div></section>']);
-    /* 6. what's included */
+      '<div class="qs" style="margin-top:12px">' + COPY.reviews.quotes.map(function (r) { return '<div class="q">“' + esc(r.text) + '”<small>' + esc(r.who) + ' · ' + esc(r.job) + ' · Thumbtack</small></div>'; }).join('') + '</div></div></div></div></section>']);
+    /* 6. what's included: layered roof */
     if (D.type !== 'repair') {
-      secs.push(['system', '<section class="slide"><div class="s"><p class="k">What’s included</p><h2>A complete roof system, not just shingles</h2>' +
-        '<p class="lead">When quotes differ, this is usually why. Everything below is included in your price, in writing.</p><div class="list">' +
-        COPY.system.map(function (w) { return '<div class="li"><i>' + ICON.check + '</i><div><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></div></div>'; }).join('') + '</div></div></section>']);
+      secs.push(['system', '<section class="slide" data-t="What’s included"><div class="s"><p class="k">What’s included</p><h2>A complete roof system, not just shingles</h2>' +
+        '<p class="lead">When quotes differ, this is usually why. Everything below is included in your price, in writing.</p>' +
+        '<div class="split sys"><div>' + layersSvg() + '</div><div><div class="list numl" style="grid-template-columns:1fr">' +
+        [0, 1, 2, 5, 3, 4].map(function (k, n) { var w = COPY.system[k]; return w ? '<div class="li"><i>' + (n + 1) + '</i><div><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></div></div>' : ''; }).join('') + '</div>' +
+        '<div class="plus">' + COPY.system.slice(6).map(function (w) { return '<span title="' + esc(w[1]) + '">' + ICON.check + esc(w[0]) + '</span>'; }).join('') + '</div></div></div></div></section>']);
     }
-    /* 7. timeline */
-    secs.push(['steps', '<section class="slide"><div class="s"><p class="k">What happens next</p><h2>From yes to done</h2><ol class="tl">' +
-      COPY.steps.map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
+    /* 7. compare the options */
+    if (D.offers) {
+      secs.push(['compare', '<section class="slide" data-t="Compare options"><div class="s" id="tfp-compare"></div></section>']);
+    }
     /* 8. options / price */
-    secs.push(['price', '<section class="slide"><div class="s" id="tfp-price"></div></section>']);
+    secs.push(['price', '<section class="slide" data-t="Your investment"><div class="s" id="tfp-price"></div></section>']);
     /* 9. color */
-    if (D.type !== 'repair') secs.push(['color', '<section class="slide"><div class="s" id="tfp-color"></div></section>']);
-    /* 10. questions */
+    if (D.type !== 'repair') secs.push(['color', '<section class="slide" data-t="Your color"><div class="s" id="tfp-color"></div></section>']);
+    /* 10. timeline */
+    secs.push(['steps', '<section class="slide" data-t="What happens next"><div class="s"><p class="k">What happens next</p><h2>From yes to done</h2><ol class="tl">' +
+      COPY.steps.map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
+    /* 11. questions */
     var dep = D.depositPct > 0 ? 'A ' + D.depositPct + '% deposit holds your spot on the schedule. The balance is due when the job is done.' : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
-    secs.push(['faq', '<section class="slide"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
+    secs.push(['faq', '<section class="slide" data-t="Questions"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
       COPY.faq.filter(function (f) { return f[1] !== '__FINANCE__' || (FIN && FIN.on); }).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
       '<p class="m" style="margin-top:16px">Something else on your mind?</p><div class="ask"><a class="btn ghost" href="' + esc(smsHref('Hi Team Forte, I have a question about proposal ' + D.id + ': ')) + '">' + ICON.chat + 'Text us a question</a><a class="btn ghost" href="' + phoneHref() + '">' + ICON.phone + 'Call ' + esc(COPY.phone) + '</a></div></div></section>']);
-    /* 11. sign */
-    secs.push(['sign', '<section class="slide" id="tfp-sign"><div class="s" id="tfp-signbox"></div></section>']);
+    /* 12. sign */
+    secs.push(['sign', '<section class="slide" id="tfp-sign" data-t="Accept & sign"><div class="s" id="tfp-signbox"></div></section>']);
 
     S.secs = secs.map(function (x) { return x[0]; });
     root.innerHTML = bar() + '<div class="deck">' + secs.map(function (x) { return x[1]; }).join('') + '</div>' +
       '<div class="nav"><button class="pv" type="button">' + ICON.left + 'Back</button><div class="dots">' + secs.map(function () { return '<i></i>'; }).join('') + '</div><button class="nx" type="button">Next' + ICON.right + '</button></div>' +
       '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') +
       '<br><span style="font-size:11px">*Warranty and wind ratings per Owens Corning’s terms and installation requirements.</span></div></div>';
-    renderPrice(); if (D.type !== 'repair') renderColor(); renderSign();
+    renderCompare(); renderPrice(); if (D.type !== 'repair') renderColor(); renderSign();
+    presenterTools();
     tagCounts(); markRv(); wire(); S.built = true;
-    if (PRESENT) go(0); else watch();
+    if (PRESENT) go(0); else { watch(); initCover(); initRoofMap(); }
+  }
+
+  function lockLine() { return D.validUntil && !D.signed ? '<div class="lock">🔒 Your price is locked until ' + esc(D.validUntil) + '</div>' : ''; }
+  function renderCompare() {
+    var box = root.querySelector('#tfp-compare'); if (!box) return;
+    var rec = D.pick >= 0 ? D.pick : 1, idx = [0, 1, 2].filter(function (i) { return price(i) > 0; });
+    var pl = amortPlan();
+    var rows = [['Shingle', function (p) { return esc(p.name.replace('Owens Corning® ', '')); }], ['Wind rating', function (p) { return esc(p.cmp.wind); }], ['Impact rating', function (p) { return esc(p.cmp.impact); }],
+      ['Color', function (p) { return esc(p.cmp.look); }], ['Cold weather', function (p) { return esc(p.cmp.cold); }], ['Shingle warranty', function () { return 'Limited Lifetime*'; }],
+      ['Full system, permit & cleanup', function () { return '<span class="yes">✓</span>'; }], ['Best for', function (p) { return esc(p.cmp.best); }]];
+    var h = '<p class="k">Compare</p><h2>Your three options side by side</h2><p class="lead">Same crew, same full roof system, same cleanup. Here is what changes.</p><p class="swipe">Swipe the table to see all three →</p><div class="cmpw"><table class="cmp"><thead><tr><th></th>' +
+      idx.map(function (i) { return '<th' + (i === rec ? ' class="rec"' : '') + '>' + esc(PKGS[i].label) + (i === rec ? ' · Recommended' : '') + '<b>' + esc(PKGS[i].name.replace('Owens Corning® ', '')) + '</b></th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr><td>' + r[0] + '</td>' + idx.map(function (i) { return '<td' + (i === rec ? ' class="rec"' : '') + '>' + r[1](PKGS[i]) + '</td>'; }).join('') + '</tr>'; }).join('') +
+      '<tr><td>Price</td>' + idx.map(function (i) { return '<td' + (i === rec ? ' class="rec"' : '') + '><span class="pr2">' + money(price(i)) + '</span></td>'; }).join('') + '</tr>' +
+      (pl ? '<tr><td>Monthly, about*</td>' + idx.map(function (i) { return '<td' + (i === rec ? ' class="rec"' : '') + '>' + money(Math.ceil(monthly(price(i), pl.apr, pl.months))) + '/mo</td>'; }).join('') + '</tr>' : '') +
+      '</tbody></table></div>';
+    box.innerHTML = h;
   }
 
   function renderPrice() {
@@ -517,7 +699,7 @@
         (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit (' + depositText(D.price) + ') to schedule · balance when the job is done</div>' : '');
     } else if (D.offers) {
       var rec = D.pick >= 0 ? D.pick : 1;
-      h = '<p class="k">Your investment</p><h2>Three ways to do this roof</h2><p class="lead">Same crew, same full system and cleanup. The difference is the shingle. Tap the one you want.</p><div class="opts">' +
+      h = '<p class="k">Your investment</p><h2>Three ways to do this roof</h2>' + lockLine() + '<p class="lead">Same crew, same full system and cleanup. The difference is the shingle. Tap the one you want.</p><div class="opts">' +
         PKGS.map(function (p, i) {
           if (!(price(i) > 0)) return '';
           return '<div class="opt' + (i === S.pick ? ' on' : '') + '" data-pk="' + i + '"><span class="rib' + (i === rec ? ' rec' : '') + '">' + (i === rec ? 'Recommended' : esc(p.ribbon)) + '</span>' +
@@ -564,7 +746,7 @@
       if (S.built) markRv(box, true);
       return;
     }
-    box.innerHTML = '<p class="k">Ready when you are</p><h2>Accept & sign</h2>' + sum +
+    box.innerHTML = '<p class="k">Ready when you are</p><h2>Accept & sign</h2>' + lockLine() + sum +
       (D.terms ? '<div class="terms"><b>Terms.</b> ' + esc(D.terms) + '</div>' : '') +
       '<label class="f" for="tfp-nm">Your full name</label><input class="inp" id="tfp-nm" autocomplete="name" value="' + esc(D.name || '') + '">' +
       '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
@@ -617,6 +799,11 @@
     if (S.wired) return wireNav();
     S.wired = true;
     root.addEventListener('click', function (e) {
+      var ui = e.target.closest('[data-ui]');
+      if (ui) { var w = ui.getAttribute('data-ui'); if (w === 'notes') root.querySelector('#tfp-notes').classList.toggle('on'); if (w === 'menu') { syncPresenter(); root.querySelector('#tfp-menu').classList.toggle('on'); } return; }
+      var gt = e.target.closest('[data-goto]');
+      if (gt) { root.querySelector('#tfp-menu').classList.remove('on'); go(+gt.getAttribute('data-goto')); return; }
+      if (e.target.id === 'tfp-menu') { e.target.classList.remove('on'); return; }
       var pb = e.target.closest('[data-pay]');
       if (pb) { e.preventDefault(); if (!pb.disabled) payNow(pb.getAttribute('data-pay'), pb); return; }
       var fl = e.target.closest('[data-full]');
@@ -642,6 +829,9 @@
         if (/input|textarea/i.test((e.target && e.target.tagName) || '')) return;
         if (e.key === 'ArrowRight' || e.key === 'PageDown') { go(S.slide + 1); e.preventDefault(); }
         if (e.key === 'ArrowLeft' || e.key === 'PageUp') { go(S.slide - 1); e.preventDefault(); }
+        if (e.key === 'n' || e.key === 'N') { var nn = root.querySelector('#tfp-notes'); if (nn) nn.classList.toggle('on'); }
+        if (e.key === 'm' || e.key === 'M') { syncPresenter(); var mm = root.querySelector('#tfp-menu'); if (mm) mm.classList.toggle('on'); }
+        if (e.key === 'Escape') { var m2 = root.querySelector('#tfp-menu'); if (m2) m2.classList.remove('on'); }
       });
       var sx = null, sy = null;
       root.addEventListener('touchstart', function (e) { if (e.target.closest('canvas,.sws,.opts')) { sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
@@ -662,6 +852,7 @@
     var nx = root.querySelector('.nav .nx'); nx.disabled = i === sl.length - 1;
     var prog = root.querySelector('#tfp-prog'); if (prog) prog.style.width = ((i + 1) / sl.length * 100) + '%';
     if (S.secs[i] === 'sign' && S.sizeSig) setTimeout(S.sizeSig, 30);
+    initMapsFor(S.secs[i]); syncPresenter();
     if (!CALM) {
       var cur = sl[i];
       cur.querySelectorAll('.rv').forEach(function (el) { el.classList.remove('in'); el.style.transitionDelay = ''; });
