@@ -1,4 +1,4 @@
-/* Team Forte website gallery (hosted on teamsforte.github.io). Jobs and photos come from the Team Forte app (Google Drive).
+/* Team Forte website gallery (hosted on teamsforte.github.io, v4). Jobs and photos come from the Team Forte app (Google Drive).
    Options on the div: data-service, data-title, data-subtitle, data-limit, data-min (hide until this many jobs), data-replace (CSS selector of a section to hide once shown). */
 /* Team Forte website gallery. Loads jobs and photos from Team Forte Photos (Google Drive). */
 (function () {
