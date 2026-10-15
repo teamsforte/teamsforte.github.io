@@ -160,7 +160,7 @@
     '.tfg-sc:hover b{color:var(--tfg-red)}.tfg-sc:focus-visible{outline:2px solid var(--tfg-red);outline-offset:-2px}' +
     '.tfg-sci{flex:none;width:26px;height:26px;color:#fff;display:flex}.tfg-sci svg{width:26px;height:26px}' +
     '.tfg-sct{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}' +
-    '.tfg-sct b{font-size:15px;font-weight:800;line-height:1.25;transition:color .15s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.tfg-sct b{font-size:15px;font-weight:800;line-height:1.25;transition:color .15s;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}' +
     '.tfg-sct small{font-size:13px;color:var(--tfg-muted);line-height:1.2}' +
     '.tfg-scn{flex:none;font-size:12px;font-weight:700;color:var(--tfg-muted);white-space:nowrap}' +
     '.tfg--show .tfg-more{margin-top:20px}' +
@@ -170,6 +170,29 @@
     '.tfg-ti b{display:block;font-size:14px;font-weight:800}.tfg-ti small{display:block;font-size:12px;color:var(--tfg-muted)}' +
     '.tfg-trust .tfg-btn{margin-left:auto;min-height:56px;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 22px}' +
     '.tfg-trust .tfg-btn small{font-size:12px;font-weight:600;opacity:.9}' +
+    /* light variant: matches team-forte.com sections (white cards, centered 40px headings, red label) */
+    '.tfg--show.tfg--lt{--tfg-ink:#14161C;--tfg-muted:#5B6270;--tfg-line:#E3E6EB;--tfg-card:#fff;background:transparent;border-radius:0;padding:72px 0 8px;overflow:visible;max-width:1180px}' +
+    '.tfg--lt .tfg-bg{display:none}' +
+    '.tfg--lt .tfg-head{text-align:center;margin:0 auto 30px;max-width:760px}' +
+    '.tfg--lt .tfg-eye{font-size:12px;font-weight:700;letter-spacing:2.4px;margin:0 0 14px}' +
+    '.tfg--show.tfg--lt .tfg-head h2{font-size:clamp(28px,4vw,40px);line-height:1.15;letter-spacing:-.8px;font-weight:800;color:#14161C;margin:0 0 16px}' +
+    '.tfg--lt .tfg-head h2 em{font-style:normal;color:var(--tfg-red)}' +
+    '.tfg--show.tfg--lt .tfg-head p{font-size:16px;line-height:1.65;color:#5B6270}' +
+    '.tfg--show.tfg--lt .tfg-tabs{justify-content:center;margin:0 0 26px}' +
+    '.tfg--show.tfg--lt .tfg-tab{background:#fff;border-color:#E3E6EB;color:#14161C;border-radius:999px}' +
+    '.tfg--show.tfg--lt .tfg-tab:hover{border-color:var(--tfg-red)}' +
+    '.tfg--show.tfg--lt .tfg-tab[aria-selected="true"]{background:var(--tfg-red);border-color:var(--tfg-red);color:#fff}' +
+    '.tfg--show.tfg--lt .tfg-card{background:#fff;border:1px solid #E3E6EB;border-radius:14px}' +
+    '.tfg--show.tfg--lt .tfg-card:hover{box-shadow:0 14px 32px rgba(20,22,28,.12);border-color:#E3E6EB}' +
+    '.tfg--lt .tfg-sc{color:#14161C;border-top:1px solid #EEF0F3}' +
+    '.tfg--lt .tfg-sci{color:var(--tfg-red)}' +
+    '.tfg--lt .tfg-sct small,.tfg--lt .tfg-scn{color:#5B6270}' +
+    '.tfg--lt .tfg-img{background:#E9ECF0}' +
+    '.tfg--show.tfg--lt .tfg-more{margin-top:28px}' +
+    '.tfg--lt .tfg-more .tfg-btn{min-height:50px;border-radius:9px;font-size:15px;padding:0 28px}' +
+    '.tfg--lt .tfg-trust{margin:30px 0 0;border-radius:14px}' +
+    '.tfg--show.tfg--lt .tfg-btn--ghost{color:#14161C;border-color:#E3E6EB;background:#fff}.tfg--show.tfg--lt .tfg-btn--ghost:hover{color:#14161C;border-color:var(--tfg-red)}' +
+    '@media(max-width:700px){.tfg--show.tfg--lt{padding:52px 0 4px}.tfg--show.tfg--lt .tfg-tabs{justify-content:flex-start}}' +
     '@media(max-width:599px){.tfg--show .tfg-grid{gap:10px}.tfg--show .tfg-img{height:150px}.tfg--show .tfg-wide .tfg-img{height:230px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-scn{display:none}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sc{padding:10px 11px;gap:9px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sci,.tfg--show .tfg-card:not(.tfg-wide) .tfg-sci svg{width:20px;height:20px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sct b{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sct small{font-size:12px}}' +
     '@media(max-width:700px){.tfg--show{padding:34px 16px 16px;border-radius:0}.tfg-trust{margin:22px -16px -16px;padding:18px 16px}.tfg-trust .tfg-btn{margin-left:0;width:100%;align-items:center}.tfg--show .tfg-head p{font-size:15px}}';
 
@@ -288,7 +311,8 @@
       trust: el.getAttribute('data-trust'),
       phone: el.getAttribute('data-phone') || '(860) 854-9335'
     };
-    if (o.layout === 'showcase') o.theme = 'show';
+    if (o.layout === 'showcase') o.theme = el.getAttribute('data-theme') === 'dark' ? 'show' : 'show tfg--lt';
+    if (o.theme === 'show tfg--lt' && o.trust == null) o.trust = 'none';
     /* On team-forte.com, galleries outside the Gallery page link to it */
     if (!o.more && /(^|\.)team-forte\.com$/i.test(location.hostname) && !/^\/gallery\/?$/i.test(location.pathname)) o.more = '/gallery';
     var root = document.createElement('div');
@@ -344,7 +368,7 @@
         var draw = function () {
           var list = pick(st.tab);
           var h = (cover ? '<div class="tfg-bg" style="background-image:url(&quot;' + src(cover, 1600) + '&quot;)"></div>' : '') +
-            '<div class="tfg-head"><span class="tfg-eye">' + esc(o.eyebrow) + '</span>' + (o.title ? '<h2>' + esc(o.title) + '</h2>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
+            '<div class="tfg-head"><span class="tfg-eye">' + esc(o.eyebrow) + '</span>' + (o.title ? '<h2>' + accentTitle(o) + '</h2>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
           if (o.tabs && filters.length > 2) {
             h += '<div class="tfg-tabs" role="tablist">' + filters.map(function (f) {
               return '<button type="button" class="tfg-tab" role="tab" aria-selected="' + (st.tab === f.key) + '" data-tab="' + esc(f.key) + '">' + f.icon + esc(f.label) + '</button>';
@@ -354,7 +378,7 @@
           if (list.length > st.shown) {
             h += '<div class="tfg-more"><button type="button" class="tfg-btn tfg-btn--ghost" data-more>See more work (' + (list.length - st.shown) + ')</button></div>';
           } else if (o.more) {
-            h += '<div class="tfg-more"><a class="tfg-btn tfg-btn--ghost" href="' + esc(o.more) + '">See all our work \u2192</a></div>';
+            h += '<div class="tfg-more"><a class="tfg-btn' + (o.theme.indexOf('tfg--lt') < 0 ? ' tfg-btn--ghost' : '') + '" href="' + esc(o.more) + '">See all our work \u2192</a></div>';
           }
           h += trustBar(o);
           root.innerHTML = h;
@@ -435,9 +459,15 @@
     }
     return '<div class="tfg-card"><button type="button" class="tfg-img tfg-imgb" data-job="' + esc(j.id) + '" tabindex="-1" aria-hidden="true">' + imgTag(j.cover, 900, j.title) + '</button>' + cap + '</div>';
   }
+  /* Light (site) style: the words after the last comma get the red accent, like the site's other headings */
+  function accentTitle(o) {
+    var t = String(o.title), i = t.lastIndexOf(', ');
+    if (o.theme.indexOf('tfg--lt') < 0 || i < 0) return esc(t);
+    return esc(t.slice(0, i + 2)) + '<em>' + esc(t.slice(i + 2)) + '</em>';
+  }
   function trustBar(o) {
     if (o.trust === 'none') return '';
-    var items = (o.trust || 'Licensed & Insured|Your home is protected;Free Inspections|Written estimate with photos;Serving Connecticut|Local and responsive').split(';')
+    var items = (o.trust || 'Registered & Insured|CT HIC.0706595;Free Inspections|Written estimate with photos;Serving Connecticut|Local and responsive').split(';')
       .map(function (x) { return x.split('|'); }).filter(function (x) { return x[0]; }).slice(0, 3);
     var icons = [KICON.shield, KICON.doc, KICON.pin];
     var tel = 'tel:+1' + String(o.phone).replace(/\D/g, '').slice(-10);

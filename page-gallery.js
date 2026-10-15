@@ -38,7 +38,7 @@
     '<header class="tfp-top"><div class="tfp-bar"><a class="tfp-logo" href="/" aria-label="Team Forte home"><img src="' + LOGO + '" alt="Team Forte Roofing" width="186" height="48"></a>' +
       '<nav class="tfp-nav" aria-label="Main">' + NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[1] === here ? ' class="on" aria-current="page"' : '') + '>' + n[0] + '</a>'; }).join('') + '</nav>' +
       '<a class="tfp-call" href="' + TEL + '">☎ ' + PHONE + '</a></div></header>' +
-    '<main class="tfp-main"><div class="tf-gallery" data-eyebrow="Our Work" data-title="Real Projects. Happy Homeowners." ' +
+    '<main class="tfp-main"><div class="tf-gallery" data-theme="dark" data-eyebrow="Our Work" data-title="Real Projects. Happy Homeowners." ' +
       'data-subtitle="Take a look at some of our recent roofing projects across Connecticut. Quality work, clean finishes, and lasting results — that’s the Team Forte difference." data-limit="24"></div></main>' +
     '<footer class="tfp-foot"><span>© ' + new Date().getFullYear() + ' Team Forte · GR Brothers LLC</span><span>Serving Connecticut</span>' +
       '<a href="' + TEL + '">' + PHONE + '</a><a href="mailto:info@team-forte.com">info@team-forte.com</a>' +
