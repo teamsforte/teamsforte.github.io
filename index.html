@@ -250,6 +250,13 @@ button:active,.btn:active,.job:active,.chip:active,.tab:active,.add:active,.ph:a
 .dv-st button{flex:1;padding:10px 0;border-radius:10px;background:var(--slate);font-weight:800;font-size:13px;color:var(--ink)}
 .dv-st button.on{background:var(--ink);color:#fff}
 .dv-more{display:block;margin:12px auto 0}
+.ph{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.ph img{-webkit-user-drag:none;pointer-events:none}
+.ph.ghost{opacity:.25;outline:2px dashed #FF5440;outline-offset:-2px}
+.grid.drop{background:#FFF4F2;border-radius:10px;box-shadow:0 0 0 6px #FFF4F2}
+.dragfly{position:fixed;z-index:80;pointer-events:none;border-radius:10px;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.35);transform:scale(1.08) rotate(-2deg);opacity:.95;transition:transform .12s}
+.dragfly img{width:100%;height:100%;object-fit:cover;display:block}
+body.dragging,body.dragging *{cursor:grabbing!important;-webkit-user-select:none;user-select:none}
 .netpill{position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:60;background:#FFF4E5;color:#7A4B00;border:1px solid #F5D7A6;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;pointer-events:none}
 </style>
 </head>
@@ -519,7 +526,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='14';
+var APP_VERSION='15';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -700,11 +707,11 @@ function renderJob(){
     tog('published','Show on website',j.photos.length?'Appears in the Our Work gallery':'Add a photo first. Then it will appear',j.published)+
     tog('featured','Show on homepage','Also appears in the homepage gallery',j.featured)+
     '</div>';
-  h+='<div class="card"><h2>Photos <small>Tap a photo to edit</small></h2>';
+  h+='<div class="card"><h2>Photos <small>Tap to edit · hold &amp; drag to move</small></h2>';
   STAGES.forEach(function(st){
     var list=photosOf(j,st[0]);
-    h+='<div class="stage"><div class="stage-h"><b>'+st[1]+'</b><span>'+list.length+' photo'+(list.length===1?'':'s')+'</span></div><div class="grid">'+
-      list.map(function(p){return '<button class="ph" data-act="photo" data-id="'+esc(p.id)+'" aria-label="'+st[1]+' photo"><img loading="lazy" src="'+esc(img(p.id,400))+'" alt="">'+(p.id===c?'<span class="star">COVER</span>':'')+(p.caption?'<span class="cap">'+esc(p.caption)+'</span>':'')+'</button>';}).join('')+
+    h+='<div class="stage"><div class="stage-h"><b>'+st[1]+'</b><span>'+list.length+' photo'+(list.length===1?'':'s')+'</span></div><div class="grid" data-stg="'+st[0]+'">'+
+      list.map(function(p){return '<button class="ph" data-act="photo" data-id="'+esc(p.id)+'" aria-label="'+st[1]+' photo"><img loading="lazy" draggable="false" src="'+esc(img(p.id,400))+'" alt="">'+(p.id===c?'<span class="star">COVER</span>':'')+(p.caption?'<span class="cap">'+esc(p.caption)+'</span>':'')+'</button>';}).join('')+
       '<button class="add" data-act="add" data-stage="'+st[0]+'">'+ICON.cam+'Add '+st[1].toLowerCase()+'</button>'+
       (S.user&&S.user.role==='owner'?'<button class="add drv" data-act="drive" data-stage="'+st[0]+'">'+ICON.folder+'From Drive</button>':'')+'</div></div>';
   });
@@ -994,6 +1001,79 @@ function driveImport(){
     if(res.failed.length)toast(msg+'. '+res.failed.length+' didn\u2019t copy: '+res.failed[0].error,true);else toast(msg+'.');
   });
 }
+/* ---------- hold & drag to rearrange photos ---------- */
+var DRAG={on:false,t:null,justDropped:0};
+function dragStart(ph,x,y){
+  var j=job();if(!j)return;
+  var r=ph.getBoundingClientRect();
+  DRAG.on=true;DRAG.ph=ph;DRAG.j=j;DRAG.dx=x-r.left;DRAG.dy=y-r.top;DRAG.moved=false;
+  DRAG.before=JSON.stringify(dragOrder());
+  var fly=document.createElement('div');fly.className='dragfly';fly.style.width=r.width+'px';fly.style.height=r.height+'px';
+  fly.innerHTML='<img src="'+esc(ph.querySelector('img').src)+'" alt="">';document.body.appendChild(fly);DRAG.fly=fly;
+  ph.classList.add('ghost');document.body.classList.add('dragging');
+  if(navigator.vibrate)try{navigator.vibrate(15);}catch(e){}
+  dragMove(x,y);
+}
+function dragMove(x,y){
+  if(!DRAG.on)return;
+  DRAG.fly.style.left=(x-DRAG.dx)+'px';DRAG.fly.style.top=(y-DRAG.dy)+'px';DRAG.x=x;DRAG.y=y;
+  var el=document.elementFromPoint(x,y);if(!el)return;
+  var grid=el.closest('.grid[data-stg]');
+  document.querySelectorAll('.grid.drop').forEach(function(g){if(g!==grid)g.classList.remove('drop');});
+  if(!grid)return;grid.classList.add('drop');
+  var over=el.closest('.ph');
+  if(over&&over!==DRAG.ph){
+    var r=over.getBoundingClientRect(),after=x>r.left+r.width/2;
+    var ref=after?over.nextSibling:over;if(ref!==DRAG.ph&&!(DRAG.ph.parentNode===grid&&DRAG.ph.nextSibling===ref)){grid.insertBefore(DRAG.ph,ref);DRAG.moved=true;}
+  }else if(!over){
+    /* empty space or the Add tiles: go to the end of that stage */
+    var firstAdd=grid.querySelector('.add');
+    if(DRAG.ph.parentNode!==grid||DRAG.ph.nextSibling!==firstAdd){grid.insertBefore(DRAG.ph,firstAdd);DRAG.moved=true;}
+  }
+}
+function dragOrder(){var o={};document.querySelectorAll('.grid[data-stg]').forEach(function(g){o[g.getAttribute('data-stg')]=Array.prototype.map.call(g.querySelectorAll('.ph[data-id]'),function(p){return p.getAttribute('data-id');});});return o;}
+function dragEnd(cancel){
+  if(!DRAG.on)return;
+  DRAG.on=false;DRAG.justDropped=Date.now();
+  if(DRAG.fly)DRAG.fly.remove();DRAG.ph.classList.remove('ghost');document.body.classList.remove('dragging');
+  document.querySelectorAll('.grid.drop').forEach(function(g){g.classList.remove('drop');});
+  var order=dragOrder(),j=DRAG.j;
+  if(cancel||JSON.stringify(order)===DRAG.before){renderKeepScroll();return;}
+  /* apply on the phone right away, then save */
+  var prev=j.photos.map(function(p){return [p,p.stage];});
+  var byId={};j.photos.forEach(function(p){byId[p.id]=p;});
+  var list=[];STAGES.forEach(function(s){(order[s[0]]||[]).forEach(function(id){var p=byId[id];if(p){p.stage=s[0];list.push(p);delete byId[id];}});});
+  Object.keys(byId).forEach(function(id){list.push(byId[id]);});
+  j.photos=list;renderKeepScroll();
+  call('reorderPhotos',{jobId:j.id,stages:order}).then(function(){toast(j.published?'Order saved. Live on the website.':'Order saved');})
+    .catch(function(e){j.photos=prev.map(function(x){x[0].stage=x[1];return x[0];});renderKeepScroll();toast('Couldn\u2019t save the new order: '+e.message,true);});
+}
+function dragAutoScroll(){
+  if(!DRAG.on)return;var y=DRAG.y,h=window.innerHeight,edge=70,v=0;
+  if(y<edge)v=-Math.ceil((edge-y)/5);else if(y>h-edge)v=Math.ceil((y-(h-edge))/5);
+  if(v){window.scrollBy(0,v);dragMove(DRAG.x,DRAG.y);}
+  requestAnimationFrame(dragAutoScroll);
+}
+(function(){
+  var st=null;
+  function clear(){if(st&&st.timer)clearTimeout(st.timer);st=null;}
+  app.addEventListener('pointerdown',function(e){
+    var ph=e.target.closest&&e.target.closest('.grid[data-stg] .ph');if(!ph||S.upload||e.button>0)return;
+    clear();st={ph:ph,x:e.clientX,y:e.clientY,touch:e.pointerType!=='mouse',id:e.pointerId};
+    if(st.touch)st.timer=setTimeout(function(){if(st){dragStart(st.ph,st.x,st.y);requestAnimationFrame(dragAutoScroll);}},380);
+  });
+  document.addEventListener('pointermove',function(e){
+    if(DRAG.on){e.preventDefault();dragMove(e.clientX,e.clientY);return;}
+    if(!st)return;var d=Math.abs(e.clientX-st.x)+Math.abs(e.clientY-st.y);
+    if(st.touch){if(d>10)clear();else{st.x=e.clientX;st.y=e.clientY;}}
+    else if(d>6){var s0=st;clear();dragStart(s0.ph,s0.x,s0.y);dragMove(e.clientX,e.clientY);requestAnimationFrame(dragAutoScroll);}
+  },{passive:false});
+  document.addEventListener('touchmove',function(e){if(DRAG.on)e.preventDefault();},{passive:false});
+  document.addEventListener('pointerup',function(){clear();if(DRAG.on)dragEnd(false);});
+  document.addEventListener('pointercancel',function(){clear();if(DRAG.on)dragEnd(false);});
+  document.addEventListener('contextmenu',function(e){if(DRAG.on||(e.target.closest&&e.target.closest('.grid[data-stg] .ph')))e.preventDefault();});
+  document.addEventListener('keydown',function(e){if(DRAG.on&&e.key==='Escape')dragEnd(true);});
+})();
 function renderKeepScroll(){var y=window.scrollY;render();window.scrollTo(0,y);}
 
 function drawProg(){
@@ -1017,7 +1097,7 @@ app.addEventListener('click',function(e){
   if(a==='filter'){S.filter=t.getAttribute('data-v');render();return;}
   if(a==='open'){S.jobId=t.getAttribute('data-id');S.view='job';render();window.scrollTo(0,0);return;}
   if(a==='home'){S.view='home';render();window.scrollTo(0,0);return;}
-  if(a==='photo'){photoSheet(t.getAttribute('data-id'));return;}
+  if(a==='photo'){if(Date.now()-DRAG.justDropped<500)return;photoSheet(t.getAttribute('data-id'));return;}
   if(a==='add'){if(S.upload){toast('Wait for the current upload to finish.');return;}pickStage=t.getAttribute('data-stage');picker.click();return;}
   if(a==='drive'){if(S.upload){toast('Wait for the current upload to finish.');return;}driveSheet(t.getAttribute('data-stage'));return;}
   if(a==='tog'){
