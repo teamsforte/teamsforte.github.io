@@ -289,6 +289,8 @@
       phone: el.getAttribute('data-phone') || '(860) 854-9335'
     };
     if (o.layout === 'showcase') o.theme = 'show';
+    /* On team-forte.com, galleries outside the Gallery page link to it */
+    if (!o.more && /(^|\.)team-forte\.com$/i.test(location.hostname) && !/^\/gallery\/?$/i.test(location.pathname)) o.more = '/gallery';
     var root = document.createElement('div');
     root.className = 'tfg tfg--' + o.theme;
     el.innerHTML = '';
