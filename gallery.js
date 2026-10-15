@@ -216,19 +216,26 @@
     el.innerHTML = '';
     el.appendChild(root);
     root.innerHTML = head(o) + '<div class="tfg-grid">' + [1, 2, 3].map(function () { return '<div class="tfg-sk"></div>'; }).join('') + '</div>';
-    /* With data-min, stay hidden (and keep the page's current gallery) until the app has enough published jobs */
-    if (o.min > 1) el.style.display = 'none';
+    /* Hide the page's old gallery right away (no flash of old photos while the jobs load); it comes back only if the app can't show enough jobs */
+    var old = [];
+    if (o.replace) { try { Array.prototype.forEach.call(document.querySelectorAll(o.replace), function (x) { if (!x.contains(el)) { old.push([x, x.style.display]); x.style.display = 'none'; } }); } catch (e) { /* bad selector */ } }
+    function restoreOld() { old.forEach(function (p) { p[0].style.display = p[1]; }); }
+    var shownSig = '';
 
-    loadData().then(function (d) {
+    function show(d) {
+      var sig = JSON.stringify(d && d.jobs || []);
+      if (sig === shownSig) return;
+      shownSig = sig;
+      var r2 = document.createElement('div'); r2.className = root.className; el.replaceChild(r2, root); root = r2;
       var jobs = (d && d.jobs) || [];
       if (o.service !== 'all') jobs = jobs.filter(function (j) { return String(j.service).toLowerCase() === o.service; });
       if (o.featured) {
         var f = jobs.filter(function (j) { return j.featured; });
         if (f.length) jobs = f;
       }
-      if (jobs.length < o.min) { el.style.display = 'none'; return; }
+      if (jobs.length < o.min) { el.style.display = 'none'; restoreOld(); return; }
       el.style.display = '';
-      if (o.replace) { try { Array.prototype.forEach.call(document.querySelectorAll(o.replace), function (x) { if (!x.contains(el)) x.style.display = 'none'; }); } catch (e) { /* bad selector */ } }
+      old.forEach(function (p) { p[0].style.display = 'none'; });
       var services = [];
       jobs.forEach(function (j) { if (services.indexOf(j.service) < 0) services.push(j.service); });
       var order = (d.services || []);
@@ -268,11 +275,25 @@
         for (var i = 0; i < jobs.length; i++) if (jobs[i].id === id) { openJob(jobs[i], o); break; }
       });
       draw();
-    }).catch(function () {
+    }
+
+    var cached = readCache();
+    if (cached) show(cached);
+    loadData().then(function (d) { writeCache(d); show(d); }).catch(function () {
+      if (shownSig) return;
       el.style.display = 'none';
+      restoreOld();
       el.setAttribute('data-tfg-ready', 'failed');
     });
   }
+
+  /* Last good data, so return visits show the jobs instantly while fresh data loads */
+  var CACHE_KEY = 'tfg_data_v1';
+  function readCache() {
+    try { var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (c && c.d && Date.now() - c.t < 7 * 864e5) return c.d; } catch (e) { /* no storage */ }
+    return null;
+  }
+  function writeCache(d) { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: d })); } catch (e) { /* full or blocked */ } }
 
   function head(o) {
     if (!o.title && !o.subtitle) return '';
