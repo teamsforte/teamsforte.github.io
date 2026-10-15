@@ -274,6 +274,8 @@ body.dragging,body.dragging *{cursor:grabbing!important;-webkit-user-select:none
 .fv-nav{position:absolute;top:50%;z-index:2;width:48px;height:48px;margin-top:-24px;border-radius:50%;background:rgba(255,255,255,.16);display:none;align-items:center;justify-content:center;font-size:26px}
 .fv-nav.p{left:14px}.fv-nav.n{right:14px}
 @media(hover:hover){.fv-nav{display:flex}}
+.seg.kinds{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
+.seg.kinds button{font-size:13px;line-height:1.15;padding:4px 6px}
 .netpill{position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:60;background:#FFF4E5;color:#7A4B00;border:1px solid #F5D7A6;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;pointer-events:none}
 </style>
 </head>
@@ -543,9 +545,10 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='16';
+var APP_VERSION='17';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
+var KINDS=[['replacement','Replacement'],['repair','Repair'],['flat','Flat roof'],['flashing','Chimney & flashing'],['gutters','Gutters'],['skylight','Skylights']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
 var ICON={
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
@@ -752,6 +755,9 @@ function detailFields(j){
   var svc=j.service||'Roofing';
   return '<label class="f">Service</label><div class="seg" id="svc">'+SERVICES.map(function(s){return '<button type="button" class="'+(s===svc?'on':'')+'" data-svc="'+s+'">'+s+'</button>';}).join('')+'</div>'+
     '<input type="hidden" name="service" value="'+esc(svc)+'">'+
+    '<div id="kindw"'+(svc==='Roofing'?'':' hidden')+'><label class="f">Job type <small>(sets the filter on the website gallery)</small></label><div class="seg kinds" id="kind">'+
+      KINDS.map(function(k){var on=(j.kindSet||j.kind||'')===k[0];return '<button type="button" class="'+(on?'on':'')+'" data-kind="'+k[0]+'" aria-pressed="'+on+'">'+k[1]+'</button>';}).join('')+'</div>'+
+    '<input type="hidden" name="kind" value="'+esc(j.kindSet||j.kind||'')+'"></div>'+
     '<label class="f">What was the job?</label><input class="in" name="title" list="titles" maxlength="120" placeholder="e.g. Full roof replacement" value="'+esc(j.title||'')+'" required>'+
     '<datalist id="titles">'+(TITLES[svc]||[]).map(function(t){return '<option value="'+esc(t)+'">';}).join('')+'</datalist>'+
     '<div class="row"><div><label class="f">Town</label><input class="in" name="town" maxlength="60" placeholder="e.g. Hartford" value="'+esc(j.town||'')+'"></div>'+
@@ -761,15 +767,21 @@ function detailFields(j){
 }
 
 function wireService(form){
+  var ks=form.querySelector('#kind');
+  if(ks)ks.onclick=function(e){var b=e.target.closest('button[data-kind]');if(!b)return;
+    var on=!b.classList.contains('on');
+    ks.querySelectorAll('button').forEach(function(x){var y=x===b&&on;x.classList.toggle('on',y);x.setAttribute('aria-pressed',y);});
+    form.elements.kind.value=on?b.getAttribute('data-kind'):'';};
   var seg=form.querySelector('#svc');if(!seg)return;
   seg.onclick=function(e){var b=e.target.closest('button[data-svc]');if(!b)return;
     seg.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
     form.elements.service.value=b.getAttribute('data-svc');
+    var kw=form.querySelector('#kindw');if(kw)kw.hidden=b.getAttribute('data-svc')!=='Roofing';
     var dl=form.querySelector('#titles');if(dl)dl.innerHTML=(TITLES[b.getAttribute('data-svc')]||[]).map(function(t){return '<option value="'+esc(t)+'">';}).join('');
   };
 }
 
-function formData(f){return{service:f.elements.service.value,title:f.elements.title.value,town:f.elements.town.value,date:f.elements.date.value,address:f.elements.address.value,description:f.elements.description.value};}
+function formData(f){return{kind:f.elements.service.value==='Roofing'&&f.elements.kind?f.elements.kind.value:'',service:f.elements.service.value,title:f.elements.title.value,town:f.elements.town.value,date:f.elements.date.value,address:f.elements.address.value,description:f.elements.description.value};}
 
 function saveDetails(f){
   var j=job();var b=f.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving…';

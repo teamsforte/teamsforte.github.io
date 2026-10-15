@@ -1,5 +1,5 @@
 /* Team Forte website gallery (hosted on teamsforte.github.io, v4). Jobs and photos come from the Team Forte app (Google Drive).
-   Options on the div: data-service, data-title, data-subtitle, data-limit, data-min (hide until this many jobs), data-replace (CSS selector of a section to hide once shown). */
+   Options on the div: data-layout (showcase | cards), data-eyebrow, data-trust ("Title|line;Title|line" or none), data-phone, data-more-href, data-service, data-title, data-subtitle, data-limit, data-min (hide until this many jobs), data-replace (CSS selector of a section to hide once shown). */
 /* Team Forte website gallery. Loads jobs and photos from Team Forte Photos (Google Drive). */
 (function () {
   'use strict';
@@ -133,7 +133,45 @@
     '.tfg-cta span{font-size:13px;color:#C4CCD6}' +
     '.tfg-cta .tfg-btn{min-height:46px}' +
     '@media(max-width:600px){.tfg-cta .tfg-btn{width:100%}.tfg-stage,.tfg-mtabs{padding-left:16px;padding-right:16px}.tfg-desc{padding-left:16px;padding-right:16px}.tfg-cta{margin-left:16px;margin-right:16px}}' +
-    'html.tfg-lock,html.tfg-lock body{overflow:hidden!important}';
+    'html.tfg-lock,html.tfg-lock body{overflow:hidden!important}' +
+    /* showcase layout (data-layout="showcase"): dark section, filter chips with icons, wide before & after cards, trust bar */
+    '.tfg--show{--tfg-ink:#fff;--tfg-muted:#B9C3CF;--tfg-line:rgba(255,255,255,.13);--tfg-card:#16212E;position:relative;isolation:isolate;max-width:1280px;padding:52px 28px 28px;border-radius:20px;background:#0D1721;overflow:hidden}' +
+    '.tfg-bg{position:absolute;inset:0;z-index:-1;background-size:cover;background-position:center;opacity:.22;filter:saturate(.7)}' +
+    '.tfg-bg:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,23,33,.55),#0D1721 72%)}' +
+    '.tfg--show .tfg-head{text-align:left;margin:0 0 26px;max-width:920px}' +
+    '.tfg-eye{display:block;color:var(--tfg-red);font-size:14px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin:0 0 8px}' +
+    '.tfg--show .tfg-head h2{font-size:clamp(30px,5vw,50px);line-height:1.08;margin:0 0 12px;color:#fff}' +
+    '.tfg--show .tfg-head p{font-size:17px;color:#D5DCE4}' +
+    '.tfg--show .tfg-tabs{justify-content:flex-start;margin:0 0 22px}' +
+    '.tfg--show .tfg-tab{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.22);color:#fff;border-radius:10px;padding:11px 18px}' +
+    '.tfg--show .tfg-tab svg{width:18px;height:18px;flex:none}' +
+    '.tfg--show .tfg-tab[aria-selected="true"]{background:var(--tfg-red);border-color:var(--tfg-red)}' +
+    '.tfg--show .tfg-tab .tfg-n{font-size:12px;font-weight:700;opacity:.7}' +
+    '.tfg--show .tfg-grid{grid-auto-flow:row dense;gap:14px;grid-template-columns:repeat(2,1fr)}.tfg--show .tfg-wide{grid-column:span 2}' +
+    '@media(min-width:1000px){.tfg--show .tfg-grid{grid-template-columns:repeat(4,1fr)}}' +
+    '.tfg--show .tfg-card{border-radius:12px;background:var(--tfg-card);border-color:rgba(255,255,255,.1);cursor:default}' +
+    '.tfg--show .tfg-card:hover{transform:none;box-shadow:0 14px 34px rgba(0,0,0,.4);border-color:rgba(255,255,255,.22)}' +
+    '.tfg--show .tfg-img{aspect-ratio:auto;height:clamp(210px,19vw,250px);background:#223142}' +
+    'button.tfg-imgb{appearance:none;display:block;width:100%;border:0;padding:0;margin:0;cursor:zoom-in;font:inherit}' +
+    '.tfg--show .tfg-card:hover button.tfg-imgb img{transform:scale(1.04)}' +
+    '.tfg--show .tfg-ba-l{top:12px;bottom:auto;font-size:12px;padding:6px 11px;border-radius:6px}' +
+    '.tfg--show .tfg-fsb{top:auto;bottom:10px}' +
+    '.tfg-sc{appearance:none;display:flex;align-items:center;gap:13px;width:100%;margin:0;padding:13px 16px;background:none;border:0;border-top:1px solid rgba(255,255,255,.08);color:#fff;text-align:left;font:inherit;cursor:pointer;flex:1}' +
+    '.tfg-sc:hover b{color:var(--tfg-red)}.tfg-sc:focus-visible{outline:2px solid var(--tfg-red);outline-offset:-2px}' +
+    '.tfg-sci{flex:none;width:26px;height:26px;color:#fff;display:flex}.tfg-sci svg{width:26px;height:26px}' +
+    '.tfg-sct{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}' +
+    '.tfg-sct b{font-size:15px;font-weight:800;line-height:1.25;transition:color .15s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.tfg-sct small{font-size:13px;color:var(--tfg-muted);line-height:1.2}' +
+    '.tfg-scn{flex:none;font-size:12px;font-weight:700;color:var(--tfg-muted);white-space:nowrap}' +
+    '.tfg--show .tfg-more{margin-top:20px}' +
+    '.tfg--show .tfg-btn--ghost{color:#fff;border-color:rgba(255,255,255,.3)}.tfg--show .tfg-btn--ghost:hover{color:#fff}' +
+    '.tfg-trust{display:flex;align-items:center;gap:18px 34px;flex-wrap:wrap;margin:28px -28px -28px;padding:20px 28px;background:rgba(0,0,0,.28);border-top:1px solid rgba(255,255,255,.08)}' +
+    '.tfg-ti{display:flex;align-items:center;gap:12px;color:#fff}.tfg-ti svg{width:30px;height:30px;flex:none}' +
+    '.tfg-ti b{display:block;font-size:14px;font-weight:800}.tfg-ti small{display:block;font-size:12px;color:var(--tfg-muted)}' +
+    '.tfg-trust .tfg-btn{margin-left:auto;min-height:56px;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 22px}' +
+    '.tfg-trust .tfg-btn small{font-size:12px;font-weight:600;opacity:.9}' +
+    '@media(max-width:599px){.tfg--show .tfg-grid{gap:10px}.tfg--show .tfg-img{height:150px}.tfg--show .tfg-wide .tfg-img{height:230px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-scn{display:none}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sc{padding:10px 11px;gap:9px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sci,.tfg--show .tfg-card:not(.tfg-wide) .tfg-sci svg{width:20px;height:20px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sct b{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sct small{font-size:12px}}' +
+    '@media(max-width:700px){.tfg--show{padding:34px 16px 16px;border-radius:0}.tfg-trust{margin:22px -16px -16px;padding:18px 16px}.tfg-trust .tfg-btn{margin-left:0;width:100%;align-items:center}.tfg--show .tfg-head p{font-size:15px}}';
 
   var ICON = {
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
@@ -142,6 +180,41 @@
     full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
     lr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg>'
   };
+
+  var KI = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
+  var KICON = {
+    replacement: KI('<path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>'),
+    repair: KI('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3.5 17.5a1.8 1.8 0 0 0 2.5 2.5l5.8-5.8a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.3-.6-.6-2.3z"/>'),
+    flat: KI('<path d="M3 9h18v6H3z"/><path d="M6 15v4M18 15v4M7 6h10"/>'),
+    gutters: KI('<path d="M3 6h18"/><path d="M4 6v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V6"/><path d="M15 12v8"/>'),
+    flashing: KI('<path d="M8 3h5v7"/><path d="M8 3v9"/><path d="M3 21l9-8 9 8"/><path d="M6 18.5h12"/>'),
+    skylight: KI('<path d="M4 4h16v16H4z"/><path d="M4 12h16M12 4v16"/>'),
+    carpentry: KI('<path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7l-8 8 3 3 8-8"/>'),
+    painting: KI('<path d="M4 4h13v5H4z"/><path d="M17 6.5h3V12h-8v3"/><path d="M11 15h2v6h-2z"/>'),
+    handyman: KI('<path d="M4 20l7-7"/><path d="M13 5l6 6-2 2-6-6z"/><path d="M15 3l6 6"/>'),
+    ba: KI('<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none"/>'),
+    shield: KI('<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M8.7 12l2.3 2.3 4.5-4.6"/>'),
+    doc: KI('<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 16h5"/>'),
+    pin: KI('<path d="M12 21s-6.5-6.1-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.9 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>'),
+    star: KI('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>'),
+    phone: KI('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>')
+  };
+  var KIND_LABEL = { replacement: 'Roof Replacements', repair: 'Roof Repairs', flat: 'Flat Roofs', gutters: 'Gutters', flashing: 'Chimney & Flashing', skylight: 'Skylights' };
+  var KIND_ORDER = ['replacement', 'repair', 'flat', 'flashing', 'gutters', 'skylight'];
+  /* The app sends each job's type; older data falls back to a guess from the title. */
+  function kindOf(j) {
+    if (j.kind && KIND_LABEL[j.kind]) return j.kind;
+    if (j.service && j.service !== 'Roofing') return '';
+    var t = String(j.title || '').toLowerCase();
+    if (/flat|rubber|epdm|tpo|membrane/.test(t)) return 'flat';
+    if (/gutter/.test(t)) return 'gutters';
+    if (/chimney|flashing/.test(t)) return 'flashing';
+    if (/skylight/.test(t)) return 'skylight';
+    if (/repair|leak|patch|boot/.test(t)) return 'repair';
+    if (/replac|new roof|re-?roof|tear/.test(t)) return 'replacement';
+    return '';
+  }
+  function iconOf(j) { var k = kindOf(j); return KICON[k] || KICON[String(j.service || '').toLowerCase()] || KICON.replacement; }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -209,8 +282,13 @@
       ctaHref: el.getAttribute('data-cta-href') || 'tel:+18608549335',
       theme: el.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
       min: Math.max(1, parseInt(el.getAttribute('data-min'), 10) || 1),
-      replace: el.getAttribute('data-replace') || ''
+      replace: el.getAttribute('data-replace') || '',
+      layout: el.getAttribute('data-layout') === 'cards' ? 'cards' : 'showcase',
+      eyebrow: el.getAttribute('data-eyebrow') || 'Our Work',
+      trust: el.getAttribute('data-trust'),
+      phone: el.getAttribute('data-phone') || '(860) 854-9335'
     };
+    if (o.layout === 'showcase') o.theme = 'show';
     var root = document.createElement('div');
     root.className = 'tfg tfg--' + o.theme;
     el.innerHTML = '';
@@ -241,7 +319,46 @@
       var order = (d.services || []);
       services.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
       var st = { tab: 'All', shown: o.limit };
-      function draw() {
+      if (o.layout === 'showcase') {
+        var cover = (jobs.filter(function (j) { return j.featured; })[0] || jobs[0] || {}).cover;
+        var filters = [{ key: 'All', label: 'All', icon: '' }];
+        KIND_ORDER.forEach(function (k) {
+          var n = jobs.filter(function (j) { return kindOf(j) === k; }).length;
+          if (n) filters.push({ key: 'k:' + k, label: KIND_LABEL[k], icon: KICON[k], n: n });
+        });
+        services.forEach(function (s) {
+          if (s === 'Roofing') return;
+          var n = jobs.filter(function (j) { return j.service === s; }).length;
+          if (n) filters.push({ key: 's:' + s, label: s, icon: KICON[s.toLowerCase()] || KICON.handyman, n: n });
+        });
+        var nba = jobs.filter(function (j) { return pairOf(j); }).length;
+        if (nba && nba < jobs.length) filters.push({ key: 'ba', label: 'Before & After', icon: KICON.ba, n: nba });
+        var pick = function (key) {
+          if (key === 'All') return jobs;
+          if (key === 'ba') return jobs.filter(function (j) { return pairOf(j); });
+          if (key.indexOf('k:') === 0) return jobs.filter(function (j) { return kindOf(j) === key.slice(2); });
+          return jobs.filter(function (j) { return j.service === key.slice(2); });
+        };
+        var draw = function () {
+          var list = pick(st.tab);
+          var h = (cover ? '<div class="tfg-bg" style="background-image:url(&quot;' + src(cover, 1600) + '&quot;)"></div>' : '') +
+            '<div class="tfg-head"><span class="tfg-eye">' + esc(o.eyebrow) + '</span>' + (o.title ? '<h2>' + esc(o.title) + '</h2>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
+          if (o.tabs && filters.length > 2) {
+            h += '<div class="tfg-tabs" role="tablist">' + filters.map(function (f) {
+              return '<button type="button" class="tfg-tab" role="tab" aria-selected="' + (st.tab === f.key) + '" data-tab="' + esc(f.key) + '">' + f.icon + esc(f.label) + '</button>';
+            }).join('') + '</div>';
+          }
+          h += '<div class="tfg-grid">' + list.slice(0, st.shown).map(showCard).join('') + '</div>';
+          if (list.length > st.shown) {
+            h += '<div class="tfg-more"><button type="button" class="tfg-btn tfg-btn--ghost" data-more>See more work (' + (list.length - st.shown) + ')</button></div>';
+          } else if (o.more) {
+            h += '<div class="tfg-more"><a class="tfg-btn tfg-btn--ghost" href="' + esc(o.more) + '">See all our work \u2192</a></div>';
+          }
+          h += trustBar(o);
+          root.innerHTML = h;
+          baHint(root);
+        };
+      } else var draw = function () {
         var list = st.tab === 'All' ? jobs : jobs.filter(function (j) { return j.service === st.tab; });
         var showTabs = o.tabs && o.service === 'all' && !o.featured && services.length > 1;
         var h = head(o);
@@ -258,7 +375,7 @@
         }
         root.innerHTML = h;
         baHint(root);
-      }
+      };
       baWire(root);
       root.addEventListener('click', function (e) {
         var fj = e.target.closest ? e.target.closest('[data-fsj]') : null;
@@ -300,6 +417,33 @@
     return '<div class="tfg-head">' + (o.title ? '<h2>' + esc(o.title) + '</h2>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
   }
 
+  function showCard(j) {
+    var pair = pairOf(j), n = j.photos.length;
+    var cap = '<button type="button" class="tfg-sc" data-job="' + esc(j.id) + '" aria-label="' + esc(j.title + (j.town ? ', ' + j.town : '') + '. View ' + n + ' photos') + '">' +
+      '<span class="tfg-sci">' + iconOf(j) + '</span><span class="tfg-sct"><b>' + esc(j.title) + '</b>' + (j.town ? '<small>' + esc(j.town) + '</small>' : '') + '</span>' +
+      '<span class="tfg-scn">' + n + ' photo' + (n === 1 ? '' : 's') + ' \u2192</span></button>';
+    if (pair) {
+      return '<div class="tfg-card tfg-hasba tfg-wide">' +
+        '<div class="tfg-img"><div class="tfg-ba" role="slider" tabindex="0" aria-label="' + esc('Before and after: ' + j.title + '. Drag or use arrow keys to compare.') + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-valuetext="50% before">' +
+          imgTag(pair.after.id, 1200, 'After: ' + j.title, 'tfg-ba-a') + imgTag(pair.before.id, 1200, 'Before: ' + j.title, 'tfg-ba-b') +
+          '<span class="tfg-ba-l b">Before</span><span class="tfg-ba-l a">After</span>' +
+          '<span class="tfg-ba-h"></span><span class="tfg-ba-k">' + ICON.lr + '</span></div>' +
+          '<button type="button" class="tfg-fsb" data-fsj="' + esc(j.id) + '" aria-label="' + esc('Full screen: ' + j.title) + '">' + ICON.full + '</button></div>' +
+        cap + '</div>';
+    }
+    return '<div class="tfg-card"><button type="button" class="tfg-img tfg-imgb" data-job="' + esc(j.id) + '" tabindex="-1" aria-hidden="true">' + imgTag(j.cover, 900, j.title) + '</button>' + cap + '</div>';
+  }
+  function trustBar(o) {
+    if (o.trust === 'none') return '';
+    var items = (o.trust || 'Free Inspections|No cost, no obligation;Written Estimates|With photos of what we find;Serving Connecticut|Local and responsive').split(';')
+      .map(function (x) { return x.split('|'); }).filter(function (x) { return x[0]; }).slice(0, 3);
+    var icons = [KICON.shield, KICON.doc, KICON.pin];
+    var tel = 'tel:+1' + String(o.phone).replace(/\D/g, '').slice(-10);
+    return '<div class="tfg-trust">' + items.map(function (x, i) {
+      return '<div class="tfg-ti">' + icons[i] + '<div><b>' + esc(x[0]) + '</b>' + (x[1] ? '<small>' + esc(x[1]) + '</small>' : '') + '</div></div>';
+    }).join('') +
+      '<a class="tfg-btn" href="' + esc(o.ctaHref || tel) + '">' + esc(o.ctaText) + ' \u2192<small>Call ' + esc(o.phone) + '</small></a></div>';
+  }
   function card(j) {
     var pair = pairOf(j);
     if (pair) return baCard(j, pair);
