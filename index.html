@@ -484,7 +484,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='11';
+var APP_VERSION='12';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -999,7 +999,7 @@ var MAT=(function(){
       (x.link&&!rep?'<div class="acts"><button class="btn" data-m="share">Send quote</button><a class="btn ghost" href="'+esc(x.link)+'" target="_blank" rel="noopener">View quote page</a></div>':'')+
       ghlLine(x)+'</div>';
     if(rep)h+=repairCard(x);
-    h+=proposalCard(x);
+    h+=proposalCard(x)+paymentsCard(x);
     if(x.status==='new')h+=rep?approveRepairCard(x):approveCard(x);
     else h+=scheduleCard(x)+profitCard(x)+jobCards(x);
     h+=inspectionCard(x);
@@ -2400,6 +2400,48 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       closeSheet();saveQ({name:ov.querySelector('#cn').value,phone:ov.querySelector('#cp').value,email:em,address:ov.querySelector('#cad').value},'Saved');};
   }
 
+  /* ----- payments ----- */
+  function paidOf(x){return (x.payments||[]).filter(function(p){return p.status==='paid';}).reduce(function(n,p){return n+(Number(p.amount)||0);},0);}
+  function payUrl(x){return (M.settings.proposalBase||'https://team-forte.com/quote')+'#p='+encodeURIComponent(x.id)+'&pay=1';}
+  function paymentsCard(x){
+    if(!(x.contractPrice>0)||!(x.signedAt||x.status!=='new'))return '';
+    var paid=Math.round(paidOf(x)*100)/100,bal=Math.max(0,Math.round(((x.contractPrice||0)-paid)*100)/100),s=M.settings;
+    var list=(x.payments||[]).filter(function(p){return p.status==='paid'||p.processing;});
+    return '<div class="card"><h2>Payments '+(bal<=0?'<span class="pill done">Paid in full</span>':(paid>0?'<span class="pill">'+money(paid)+' paid</span>':''))+'</h2>'+
+      kv('Job price',money(x.contractPrice))+list.map(function(p){return '<div class="kv"><span>'+(p.status==='paid'?'✓ ':'… ')+esc(p.label||'Payment')+' · '+dateStr(p.paidAt||p.created)+(p.status!=='paid'?' (bank payment clearing)':'')+'</span><b>'+money(p.amount)+(p.kind==='manual'?' <button class="lnk" data-m="delpay" data-pid="'+esc(p.id)+'" aria-label="Remove">✕</button>':'')+'</b></div>';}).join('')+
+      kv('Balance','<span class="money">'+money(bal)+'</span>')+
+      (x.payReq&&x.payReq.amount>0?'<p class="hint">Requested '+money(x.payReq.amount)+' ('+esc(x.payReq.label||'')+') '+dateStr(x.payReq.at)+'</p>':'')+
+      (!s.hasStripe?'<p class="hint">Turn on card and bank payments: Spending › Settings › Online payments (Stripe).</p>':'')+
+      '<div class="acts">'+(bal>0?'<button class="btn" data-m="reqpay">Request payment</button>':'')+'<button class="btn ghost" data-m="recpay">Record cash/check</button></div></div>';
+  }
+  function reqPaySheet(){
+    var x=q();var paid=paidOf(x),bal=Math.max(0,Math.round(((x.contractPrice||0)-paid)*100)/100),dep=Math.max(0,Math.round(((x.contractPrice||0)*(M.settings.depositPct||0)/100-paid)*100)/100);
+    var def=dep>0?dep:bal,lab=dep>0?'Deposit':'Balance';
+    var ov=sheet('<h3>Request payment'+closeBtn()+'</h3>'+kv('Balance',money(bal))+
+      '<div class="row"><div><label class="f">Amount</label><input class="in money" id="rpa" inputmode="decimal" value="'+def+'"></div><div><label class="f">For</label><input class="in" id="rpl" value="'+lab+'" placeholder="Balance"></div></div>'+
+      '<div class="pkg" id="rpq" style="margin-top:10px">'+(dep>0?'<button type="button" data-a="'+dep+'" data-l="Deposit"><b>Deposit</b><span>'+money(dep)+'</span></button>':'')+'<button type="button" data-a="'+bal+'" data-l="Balance"><b>Balance</b><span>'+money(bal)+'</span></button></div>'+
+      '<label class="f">Customer email</label><input class="in" id="rpe" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
+      (M.settings.hasStripe?'':'<div class="note">Stripe isn’t connected yet, so the invoice will show your phone number instead of a Pay button.</div>')+
+      '<button class="btn block mt" id="rpnow">Collect now on this device</button><div class="acts"><button class="btn ghost" id="rpem">Email invoice</button><button class="btn ghost" id="rptx">Text or copy link</button></div><div id="rpout"></div>');
+    ov.querySelector('#rpq').onclick=function(e){var b=e.target.closest('[data-a]');if(!b)return;ov.querySelector('#rpa').value=b.getAttribute('data-a');ov.querySelector('#rpl').value=b.getAttribute('data-l');};
+    function args(send){return {id:x.id,amount:String(ov.querySelector('#rpa').value).replace(/[^\d.]/g,''),label:ov.querySelector('#rpl').value.trim(),send:send};}
+    ov.querySelector('#rpnow').onclick=function(){var b=this;b.disabled=true;var w=null;try{w=window.open('about:blank','_blank');}catch(e){}
+      call('requestPayment',args('none')).then(function(r){mergeQ(r);var u=r.payUrl||payUrl(r);if(w&&!w.closed)w.location.href=u;else location.href=u;closeSheet();render();}).catch(function(e){if(w)try{w.close();}catch(z){}b.disabled=false;err(e);});};
+    ov.querySelector('#rpem').onclick=function(){var b=this;var a=args('email');var em=ov.querySelector('#rpe').value.trim();if(!validEmail(em)){toast('Add the customer’s email.',true);return;}b.disabled=true;
+      (em!==x.email?call('saveQuote',{id:x.id,email:em}).then(mergeQ):Promise.resolve()).then(function(){return call('requestPayment',a);}).then(function(r){mergeQ(r);closeSheet();render();toast('Invoice emailed to '+em);}).catch(function(e){b.disabled=false;err(e);});};
+    ov.querySelector('#rptx').onclick=function(){var b=this;b.disabled=true;call('requestPayment',args('none')).then(function(r){mergeQ(r);var u=r.payUrl||payUrl(r);var amt=money(r.payReq&&r.payReq.amount);
+      var msg='Hi'+(r.name?' '+r.name.split(' ')[0]:'')+', here is your Team Forte invoice for '+amt+'. You can pay by card or bank here: '+u;
+      ov.querySelector('#rpout').innerHTML='<a class="btn block mt" href="'+esc(smsHref(r.phone,msg))+'" target="_top">Text it'+(r.phone?' to '+esc(r.phone):'')+'</a><textarea class="in mt" readonly style="min-height:64px;font-size:13px">'+esc(u)+'</textarea>';render();}).catch(function(e){b.disabled=false;err(e);});};
+  }
+  function recPaySheet(){
+    var x=q();var bal=Math.max(0,Math.round(((x.contractPrice||0)-paidOf(x))*100)/100);
+    var ov=sheet('<h3>Record a payment'+closeBtn()+'</h3><p class="sub">For cash, checks, Zelle or a financing payout. Card and bank payments through Stripe are recorded automatically.</p>'+
+      '<div class="row"><div><label class="f">Amount</label><input class="in money" id="mpa" inputmode="decimal" value="'+(bal||'')+'"></div><div><label class="f">How</label><select class="in" id="mpm">'+['Check','Cash','Zelle','Financing','Other'].map(function(m){return '<option>'+m+'</option>';}).join('')+'</select></div></div>'+
+      '<label class="f">Note <small>(check #, optional)</small></label><input class="in" id="mpn" placeholder="#1042">'+
+      '<button class="btn block mt" id="mpsave">Save payment</button>');
+    ov.querySelector('#mpsave').onclick=function(){var b=this;b.disabled=true;call('recordPayment',{id:x.id,amount:ov.querySelector('#mpa').value,method:ov.querySelector('#mpm').value,note:ov.querySelector('#mpn').value}).then(function(r){mergeQ(r);closeSheet();render();toast('Payment saved');}).catch(function(e){b.disabled=false;err(e);});};
+  }
+
   /* ----- proposal / e-signature ----- */
   function proposalCard(x){
     var s=M.settings;
@@ -2592,6 +2634,11 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         '<div id="ghlsel">'+kv('Pipeline','Sales Pipeline')+kv('When a quote is sent','Quote Sent')+kv('When a job is approved','Won - Signed &amp; Scheduled')+'</div>'+
         '<div class="toggle" style="margin-top:8px"><div class="tl"><b>Sync quotes and jobs</b><span>Contacts and deals in your Sales Pipeline</span></div><button type="button" class="sw'+(g.enabled!==false?' on':'')+'" role="switch" data-sw="ghlEnabled" aria-checked="'+(g.enabled!==false)+'" aria-label="Sync with GoHighLevel"></button></div>'+
         '<button type="button" class="btn ghost block mt" data-m="ghltest">Check connection</button></div>';
+      h+='<div class="card"><h2>Online payments (Stripe) <small>'+(s.hasStripe?'<span class="pill done">Connected'+(s.stripeMode==='test'?' · test mode':'')+'</span>':'<span class="pill">Not connected</span>')+'</small></h2>'+
+        '<p class="hint">Customers pay the deposit right after signing, and you can send invoices for the balance. Card or bank account (ACH). Money goes straight to your Stripe account.</p>'+
+        '<p class="hint">Stripe › Developers › API keys › <b>Create restricted key</b>. Name it “Team Forte app” and set <b>Checkout Sessions: Write</b> (everything else None). Paste it here. Never paste the publishable key.</p>'+
+        '<label class="f">Restricted key</label><input class="in" name="stripeKey" autocomplete="off" placeholder="'+(s.hasStripe?'Saved. Paste to replace':'rk_live_…')+'">'+
+        '<button type="button" class="btn ghost block mt" data-m="stripetest">Check connection</button></div>';
       h+='<div class="card"><h2>People &amp; logins</h2><p class="hint">Your setup passcode is the owner login. Office: everything except logins and keys. Crew: their jobs and photos only, no prices.</p><div id="people"><div class="loading" style="padding:12px"><div class="spin dk"></div></div></div>'+
         '<div class="acts"><button type="button" class="btn ghost" data-m="addperson">'+ICON.plus+'Add person</button><button type="button" class="btn dark" data-m="savepeople">Save people</button></div></div>';
     }
@@ -2604,6 +2651,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     var a={company:{name:el.co_name.value,legal:el.co_legal.value,address:el.co_address.value,phone:el.co_phone.value,email:el.co_email.value,hic:el.co_hic.value},
       depositPct:el.depositPct.value,depositLink:el.depositLink.value,terms:el.terms.value,crewDayRate:el.crewDayRate.value,dumpster:el.dumpster.value,permit:el.permit.value,
       reviewLink:el.reviewLink.value,warrantyLink:el.warrantyLink.value,autoReview:sw('autoReview')};
+    if(el.stripeKey&&el.stripeKey.value.trim())a.stripeKey=el.stripeKey.value.trim();
     if(el.ghlToken){if(el.ghlToken.value.trim())a.ghlToken=el.ghlToken.value.trim();a.ghl={enabled:sw('ghlEnabled')};
       ['pipelineId','stageQuote','stageWon'].forEach(function(k2){if(el['g_'+k2])a.ghl[k2]=el['g_'+k2].value;});}
     return a;
@@ -2631,6 +2679,9 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='edititems'){editItemsSheet();return;}
     if(a==='approverep'){t.disabled=true;saveQ({status:'approved'},'Approved').then(function(){M.qfilter='approved';call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);});}).catch(function(){t.disabled=false;});return;}
     if(a==='propose'){proposeSheet();return;}
+    if(a==='reqpay'){reqPaySheet();return;}
+    if(a==='recpay'){recPaySheet();return;}
+    if(a==='delpay'){if(!confirm('Remove this payment record?'))return;call('deletePayment',{id:q().id,paymentId:t.getAttribute('data-pid')}).then(function(r){mergeQ(r);render();toast('Removed');}).catch(err);return;}
     if(a==='savesched'){saveQ({installDate:document.getElementById('sd').value,crew:document.getElementById('sc').value},'Schedule saved');return;}
     if(a==='editcosts'){costsSheet();return;}
     if(a==='addinsp'){addInspSheet(M.qid);return;}
@@ -2647,6 +2698,9 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='crewinsp'){addInspSheet(M.qid);return;}
     if(a==='crewnote'){var ni=document.getElementById('cnote');var nv=ni.value.trim();if(!nv)return;t.disabled=true;
       call('crewNote',{id:M.qid,note:nv}).then(function(){var cj2=M.crewJobs.filter(function(z){return z.id===M.qid;})[0];cj2.events=(cj2.events||[]).concat([{e:'crew: '+nv+' ('+S.user.name+')',t:new Date().toISOString()}]);render();toast('Sent to the office');}).catch(function(e){t.disabled=false;err(e);});return;}
+    if(a==='stripetest'){var sf2=document.getElementById('sf');t.disabled=true;
+      saveSettings(sf2,(document.querySelector('#aenv .on')||{getAttribute:function(){return 'sandbox';}}).getAttribute('data-env')).then(function(){return call('stripeTest');}).then(function(r){toast('Stripe is connected ('+r.mode+' mode)');})
+        .catch(function(e){if(e.message!=='bad')err(e);}).then(function(){var b=document.querySelector('[data-m=stripetest]');if(b)b.disabled=false;});return;}
     if(a==='ghltest'){var gf=document.getElementById('sf');t.disabled=true;
       saveSettings(gf,(document.querySelector('#aenv .on')||{getAttribute:function(){return 'sandbox';}}).getAttribute('data-env')).then(function(){return call('ghlPipelines');}).then(function(list){
         var g=M.settings.ghl||{};var box=document.getElementById('ghlsel');

@@ -238,6 +238,23 @@
     '#tfp .foot{background:var(--navy);color:#c4ccd6;font-size:13px}#tfp .foot .s{padding:24px 16px}#tfp .foot b{color:#fff}' +
     '#tfp .load{max-width:520px;margin:0 auto;padding:90px 20px;text-align:center;color:var(--muted)}#tfp .spin{width:38px;height:38px;border:4px solid #dde2e8;border-top-color:var(--red);border-radius:50%;margin:0 auto 14px;animation:tfpspin 1s linear infinite}' +
     '@keyframes tfpspin{to{transform:rotate(360deg)}}' +
+    /* animations */
+    '#tfp .rv{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.75,.2,1)}#tfp .rv.in{opacity:1;transform:none}' +
+    '#tfp .hero .bgi{animation:tfpkb 16s ease-out both}@keyframes tfpkb{from{transform:scale(1.14)}to{transform:scale(1)}}' +
+    '#tfp .hero .s>*{animation:tfpup .8s cubic-bezier(.2,.75,.2,1) both}#tfp .hero .s>*:nth-child(2){animation-delay:.12s}#tfp .hero .s>*:nth-child(3){animation-delay:.24s}#tfp .hero .s>*:nth-child(4){animation-delay:.36s}#tfp .hero .s>*:nth-child(5){animation-delay:.5s}' +
+    '@keyframes tfpup{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}' +
+    '#tfp .li i,#tfp .tl li:before{transition:transform .5s cubic-bezier(.3,1.6,.5,1) .15s}#tfp .rv:not(.in) .li i,#tfp .li.rv:not(.in) i,#tfp .tl li.rv:not(.in):before{transform:scale(0)}' +
+    '#tfp .opt{transition:border-color .25s,box-shadow .25s,transform .25s}#tfp .opt.pop{animation:tfppop .45s cubic-bezier(.3,1.5,.5,1)}@keyframes tfppop{0%{transform:scale(.97)}60%{transform:scale(1.03)}100%{transform:scale(1)}}' +
+    '#tfp .sw{transition:transform .2s,border-color .2s,box-shadow .2s}#tfp .sw:hover{transform:translateY(-3px)}#tfp .sw.on{transform:translateY(-3px)}' +
+    '#tfp .btn{transition:transform .15s,box-shadow .2s,background .2s}#tfp .btn:active{transform:scale(.97)}#tfp .btn:not(.ghost):hover{box-shadow:0 8px 22px rgba(255,84,64,.35)}' +
+    '#tfp .card.ph img,#tfp .card.job img{transition:transform .6s ease}#tfp .card.ph:hover img,#tfp .card.job:hover img{transform:scale(1.04)}#tfp .card{overflow:hidden}' +
+    '#tfp .ok{animation:tfpup .6s cubic-bezier(.2,.75,.2,1) both}#tfp .okchk{width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:10px;animation:tfppop .6s cubic-bezier(.3,1.6,.5,1) both}' +
+    '#tfp .okchk svg{width:24px;height:24px;stroke-dasharray:30;stroke-dashoffset:30;animation:tfpdraw .5s .25s ease forwards}@keyframes tfpdraw{to{stroke-dashoffset:0}}' +
+    '#tfp .faq details p{animation:tfpup .35s ease both}' +
+    '@media (prefers-reduced-motion:reduce){#tfp .rv{opacity:1;transform:none;transition:none}#tfp *{animation:none!important;transition:none!important}}' +
+    /* payments */
+    '#tfp .paybar{max-width:980px;margin:16px auto 0;padding:0 16px}#tfp .paybar>div{border-radius:14px;padding:16px 18px;font-size:15px}#tfp .paybar .good{background:#E5F6EC;border:1px solid #BFE6CF;color:#145C34}#tfp .paybar .wait{background:#FFF7E6;border:1px solid #FDE3A7;color:#7A4B00}' +
+    '#tfp .inv{max-width:620px;margin:0 auto;padding:36px 16px 60px}#tfp .inv .sum .r.due{font-size:18px}#tfp .paid-ln{color:var(--green);font-weight:700}#tfp .secure{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}' +
     /* present mode: one slide at a time */
     '#tfp.pres{height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}#tfp.pres .deck{flex:1;position:relative;overflow:hidden}' +
     '#tfp.pres .slide{position:absolute;inset:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}#tfp.pres .slide.on{display:block;animation:tfpin .25s ease}' +
@@ -250,7 +267,8 @@
     '@media(max-width:600px){#tfp h1{font-size:30px}#tfp .hero h1{font-size:34px}#tfp h2{font-size:24px}#tfp .grid2,#tfp .list{grid-template-columns:1fr}#tfp .s{padding:34px 16px}#tfp .stat b{font-size:28px}#tfp .ph img{height:210px}#tfp .bar img{height:28px}#tfp .call span{display:none}}';
 
   /* ------------------------------------------------------------------ mount */
-  var P = params(), ID = String(P.p || P.proposal || '').trim(), PRESENT = P.present === '1';
+  var P = params(), ID = String(P.p || P.proposal || '').trim(), PRESENT = P.present === '1', INVOICE = P.pay === '1', PAID = /^cs_[A-Za-z0-9_]+$/.test(P.paid || '') ? P.paid : '';
+  var CALM = false; try { CALM = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var host = document.getElementById('tfp-host') || document.getElementById('tfq-host');
   var cur = document.currentScript;
   var root = document.createElement('div'); root.id = 'tfp';
@@ -282,8 +300,112 @@
     D = d;
     S.pick = D.offers ? (D.pick >= 0 ? D.pick : 1) : D.pick;
     S.color = D.color || '';
-    build();
+    if (INVOICE && D.signed) buildInvoice(); else build();
+    if (PAID) checkPaid();
   }).catch(function () { showMsg('We couldn’t load your proposal', 'Please check your connection and refresh the page, or give us a call.'); });
+
+  /* ------------------------------------------------------------------ payments */
+  function payBtn(kind, amount, label) {
+    return '<button class="btn block" type="button" data-pay="' + kind + '">' + esc(label || ('Pay ' + money(amount, true) + ' now')) + '</button><p class="secure">Secure checkout by Stripe. Card or bank account.</p>';
+  }
+  function payNow(kind, btn) {
+    var old = btn.innerHTML; btn.disabled = true; btn.textContent = 'Opening secure checkout…';
+    fetch(EXEC + '?r=pay', { method: 'POST', body: JSON.stringify({ id: D.id, kind: kind }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
+      .then(function (r) { return r.text(); }).then(function (t) {
+        var r; try { r = JSON.parse(t); } catch (e) { throw new Error('bad'); }
+        if (!r.ok || !r.url) throw new Error(r.error || 'Payment isn’t available right now.');
+        location.href = r.url;
+      }).catch(function (e) {
+        btn.disabled = false; btn.innerHTML = old;
+        var m = document.createElement('div'); m.className = 'err'; m.textContent = (e && e.message && e.message !== 'bad' ? e.message : 'Couldn’t open checkout. Check your connection and try again, or call ' + COPY.phone + '.');
+        btn.insertAdjacentElement('afterend', m); setTimeout(function () { if (m.parentNode) m.parentNode.removeChild(m); }, 8000);
+      });
+  }
+  function checkPaid() {
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+    showPayBar('wait', 'Confirming your payment…');
+    jsonp(EXEC + '?r=paid&id=' + encodeURIComponent(ID) + '&session=' + encodeURIComponent(PAID), 30000).then(function (r) {
+      if (!r || !r.ok) { showPayBar('wait', 'We couldn’t confirm your payment yet. If you were charged, you’ll get a receipt by email from Stripe, and we’ll confirm it shortly.'); return; }
+      var kind = 'wait', msg;
+      if (r.status === 'paid') { kind = 'good'; msg = '<b>Payment received. Thank you!</b> ' + money(r.amount, true) + ' was paid' + (r.balance > 0 ? '. Remaining balance: ' + money(r.balance, true) + '.' : '. Your account is paid in full.') + ' A receipt is on its way to your email.'; }
+      else if (r.status === 'processing') msg = '<b>Thank you!</b> Your bank payment of ' + money(r.amount, true) + ' is processing. Bank payments take a few business days to clear, and we’ll confirm when it does.';
+      else msg = 'Your payment wasn’t completed. You can try again below, or call us at ' + esc(COPY.phone) + '.';
+      D.paid = r.paid; D.balance = r.balance; D.depositDue = r.depositDue; D.payments = r.payments || D.payments; if (r.status === 'paid') D.payReq = r.payReq || null;
+      if (INVOICE && D.signed) buildInvoice(); else if (root.querySelector('#tfp-signbox')) renderSign();
+      showPayBar(kind, msg);
+      if (r.status === 'paid' && !CALM) confetti();
+    }).catch(function () { showPayBar('wait', 'We couldn’t confirm your payment yet. If you were charged, you’ll get a receipt by email from Stripe.'); });
+  }
+  function showPayBar(kind, html) {
+    var b = root.querySelector('.paybar'); if (!b) { b = document.createElement('div'); b.className = 'paybar'; var bar0 = root.querySelector('.bar'); if (bar0) bar0.insertAdjacentElement('afterend', b); else root.insertBefore(b, root.firstChild); }
+    b.innerHTML = '<div class="' + kind + '">' + html + '</div>';
+  }
+  function buildInvoice() {
+    var keepBar = root.querySelector('.paybar'), barHtml = keepBar ? keepBar.outerHTML : '';
+    var due = D.payReq && D.payReq.amount > 0 ? Math.min(D.payReq.amount, D.balance) : D.balance;
+    var label = D.payReq && D.payReq.label ? D.payReq.label : (D.depositDue > 0 ? 'Deposit' : 'Balance due');
+    var p = PKGS[D.pick];
+    var h = '<div class="inv"><p class="k">Invoice · ' + esc(D.id) + '</p><h1 style="font-size:32px">' + (due > 0 ? 'Amount due: ' + money(due, true) : 'Paid in full') + '</h1><p class="lead">' + esc(D.address) + '</p>' +
+      '<div class="sum"><div class="r"><span>' + (D.type === 'repair' ? 'Roof repair' : esc(p ? p.name : 'New roof') + (D.color ? ', ' + esc(D.color) : '')) + '</span><span>' + money(D.price, true) + '</span></div>' +
+      (D.payments || []).map(function (x) { return '<div class="r"><span class="paid-ln">Paid ' + esc(x.date) + (x.label ? ' · ' + esc(x.label) : '') + '</span><span class="paid-ln">−' + money(x.amount, true) + '</span></div>'; }).join('') +
+      '<div class="r"><span>Balance</span><span class="tot">' + money(D.balance, true) + '</span></div></div>' +
+      (due > 0 ? (D.stripe ? '<div class="sum"><div class="r due"><span><b>' + esc(label) + '</b></span><span class="tot">' + money(due, true) + '</span></div></div>' + payBtn('request', due, 'Pay ' + money(due, true) + ' now') :
+        '<p class="m">To pay, call us at ' + esc(COPY.phone) + '.</p>') : '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Paid in full. Thank you!</b></div>') +
+      (FIN && FIN.on && due >= 1000 ? '<p class="m" style="margin-top:14px">Prefer monthly payments? <a href="' + esc(FIN.applyUrl || smsHref('Hi Team Forte, I’d like to hear about financing for ' + D.id + '.')) + '">' + (FIN.applyUrl ? 'Check your financing options' : 'Ask us about financing') + '</a>.</p>' : '') +
+      '<p class="m" style="margin-top:22px;text-align:center"><a href="#p=' + encodeURIComponent(D.id) + '" data-full="1">View your full roof plan</a> · Questions? <a href="' + esc(smsHref('Hi Team Forte, about invoice ' + D.id + ': ')) + '">Text us</a></p></div>' +
+      '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') + '</div></div>';
+    root.className = ''; root.innerHTML = bar() + barHtml + h;
+    if (!S.wired) wire();
+  }
+
+  /* ------------------------------------------------------------------ animation */
+  var RV_SEL = '.slide .k,.slide h2,.slide .lead,.stat,.roofs,.card,.li,.tl li,.opt,.dep,.fin,.sw,.viz,.rate,.q,.faq details,.ask,.sum,.terms,.certs';
+  function markRv(scope, done) {
+    (scope || root).querySelectorAll(RV_SEL).forEach(function (el) { if (el.closest('.hero')) return; el.classList.add('rv'); if (done || CALM) el.classList.add('in'); });
+  }
+  function reveal(els) {
+    var k = 0;
+    els.forEach(function (el) {
+      if (el.classList.contains('in')) return;
+      el.style.transitionDelay = Math.min(k++, 12) * 65 + 'ms'; el.classList.add('in');
+      el.querySelectorAll('[data-count]').forEach(countUp); if (el.hasAttribute('data-count')) countUp(el);
+      setTimeout(function () { el.style.transitionDelay = ''; }, 1600);
+    });
+  }
+  function countUp(el) {
+    if (CALM || el.__counted) return; el.__counted = true;
+    var fin = el.textContent, m = fin.match(/^(\$?)([\d,]+)(.*)$/); if (!m) return;
+    var target = Number(m[2].replace(/,/g, '')), t0 = null, dur = 900;
+    if (!(target > 9)) return;
+    function step(ts) { if (!t0) t0 = ts; var x = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - x, 3);
+      el.textContent = m[1] + Math.round(target * e).toLocaleString('en-US') + m[3]; if (x < 1) requestAnimationFrame(step); else el.textContent = fin; }
+    requestAnimationFrame(step);
+  }
+  function tagCounts(scope) { (scope || root).querySelectorAll('.stat b,.opt .pr').forEach(function (el) { el.setAttribute('data-count', '1'); }); }
+  function watch() {
+    if (CALM) return;
+    if (!('IntersectionObserver' in window)) { reveal(root.querySelectorAll('.rv')); return; }
+    var io = new IntersectionObserver(function (ents) {
+      var batch = ents.filter(function (e) { return e.isIntersecting; }).map(function (e) { io.unobserve(e.target); return e.target; });
+      if (batch.length) reveal(batch);
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    root.querySelectorAll('.rv:not(.in)').forEach(function (el) { io.observe(el); });
+  }
+  function confetti() {
+    try {
+      var cv = document.createElement('canvas'), W = innerWidth, H = innerHeight, d = window.devicePixelRatio || 1;
+      cv.width = W * d; cv.height = H * d; cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:99999';
+      document.body.appendChild(cv); var cx = cv.getContext('2d'); cx.scale(d, d);
+      var cols = ['#FF5440', '#13202F', '#FDB022', '#16A34A', '#ffffff'], ps = [];
+      for (var i = 0; i < 140; i++) ps.push({ x: W / 2 + (Math.random() - 0.5) * 120, y: H * 0.35, vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 13 - 4, r: Math.random() * 6 + 4, c: cols[i % cols.length], a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4 });
+      var t0 = performance.now();
+      (function fr(t) {
+        var el = t - t0; cx.clearRect(0, 0, W, H);
+        ps.forEach(function (p) { p.vy += 0.38; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.a += p.va; cx.save(); cx.translate(p.x, p.y); cx.rotate(p.a); cx.globalAlpha = Math.max(0, 1 - el / 2200); cx.fillStyle = p.c; cx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); cx.restore(); });
+        if (el < 2200) requestAnimationFrame(fr); else cv.parentNode && cv.parentNode.removeChild(cv);
+      })(t0);
+    } catch (e) {}
+  }
 
   /* ------------------------------------------------------------------ build */
   function price(i) { return D.offers ? Number(D.offers[i]) || 0 : D.price; }
@@ -382,8 +504,8 @@
       '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') +
       '<br><span style="font-size:11px">*Warranty and wind ratings per Owens Corning’s terms and installation requirements.</span></div></div>';
     renderPrice(); if (D.type !== 'repair') renderColor(); renderSign();
-    wire();
-    if (PRESENT) go(0);
+    tagCounts(); markRv(); wire(); S.built = true;
+    if (PRESENT) go(0); else watch();
   }
 
   function renderPrice() {
@@ -411,6 +533,7 @@
         (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit holds your install date. Balance when the job is done.</div>' : '');
     }
     box.innerHTML = h + financeBox();
+    if (S.built) { markRv(box, true); var on = box.querySelector('.opt.on'); if (on && !CALM) { on.classList.add('pop'); } }
   }
 
   function renderColor() {
@@ -420,6 +543,7 @@
       '<div class="sws">' + p.colors.map(function (c) { return '<button type="button" class="sw' + (c === S.color ? ' on' : '') + '" data-cl="' + esc(c) + '"' + (D.signed ? ' disabled' : '') + '><img alt="" data-swatch="' + esc(c) + '"><span>' + esc(c) + '</span></button>'; }).join('') + '</div>' +
       '<p class="viz"><a href="https://www.owenscorning.com/en-us/roofing/design-eyeq" target="_blank" rel="noopener">See these colors on a house with Owens Corning’s visualizer ↗</a></p>' +
       (S.color ? '' : '<p class="m">Not sure yet? You can sign now and pick the color with us later.</p>');
+    if (S.built) markRv(box, true);
     var imgs = box.querySelectorAll('img[data-swatch]'), k = 0;
     (function next() { if (k >= imgs.length) return; var el = imgs[k++]; el.src = swatch(el.getAttribute('data-swatch'), 180, 100); setTimeout(next, 0); })();
   }
@@ -431,8 +555,13 @@
       '<div class="r"><span>Price</span><span class="tot">' + money(pr, true) + '</span></div>' +
       (D.depositPct > 0 ? '<div class="r"><span>Deposit to schedule (' + D.depositPct + '%)</span><span>' + depositText(pr) + '</span></div>' : '') + '</div>';
     if (D.signed) {
+      var payPart = '';
+      if (D.stripe && D.depositDue > 0) payPart = '<div style="margin-top:14px">' + payBtn('deposit', D.depositDue, 'Pay the ' + money(D.depositDue, true) + ' deposit now') + '</div>';
+      else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Balance of ' + money(D.balance, true) + ' is due when the job is done.' : ' Paid in full.') + '</p>';
+      else if (D.depositLink) payPart = '<br><a class="btn" href="' + esc(D.depositLink) + '" target="_top">Pay the ' + depositText(pr) + ' deposit</a>';
       box.innerHTML = '<p class="k">Signed</p><h2>Thank you, ' + esc(D.signed.name) + '!</h2>' + sum +
-        '<div class="ok"><b>Signed on ' + esc(D.signed.date) + '.</b> We’ll call you to schedule.' + (D.depositLink ? '<br><a class="btn" href="' + esc(D.depositLink) + '" target="_top">Pay the ' + depositText(pr) + ' deposit</a>' : '') + '</div>';
+        '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Signed on ' + esc(D.signed.date) + '.</b> We’ll call you to schedule.' + payPart + '</div>';
+      if (S.built) markRv(box, true);
       return;
     }
     box.innerHTML = '<p class="k">Ready when you are</p><h2>Accept & sign</h2>' + sum +
@@ -444,6 +573,7 @@
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
     sigPad();
+    if (S.built) markRv(box, true);
   }
 
   function sigPad() {
@@ -472,7 +602,8 @@
         var r; try { r = JSON.parse(t); } catch (e) { throw new Error('bad'); }
         if (!r.ok) { er.textContent = r.error || 'Couldn’t save. Please try again.'; b.disabled = false; b.textContent = 'Accept & sign'; return; }
         D.signed = { name: nm, date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) };
-        D.depositLink = r.depositLink || '';
+        D.depositLink = r.depositLink || ''; D.stripe = !!r.stripe; D.depositDue = Number(r.depositDue) || 0; D.paid = 0; D.balance = Number(r.balance) || 0;
+        if (!CALM) confetti();
         if (D.offers) D.price = chosenPrice();
         renderPrice(); if (D.type !== 'repair') renderColor(); renderSign();
         var ok = root.querySelector('#tfp-signbox .ok');
@@ -483,7 +614,13 @@
 
   /* ------------------------------------------------------------------ interaction */
   function wire() {
+    if (S.wired) return wireNav();
+    S.wired = true;
     root.addEventListener('click', function (e) {
+      var pb = e.target.closest('[data-pay]');
+      if (pb) { e.preventDefault(); if (!pb.disabled) payNow(pb.getAttribute('data-pay'), pb); return; }
+      var fl = e.target.closest('[data-full]');
+      if (fl) { e.preventDefault(); INVOICE = false; try { history.replaceState(null, '', location.pathname + '#p=' + encodeURIComponent(D.id)); } catch (x) {} S.built = false; build(); scrollTo(0, 0); return; }
       var pk = e.target.closest('[data-pk]');
       if (pk && !D.signed && D.offers && root.querySelector('#tfp-price').contains(pk)) {
         var i = +pk.getAttribute('data-pk'); if (i !== S.pick) { S.pick = i; renderPrice(); if (D.type !== 'repair') renderColor(); var nm = root.querySelector('#tfp-nm'), keep = nm ? nm.value : ''; renderSign(); if (nm) root.querySelector('#tfp-nm').value = keep; } return;
@@ -495,6 +632,11 @@
       if (e.target.closest('.nav .nx')) { go(S.slide + 1); return; }
       if (e.target.closest('.nav .pv')) { go(S.slide - 1); return; }
     });
+    wireNav();
+  }
+  function wireNav() {
+    if (!D || !root.querySelector('.deck') || S.navWired) return;
+    S.navWired = true;
     if (PRESENT) {
       document.addEventListener('keydown', function (e) {
         if (/input|textarea/i.test((e.target && e.target.tagName) || '')) return;
@@ -520,5 +662,11 @@
     var nx = root.querySelector('.nav .nx'); nx.disabled = i === sl.length - 1;
     var prog = root.querySelector('#tfp-prog'); if (prog) prog.style.width = ((i + 1) / sl.length * 100) + '%';
     if (S.secs[i] === 'sign' && S.sizeSig) setTimeout(S.sizeSig, 30);
+    if (!CALM) {
+      var cur = sl[i];
+      cur.querySelectorAll('.rv').forEach(function (el) { el.classList.remove('in'); el.style.transitionDelay = ''; });
+      cur.querySelectorAll('[data-count]').forEach(function (el) { el.__counted = false; });
+      requestAnimationFrame(function () { requestAnimationFrame(function () { reveal(cur.querySelectorAll('.rv')); }); });
+    }
   }
 })();
