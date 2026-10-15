@@ -1,7 +1,7 @@
 /* Team Forte app: keeps the app itself on the phone so it opens instantly.
    App files: served from the phone, refreshed in the background.
    Your data (quotes, jobs, photos) always comes from Google. */
-var VERSION = 'tf-v10';
+var VERSION = 'tf-v11';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
@@ -30,7 +30,12 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   if (url.origin === location.origin) {
-    if (req.mode === 'navigate') { e.respondWith(fromCacheThenUpdate(req, 'index.html')); return; }
+    if (req.mode === 'navigate') {
+      /* only the app itself opens from the phone; other pages (the proposal presentation p.html) load fresh */
+      if (/\/(index\.html)?$/.test(url.pathname)) e.respondWith(fromCacheThenUpdate(req, 'index.html'));
+      return;
+    }
+    if (/\/(proposal|instant-quote|gallery)\.js$/.test(url.pathname)) return; /* website scripts: always fresh */
     e.respondWith(fromCacheThenUpdate(req));
     return;
   }

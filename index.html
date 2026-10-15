@@ -484,7 +484,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='10';
+var APP_VERSION='11';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var TITLES={Roofing:['Full roof replacement','Roof repair','Leak repair','Shingle replacement','Flat roof','Chimney flashing','Gutters','Skylight'],Carpentry:['Deck build','Deck repair','Trim & molding','Framing','Door install','Stairs & railings'],Painting:['Exterior painting','Interior painting','Deck staining','Cabinet painting'],Handyman:['General repairs','Drywall repair','Fixture install','Siding repair']};
@@ -2326,7 +2326,9 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   /* =================== EXTRAS (repairs, proposals, schedule, profit, inspections, wrap-up, crew) =================== */
   function role(){return (S.user&&S.user.role)||'owner';}
   function isOwner(){return role()==='owner';}
-  function proposalUrl(x){return (M.execUrl||EXEC_URL)+'?r=proposal&id='+encodeURIComponent(x.id);}
+  function proposalUrl(x){return (M.settings.proposalBase||'https://team-forte.com/quote')+'#p='+encodeURIComponent(x.id);}
+  function presentUrl(x){return (M.settings.presentBase||'https://teamsforte.github.io/p.html')+'#p='+encodeURIComponent(x.id)+'&present=1';}
+  function opens(x){var ev=(x.events||[]).filter(function(e){return /^proposal opened/.test(e.e);});return {n:ev.length,last:ev.length?ev[ev.length-1].t:''};}
   function repairTotal(items){var t=(items||[]).reduce(function(n,it){return n+(Number(it.qty)||0)*(Number(it.price)||0);},0);return Math.round(Math.max(Number(M.repairs.min)||0,t)*100)/100;}
   function inspOf(x){return (M.inspections||[]).filter(function(i){return i.quoteId===x.id;}).sort(function(a,b){return a.order-b.order;});}
   function validEmail(e){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(e||''));}
@@ -2409,25 +2411,33 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         '<a class="btn ghost" href="'+esc(proposalUrl(x))+'" target="_blank" rel="noopener">Proposal page</a></div></div>';
     }
     if(x.status==='done'||x.status==='archived')return '';
-    return '<div class="card"><h2>Online signature</h2><p class="sub" style="margin:0">Send a firm-price proposal the customer can sign on their phone. When they sign, the job is approved for you'+(s.depositPct?' and they can pay the '+s.depositPct+'% deposit':'')+'.</p>'+
-      (x.proposalSentAt?'<p class="hint">Sent '+dateStr(x.proposalSentAt)+'</p>':'')+
-      '<button class="btn block mt" data-m="propose">'+(x.proposalSentAt?'Send again':'Send for signature')+'</button></div>';
+    return '<div class="card"><h2>Roof plan & signature</h2><p class="sub" style="margin:0">A presentation with their roof, your inspection photos, the options and prices. Show it at the table or send it, and they can sign on the spot. When they sign, the job is approved for you'+(s.depositPct?' and they can pay the '+s.depositPct+'% deposit':'')+'.</p>'+
+      (x.proposalSentAt?'<p class="hint">Sent '+dateStr(x.proposalSentAt)+(function(o){return o.n?' · opened '+o.n+'×, last '+dateStr(o.last)+' '+new Date(o.last).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):' · not opened yet';})(opens(x))+'</p>':'')+
+      '<button class="btn block mt" data-m="propose">'+(x.proposalSentAt?'Send again or present':'Present or send for signature')+'</button>'+
+      (x.proposalSentAt?'<a class="btn ghost block mt" href="'+esc(proposalUrl(x))+'" target="_blank" rel="noopener">See what the customer sees</a>':'')+'</div>';
   }
   function proposeSheet(){
     var x=q();var rep=x.type==='repair';var pick=x.pick>=0?x.pick:1;
-    var ov=sheet('<h3>Send for signature'+closeBtn()+'</h3>'+
+    function ofv(i){if(x.offers&&x.offers[i]>0)return x.offers[i];if(i===x.pick&&x.contractPrice>0)return x.contractPrice;return mid(x,i)||'';}
+    var ov=sheet('<h3>Roof plan & signature'+closeBtn()+'</h3>'+
       (rep?kv('Repair total','<span class="money">'+money(x.contractPrice)+'</span>'):
-        '<label class="f">Package</label><div class="pkg" id="ppk">'+PK.map(function(p,i){return '<button type="button" class="'+(i===pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b><span>'+(range(x,i)||' ')+'</span></button>';}).join('')+'</div>'+
-        '<div class="row"><div><label class="f">Color</label><input class="in" id="pcl" value="'+esc(x.color||'')+'" placeholder="Estate Gray"></div><div><label class="f">Firm price</label><input class="in money" id="ppr" inputmode="decimal" value="'+(x.contractPrice||mid(x,pick)||'')+'"></div></div>')+
+        '<label class="f">Firm prices <span class="hint" style="font-weight:500">· the customer picks one. Clear a box to leave that option out.</span></label>'+
+        '<div class="row">'+PK.map(function(p,i){return '<div><label class="f" style="margin-top:0;font-size:12px">'+p.label+'</label><input class="in money" data-of="'+i+'" inputmode="decimal" value="'+ofv(i)+'"><span class="hint" style="font-size:11px">'+(range(x,i)||' ')+'</span></div>';}).join('')+'</div>'+
+        '<label class="f">Recommend</label><div class="pkg" id="ppk">'+PK.map(function(p,i){return '<button type="button" class="'+(i===pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b><span>'+(i===pick?'Recommended':' ')+'</span></button>';}).join('')+'</div>'+
+        '<label class="f">Color <span class="hint" style="font-weight:500">· optional, they can pick it in the plan</span></label><input class="in" id="pcl" value="'+esc(x.color||'')+'" placeholder="Estate Gray">')+
       '<label class="f">Customer email</label><input class="in" id="pem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
-      '<div class="acts"><button class="btn" id="pemail">Email it</button><button class="btn ghost" id="plink">Text or copy link</button></div><div id="pout"></div>');
-    if(!rep)ov.querySelector('#ppk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;var old=pick;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#ppk button').forEach(function(z){z.classList.toggle('on',z===b);});
-      var pr=ov.querySelector('#ppr');if(!Number(pr.value)||Number(pr.value)===mid(x,old))pr.value=mid(x,pick)||'';};
-    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim()};if(!rep){a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=Number(ov.querySelector('#ppr').value)||0;}return a;}
-    ov.querySelector('#pemail').onclick=function(){var b=this;var a=args('email');if(!validEmail(a.email)){toast('Add the customer’s email.',true);return;}b.disabled=true;
+      '<button class="btn block mt" id="ppres">Present now on this device</button>'+
+      '<div class="acts"><button class="btn ghost" id="pemail">Email it</button><button class="btn ghost" id="plink">Text or copy link</button></div><div id="pout"></div>');
+    if(!rep)ov.querySelector('#ppk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#ppk button').forEach(function(z){var on=z===b;z.classList.toggle('on',on);z.querySelector('span').textContent=on?'Recommended':' ';});};
+    function offersIn(){return [0,1,2].map(function(i){return Number(String(ov.querySelector('[data-of="'+i+'"]').value).replace(/[^\d.]/g,''))||0;});}
+    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim()};if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
+    function okPrices(a){if(rep)return true;if(!(a.contractPrice>0)){toast('Enter a price for the recommended option ('+PK[pick].label+').',true);return false;}return true;}
+    ov.querySelector('#ppres').onclick=function(){var b=this;var a=args('present');if(!okPrices(a))return;b.disabled=true;var w=null;try{w=window.open('about:blank','_blank');}catch(e){}
+      call('sendProposal',a).then(function(r){mergeQ(r);var u=r.presentUrl||presentUrl(r);if(w&&!w.closed)w.location.href=u;else location.href=u;closeSheet();render();}).catch(function(e){if(w)try{w.close();}catch(z){}b.disabled=false;err(e);});};
+    ov.querySelector('#pemail').onclick=function(){var b=this;var a=args('email');if(!okPrices(a))return;if(!validEmail(a.email)){toast('Add the customer’s email.',true);return;}b.disabled=true;
       call('sendProposal',a).then(function(r){mergeQ(r);closeSheet();render();toast('Proposal emailed to '+a.email);}).catch(function(e){b.disabled=false;err(e);});};
-    ov.querySelector('#plink').onclick=function(){var b=this;b.disabled=true;
-      call('sendProposal',args('none')).then(function(r){mergeQ(r);var url=r.proposalUrl;var msg='Hi'+(r.name?' '+r.name.split(' ')[0]:'')+', here is your Team Forte proposal. You can review and sign it here: '+url;
+    ov.querySelector('#plink').onclick=function(){var b=this;var a=args('none');if(!okPrices(a))return;b.disabled=true;
+      call('sendProposal',a).then(function(r){mergeQ(r);var url=r.proposalUrl;var msg='Hi'+(r.name?' '+r.name.split(' ')[0]:'')+', here is your Team Forte roof plan with the photos from today, your options and prices. You can review and sign it here: '+url;
         ov.querySelector('#pout').innerHTML='<a class="btn block mt" href="'+esc(smsHref(r.phone,msg))+'" target="_top">Text it'+(r.phone?' to '+esc(r.phone):'')+'</a><textarea class="in mt" readonly style="min-height:64px;font-size:13px">'+esc(url)+'</textarea>';
         render();}).catch(function(e){b.disabled=false;err(e);});};
   }
