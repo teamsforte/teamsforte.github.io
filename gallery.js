@@ -435,7 +435,7 @@
   }
   function trustBar(o) {
     if (o.trust === 'none') return '';
-    var items = (o.trust || 'Free Inspections|No cost, no obligation;Written Estimates|With photos of what we find;Serving Connecticut|Local and responsive').split(';')
+    var items = (o.trust || 'Licensed & Insured|Your home is protected;Free Inspections|Written estimate with photos;Serving Connecticut|Local and responsive').split(';')
       .map(function (x) { return x.split('|'); }).filter(function (x) { return x[0]; }).slice(0, 3);
     var icons = [KICON.shield, KICON.doc, KICON.pin];
     var tel = 'tel:+1' + String(o.phone).replace(/\D/g, '').slice(-10);
