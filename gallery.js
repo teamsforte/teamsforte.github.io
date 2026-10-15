@@ -171,7 +171,9 @@
     '.tfg-trust .tfg-btn{margin-left:auto;min-height:56px;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 22px}' +
     '.tfg-trust .tfg-btn small{font-size:12px;font-weight:600;opacity:.9}' +
     /* light variant: matches team-forte.com sections (white cards, centered 40px headings, red label) */
-    '.tfg--show.tfg--lt{--tfg-ink:#14161C;--tfg-muted:#5B6270;--tfg-line:#E3E6EB;--tfg-card:#fff;background:transparent;border-radius:0;padding:72px 0 8px;overflow:visible;max-width:1180px}' +
+    /* its own full-width band (like the site's light-gray sections) so it reads as a separate section */
+    'html,body{overflow-x:clip}' +
+    '.tfg--show.tfg--lt{--tfg-ink:#14161C;--tfg-muted:#5B6270;--tfg-line:#E3E6EB;--tfg-card:#fff;background:#F7F8FA;border-radius:0;overflow:visible;max-width:none;width:100vw;box-sizing:border-box;margin:56px 0 0 calc(50% - 50vw);padding:72px max(16px,calc(50vw - 590px)) 68px;border-top:1px solid #ECEEF1;border-bottom:1px solid #ECEEF1}' +
     '.tfg--lt .tfg-bg{display:none}' +
     '.tfg--lt .tfg-head{text-align:center;margin:0 auto 30px;max-width:760px}' +
     '.tfg--lt .tfg-eye{font-size:12px;font-weight:700;letter-spacing:2.4px;margin:0 0 14px}' +
@@ -192,7 +194,7 @@
     '.tfg--lt .tfg-more .tfg-btn{min-height:50px;border-radius:9px;font-size:15px;padding:0 28px}' +
     '.tfg--lt .tfg-trust{margin:30px 0 0;border-radius:14px}' +
     '.tfg--show.tfg--lt .tfg-btn--ghost{color:#14161C;border-color:#E3E6EB;background:#fff}.tfg--show.tfg--lt .tfg-btn--ghost:hover{color:#14161C;border-color:var(--tfg-red)}' +
-    '@media(max-width:700px){.tfg--show.tfg--lt{padding:52px 0 4px}.tfg--show.tfg--lt .tfg-tabs{justify-content:flex-start}}' +
+    '@media(max-width:700px){.tfg--show.tfg--lt{padding:48px 16px 44px;margin-top:40px}.tfg--show.tfg--lt .tfg-tabs{justify-content:flex-start}}' +
     '@media(max-width:599px){.tfg--show .tfg-grid{gap:10px}.tfg--show .tfg-img{height:150px}.tfg--show .tfg-wide .tfg-img{height:230px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-scn{display:none}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sc{padding:10px 11px;gap:9px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sci,.tfg--show .tfg-card:not(.tfg-wide) .tfg-sci svg{width:20px;height:20px}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sct b{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.tfg--show .tfg-card:not(.tfg-wide) .tfg-sct small{font-size:12px}}' +
     '@media(max-width:700px){.tfg--show{padding:34px 16px 16px;border-radius:0}.tfg-trust{margin:22px -16px -16px;padding:18px 16px}.tfg-trust .tfg-btn{margin-left:0;width:100%;align-items:center}.tfg--show .tfg-head p{font-size:15px}}';
 
