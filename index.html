@@ -545,7 +545,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='17';
+var APP_VERSION='18';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var KINDS=[['replacement','Replacement'],['repair','Repair'],['flat','Flat roof'],['flashing','Chimney & flashing'],['gutters','Gutters'],['skylight','Skylights']];
@@ -974,6 +974,7 @@ function driveGo(args,more){
   var me=DRV.cur;
   call('driveBrowse',args).then(function(d){
     if(DRV.cur!==me||!document.getElementById('dvb'))return;
+    (d.files||[]).forEach(function(f){if(f.thumb&&DRV.thumbs[f.id]===undefined)DRV.thumbs[f.id]=f.thumb;});
     if(more&&DRV.data){DRV.data.files=DRV.data.files.concat(d.files);DRV.data.token=d.token;}else DRV.data=d;
     driveDraw();
   }).catch(function(e){var b2=document.getElementById('dvb');if(b2&&DRV.cur===me)b2.innerHTML='<div class="dv-empty">'+esc(e.message)+'</div>';});
@@ -989,11 +990,13 @@ function driveDraw(){
     var all=d.files.every(function(f){return DRV.sel.indexOf(f.id)>=0;});
     h+='<div class="dv-bar"><span>'+d.files.length+(d.token?'+':'')+' photo'+(d.files.length===1?'':'s')+'</span><button type="button" data-dvall>'+(all?'Clear all':'Select all')+'</button></div>';
     h+='<div class="dv-g">'+d.files.map(function(f){var t=DRV.thumbs[f.id];
-      return '<button type="button" class="dv-p'+(DRV.sel.indexOf(f.id)>=0?' on':'')+'" data-dvp="'+esc(f.id)+'" aria-label="'+esc(f.name)+'">'+(t?'<img src="'+esc(t)+'" alt="">':'')+'<span class="nm">'+esc(f.name)+'</span><span class="ck"></span></button>';}).join('')+'</div>';
+      return '<button type="button" class="dv-p'+(DRV.sel.indexOf(f.id)>=0?' on':'')+'" data-dvp="'+esc(f.id)+'" aria-label="'+esc(f.name)+'">'+(t?'<img src="'+esc(t)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="nm">'+esc(f.name)+'</span><span class="ck"></span></button>';}).join('')+'</div>';
     if(d.token)h+='<button type="button" class="btn ghost dv-more" data-dvmore>Show more photos</button>';
   }
   if(!d.folders.length&&!d.files.length)h+='<div class="dv-empty">'+(d.mode==='search'?'Nothing found. Try another word.':'No folders or photos here.')+'</div>';
-  body.innerHTML=h;driveFoot();driveThumbs();
+  body.innerHTML=h;
+  Array.prototype.forEach.call(body.querySelectorAll('.dv-p img'),function(im){im.onerror=function(){driveThumbFail(im);};});
+  driveFoot();driveThumbs();
 }
 function driveThumbs(){
   if(DRV.tBusy)return;var d=DRV.data;if(!d)return;
@@ -1004,6 +1007,10 @@ function driveThumbs(){
     need.forEach(function(id){DRV.thumbs[id]=(r.thumbs||{})[id]||'';var b=document.querySelector('[data-dvp="'+id+'"]');var t=DRV.thumbs[id];
       if(b&&t&&!b.querySelector('img'))b.insertAdjacentHTML('afterbegin','<img src="'+esc(t)+'" alt="">');});
   }).catch(function(){need.forEach(function(id){DRV.thumbs[id]='';});}).then(function(){DRV.tBusy=false;driveThumbs();});
+}
+function driveThumbFail(im){
+  var b=im.closest('[data-dvp]');if(!b)return;var id=b.getAttribute('data-dvp');im.remove();
+  if(DRV.failed&&DRV.failed[id])return;DRV.failed=DRV.failed||{};DRV.failed[id]=1;delete DRV.thumbs[id];driveThumbs();
 }
 function driveFoot(){
   var b=document.getElementById('dvgo');if(!b||DRV.busy)return;var n=DRV.sel.length,st=STAGES.filter(function(s){return s[0]===DRV.stage;})[0][1];
