@@ -385,6 +385,7 @@
           h += trustBar(o);
           root.innerHTML = h;
           baHint(root);
+          fitBand(el);
         };
       } else var draw = function () {
         var list = st.tab === 'All' ? jobs : jobs.filter(function (j) { return j.service === st.tab; });
@@ -422,6 +423,10 @@
       draw();
     }
 
+    var refit = function () { fitBand(el); };
+    window.addEventListener('resize', refit);
+    window.addEventListener('load', refit);
+    setTimeout(refit, 1500);
     var cached = readCache();
     if (cached) show(cached);
     loadData().then(function (d) { writeCache(d); show(d); }).catch(function () {
@@ -430,6 +435,46 @@
       restoreOld();
       el.setAttribute('data-tfg-ready', 'failed');
     });
+  }
+
+  /* Light band on a host page: close the empty space above it and run it flush to the end of its section,
+     so it meets the next section with no stray white strip. Matches a light-gray next section so the two read as one. */
+  function hasText(x) {
+    for (var n = x.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && /\S/.test(n.nodeValue)) return true;
+    return false;
+  }
+  function fitBand(el) {
+    var b = el.querySelector('.tfg--show.tfg--lt');
+    if (!b || !b.getBoundingClientRect) return;
+    b.style.marginTop = ''; b.style.marginBottom = ''; b.style.paddingBottom = ''; b.style.background = ''; b.style.borderBottomColor = '';
+    var sec = el.closest ? el.closest('[id^="section-"], section, .sec') : null;
+    if (!sec || !b.offsetHeight) return;
+    var br = b.getBoundingClientRect(), cs = getComputedStyle(b);
+    var above = -1e9, below = false;
+    Array.prototype.forEach.call(sec.querySelectorAll('*'), function (x) {
+      if (b.contains(x) || x.contains(b)) return;
+      var r = x.getBoundingClientRect();
+      if (!r.height || !r.width) return;
+      if (r.bottom <= br.top + 1) { if (!x.children.length || hasText(x)) above = Math.max(above, r.bottom); } else if (r.top >= br.bottom - 1) below = true;
+    });
+    var want = window.innerWidth <= 700 ? 44 : 64;
+    if (above > -1e9) {
+      var gap = br.top - above;
+      if (gap > want + 4) b.style.marginTop = Math.round((parseFloat(cs.marginTop) || 0) - (gap - want)) + 'px';
+    }
+    if (!below) {
+      var d = Math.round(sec.getBoundingClientRect().bottom - b.getBoundingClientRect().bottom);
+      if (d > 0 && d < 260) {
+        b.style.marginBottom = -d + 'px';
+        var d2 = Math.round(sec.getBoundingClientRect().bottom - b.getBoundingClientRect().bottom);
+        if (d2 > 1) b.style.paddingBottom = Math.round((parseFloat(cs.paddingBottom) || 0) + d2) + 'px';
+        var nx = sec.nextElementSibling, m = nx && /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(getComputedStyle(nx).backgroundColor);
+        if (m && (m[4] == null || +m[4] > 0.9) && +m[1] > 225 && +m[2] > 225 && +m[3] > 225 && !(+m[1] > 252 && +m[2] > 252 && +m[3] > 252)) {
+          b.style.background = 'rgb(' + m[1] + ',' + m[2] + ',' + m[3] + ')';
+          b.style.borderBottomColor = 'rgba(20,22,28,.08)';
+        }
+      }
+    }
   }
 
   /* Last good data, so return visits show the jobs instantly while fresh data loads */
