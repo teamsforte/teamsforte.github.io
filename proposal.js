@@ -441,14 +441,14 @@
     var label = D.payReq && D.payReq.label ? D.payReq.label : (D.depositDue > 0 ? 'Deposit' : 'Balance due');
     var p = PKGS[D.pick];
     var h = '<div class="inv"><p class="k">Invoice · ' + esc(D.id) + '</p><h1 style="font-size:32px">' + (due > 0 ? 'Amount due: ' + money(due, true) : 'Paid in full') + '</h1><p class="lead">' + esc(D.address) + '</p>' +
-      '<div class="sum"><div class="r"><span>' + (D.type === 'repair' ? 'Roof repair' : esc(p ? p.name : 'New roof') + (D.color ? ', ' + esc(D.color) : '')) + '</span><span>' + money(D.price, true) + '</span></div>' +
+      '<div class="sum"><div class="r"><span>' + (D.type === 'repair' ? esc(jobLabel()) : esc(p ? p.name : 'New roof') + (D.color ? ', ' + esc(D.color) : '')) + '</span><span>' + money(D.price, true) + '</span></div>' +
       (D.changeOrders || []).filter(function (c) { return c.status === 'signed'; }).map(function (c) { return '<div class="r"><span>Change order ' + esc(c.id) + ': ' + esc(c.title) + '</span><span>' + money(c.total, true) + '</span></div>'; }).join('') +
       (D.payments || []).map(function (x) { return '<div class="r"><span class="paid-ln">Paid ' + esc(x.date) + (x.label ? ' · ' + esc(x.label) : '') + '</span><span class="paid-ln">−' + money(x.amount, true) + '</span></div>'; }).join('') +
       '<div class="r"><span>Balance</span><span class="tot">' + money(D.balance, true) + '</span></div></div>' +
       (due > 0 ? (D.stripe ? '<div class="sum"><div class="r due"><span><b>' + esc(label) + '</b></span><span class="tot">' + money(due, true) + '</span></div></div>' + payBtn('request', due, 'Pay ' + money(due, true) + ' now') :
         '<p class="m">To pay, call us at ' + esc(COPY.phone) + '.</p>') : '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Paid in full. Thank you!</b></div>') +
       (FIN && FIN.on && due >= 1000 ? '<p class="m" style="margin-top:14px">Prefer monthly payments? <a href="' + esc(FIN.applyUrl || smsHref('Hi Team Forte, I’d like to hear about financing for ' + D.id + '.')) + '">' + (FIN.applyUrl ? 'Check your financing options' : 'Ask us about financing') + '</a>.</p>' : '') +
-      '<p class="m" style="margin-top:22px;text-align:center"><a href="#p=' + encodeURIComponent(D.id) + '" data-full="1">View your full roof plan</a> · Questions? <a href="' + esc(smsHref('Hi Team Forte, about invoice ' + D.id + ': ')) + '">Text us</a></p></div>' +
+      '<p class="m" style="margin-top:22px;text-align:center"><a href="#p=' + encodeURIComponent(D.id) + '" data-full="1">View your full ' + esc(planWord()) + '</a> · Questions? <a href="' + esc(smsHref('Hi Team Forte, about invoice ' + D.id + ': ')) + '">Text us</a></p></div>' +
       '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') + '</div></div>';
     root.className = ''; root.innerHTML = bar() + barHtml + h;
     if (!S.wired) wire();
@@ -592,16 +592,27 @@
   function monthly(p, apr, n) { var r = (Number(apr) || 0) / 1200; n = Number(n) || 0; if (!(p > 0) || !(n > 0)) return 0; return r ? p * r / (1 - Math.pow(1 + r, -n)) : p / n; }
   function amortPlan() { return (FIN.plans || []).filter(function (x) { return x.months > 0 && x.apr != null; }).sort(function (a, b) { return b.months - a.months; })[0]; }
   function planLabel(x) { return x.label || ((Number(x.apr) === 0 ? '0% APR' : x.apr + '% APR') + ' for ' + x.months + ' months'); }
+  /* itemized jobs for other trades (carpentry, painting, handyman) use their own words; '' = roofing */
+  function otherTrade() { return D && D.type === 'repair' && D.trade && D.trade !== 'Roofing' ? D.trade : ''; }
+  function jobLabel() { return (D && D.jobLabel) || 'Roof repair'; }
+  function planWord() { return (D && D.plan) || 'roof plan'; }
+  var GENERIC_STEPS = [
+    ['Sign & deposit', 'Your deposit holds your spot on the schedule.'],
+    ['Materials', 'We order the materials for your job.'],
+    ['The work', 'Our crew does the work on the dates in your contract.'],
+    ['Cleanup & walkthrough', 'We clean up and walk through the finished work with you before we call it done.']
+  ];
+  var ROOF_ONLY_FAQ = ['Why might your price be higher than another quote?', 'What if you find rotted wood under the old roof?', 'What warranty comes with the roof?', 'Do you help with insurance claims?', 'How long will it take?'];
   function financeAnswer() {
     if (FIN.lender) return 'Yes. We offer financing through ' + FIN.lender + ', on approved credit.' + ((FIN.plans || []).length ? ' Plans include ' + FIN.plans.map(planLabel).join(', ') + '.' : '') + (FIN.applyUrl ? ' You can check your options online in a few minutes with the button on the price page.' : ' Ask us and we’ll walk you through it.');
-    return 'Yes. Ask us about monthly payment options for your roof and we’ll walk you through them.';
+    return 'Yes. Ask us about monthly payment options for ' + (otherTrade() ? 'your project' : 'your roof') + ' and we’ll walk you through them.';
   }
   function financeBox() {
     if (!FIN || !FIN.on || (D.type === 'repair' && !(D.price >= 1000))) return '';
     var pr = chosenPrice(), pl = amortPlan(), mo = pl ? monthly(pr, pl.apr, pl.months) : 0;
     var h = '<div class="fin"><div><p class="k" style="margin:0 0 4px">Prefer monthly payments?</p>';
-    if (mo > 0) h += '<div class="fin-mo">About <b>' + money(Math.ceil(mo)) + '/mo</b>*</div><div class="m">for the ' + (D.type === 'repair' ? 'repair' : esc((PKGS[S.pick] || {}).label || '') + ' option') + '</div>';
-    else h += '<h3 style="margin:0">Financing is available</h3><div class="m">' + (FIN.lender ? 'Through ' + esc(FIN.lender) + ', on approved credit.' : 'Ask us about monthly payment options for your roof.') + '</div>';
+    if (mo > 0) h += '<div class="fin-mo">About <b>' + money(Math.ceil(mo)) + '/mo</b>*</div><div class="m">for the ' + (D.type === 'repair' ? (otherTrade() ? 'job' : 'repair') : esc((PKGS[S.pick] || {}).label || '') + ' option') + '</div>';
+    else h += '<h3 style="margin:0">Financing is available</h3><div class="m">' + (FIN.lender ? 'Through ' + esc(FIN.lender) + ', on approved credit.' : 'Ask us about monthly payment options for ' + (otherTrade() ? 'your project.' : 'your roof.')) + '</div>';
     h += '</div><div class="fin-act">' + (FIN.applyUrl ? '<a class="btn" href="' + esc(FIN.applyUrl) + '" target="_blank" rel="noopener">Check my options</a>' :
       '<a class="btn ghost" href="' + esc(smsHref('Hi Team Forte, I’d like to hear about financing for proposal ' + D.id + '.')) + '">' + ICON.chat + 'Ask about financing</a>') + '</div>';
     if (mo > 0) h += '<p class="fine" style="flex-basis:100%;margin:0">*Estimate only, based on ' + esc(planLabel(pl)) + ' on the full price, on approved credit through ' + esc(FIN.lender || 'our lender') + '. Not a loan offer; your rate, term and payment depend on your application.' + (FIN.plans.length > 1 ? ' Other plans: ' + FIN.plans.filter(function (x) { return x !== pl; }).map(planLabel).join(', ') + '.' : '') + '</p>';
@@ -617,7 +628,7 @@
     var house = D.mapsKey && D.lat && D.lng;
     /* 1. cover: their house */
     secs.push(['cover', '<section class="cover slide" data-t="Welcome"><div class="s"><div>' +
-      '<p class="k">' + (D.type === 'repair' ? 'Your repair plan' : 'Your roof plan') + '</p><h1>' + (first ? 'Prepared for ' + first : 'Your Team Forte proposal') + '</h1>' +
+      '<p class="k">' + (D.type === 'repair' ? (otherTrade() ? 'Your ' + esc(planWord()) : 'Your repair plan') : 'Your roof plan') + '</p><h1>' + (first ? 'Prepared for ' + first : 'Your Team Forte proposal') + '</h1>' +
       '<p class="lead">' + esc(D.address) + '</p>' +
       '<div class="chips"><span class="chip">' + esc(D.date) + '</span><span class="chip">Proposal ' + esc(D.id) + '</span><span class="chip">Registered & insured' + (D.company.hic ? ' · CT ' + esc(D.company.hic) : '') + '</span></div>' +
       (PRESENT ? '' : '<p style="margin-top:26px"><a class="btn" href="#tfp-sign" data-go="sign">' + (D.signed ? 'See your signed proposal' : 'Skip to my price') + '</a></p>') + '</div>' +
@@ -638,7 +649,7 @@
     /* 3. what we found + what happens if you wait */
     if (D.insp.length) {
       var shown = D.insp.slice(0, 8);
-      secs.push(['found', '<section class="slide" data-t="What we found"><div class="s"><p class="k">From your inspection</p><h2>What we found on your roof</h2>' +
+      secs.push(['found', '<section class="slide" data-t="What we found"><div class="s"><p class="k">From your inspection</p><h2>What we found' + (otherTrade() ? '' : ' on your roof') + '</h2>' +
         '<p class="lead">' + D.insp.length + ' photo' + (D.insp.length > 1 ? 's' : '') + ' from our visit, what they mean, and what happens if they’re left alone.</p><div class="find">' +
         shown.map(function (x) {
           var info = TAG_INFO[x.tag] || '', wait = WAIT_INFO[x.tag] || '';
@@ -650,14 +661,14 @@
     /* 4. recent work: magazine layout */
     if (D.jobs.length) {
       var js = D.jobs.slice(0, 3);
-      secs.push(['work', '<section class="slide" data-t="Our work"><div class="s"><p class="k">Our work</p><h2>Recent Team Forte roofs</h2><p class="lead">Real jobs by our crews, start to finish.</p>' +
+      secs.push(['work', '<section class="slide" data-t="Our work"><div class="s"><p class="k">Our work</p><h2>Recent Team Forte ' + (otherTrade() ? 'work' : 'roofs') + '</h2><p class="lead">Real jobs by our crews, start to finish.</p>' +
         '<div class="' + (js.length === 3 ? 'mag' : 'grid' + Math.max(2, js.length)) + '">' +
         js.map(function (j) { return '<div class="card job">' + img(j.cover, 1200, j.title) + '<div class="in"><h3>' + esc(j.title) + '</h3><div class="m">' + esc([j.town, j.date].filter(Boolean).join(' · ')) + '</div></div></div>'; }).join('') +
         '</div></div></section>']);
     }
     /* 5. why us + reviews */
     secs.push(['why', '<section class="slide" data-t="Why Team Forte"><div class="s"><p class="k">Why Team Forte</p><h2>Why Connecticut homeowners choose us</h2>' +
-      '<div class="split"><div class="list" style="grid-template-columns:1fr">' + COPY.why.map(function (w) { return '<div class="li"><i>' + ICON.check + '</i><div><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></div></div>'; }).join('') +
+      '<div class="split"><div class="list" style="grid-template-columns:1fr">' + COPY.why.filter(function (w) { return !otherTrade() || !/insurance/i.test(w[0]); }).map(function (w) { if (otherTrade()) w = [w[0], w[1].replace('working on your roof', 'working in your home')]; return '<div class="li"><i>' + ICON.check + '</i><div><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></div></div>'; }).join('') +
       (COPY.certs.length ? '<div class="certs">' + COPY.certs.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') + '</div>' +
       '<div><div class="rate"><div class="st">' + ICON.star + ICON.star + ICON.star + ICON.star + ICON.star + '</div>' + COPY.reviews.summary.map(function (x, i) { return i ? '<div>' + esc(x) + '</div>' : '<div><b>' + esc(x) + '</b></div>'; }).join('') +
       '<div style="margin-top:10px"><a href="' + esc(COPY.reviews.link) + '" target="_blank" rel="noopener" style="color:#fff">Read the reviews ↗</a></div></div>' +
@@ -680,11 +691,11 @@
     if (D.type !== 'repair') secs.push(['color', '<section class="slide" data-t="Your color"><div class="s" id="tfp-color"></div></section>']);
     /* 10. timeline */
     secs.push(['steps', '<section class="slide" data-t="What happens next"><div class="s"><p class="k">What happens next</p><h2>From yes to done</h2><ol class="tl">' +
-      COPY.steps.map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
+      (otherTrade() ? GENERIC_STEPS : COPY.steps).map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
     /* 11. questions */
     var dep = D.depositPct > 0 ? 'A ' + planLine() : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
     secs.push(['faq', '<section class="slide" data-t="Questions"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
-      COPY.faq.filter(function (f) { return f[1] !== '__FINANCE__' || (FIN && FIN.on); }).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
+      COPY.faq.filter(function (f) { return (f[1] !== '__FINANCE__' || (FIN && FIN.on)) && !(otherTrade() && ROOF_ONLY_FAQ.indexOf(f[0]) >= 0); }).map(function (f) { return otherTrade() && /protect my yard/.test(f[0]) ? ['Will you protect my home?', 'Yes. We cover floors and furniture near the work, clean up every day, and leave the work area broom-clean.'] : f; }).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
       '<p class="m" style="margin-top:16px">Something else on your mind?</p><div class="ask"><a class="btn ghost" href="' + esc(smsHref('Hi Team Forte, I have a question about proposal ' + D.id + ': ')) + '">' + ICON.chat + 'Text us a question</a><a class="btn ghost" href="' + phoneHref() + '">' + ICON.phone + 'Call ' + esc(COPY.phone) + '</a></div></div></section>']);
     /* 12. sign */
     secs.push(['sign', '<section class="slide" id="tfp-sign" data-t="Accept & sign"><div class="s" id="tfp-signbox"></div></section>']);
@@ -693,7 +704,7 @@
     root.innerHTML = bar() + '<div class="deck">' + secs.map(function (x) { return x[1]; }).join('') + '</div>' +
       '<div class="nav"><button class="pv" type="button">' + ICON.left + 'Back</button><div class="dots">' + secs.map(function () { return '<i></i>'; }).join('') + '</div><button class="nx" type="button">Next' + ICON.right + '</button></div>' +
       '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') +
-      '<br><span style="font-size:11px">*Warranty and wind ratings per Owens Corning’s terms and installation requirements.</span></div></div>';
+      (otherTrade() ? '' : '<br><span style="font-size:11px">*Warranty and wind ratings per Owens Corning’s terms and installation requirements.</span>') + '</div></div>';
     renderCompare(); renderPrice(); if (D.type !== 'repair') renderColor(); renderSign();
     presenterTools();
     tagCounts(); markRv(); wire(); S.built = true;
@@ -720,7 +731,7 @@
   function renderPrice() {
     var box = root.querySelector('#tfp-price'), h;
     if (D.type === 'repair') {
-      h = '<p class="k">Your investment</p><h2>Your repair</h2><div class="sum">' + D.items.map(function (it) {
+      h = '<p class="k">Your investment</p><h2>' + (otherTrade() ? 'Your ' + esc(otherTrade().toLowerCase()) + ' job' : 'Your repair') + '</h2><div class="sum">' + D.items.map(function (it) {
         return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>';
       }).join('') + '<div class="r"><span><b>Total</b></span><span class="tot">' + money(D.signed && D.basePrice ? D.basePrice : D.price, true) + '</span></div></div>' +
         (D.depositPct > 0 ? '<div class="dep">' + planLine() + '</div>' : '');
@@ -761,9 +772,9 @@
   function grandTotal() { var base = D.signed ? (D.basePrice || D.price) : chosenPrice(); return D.signed ? D.price : base + pickedAdds().reduce(function (n, a) { return n + (Number(a.total) || 0); }, 0); }
   function sumHtml() {
     var p = PKGS[S.pick], base = D.signed ? (D.basePrice || D.price) : chosenPrice(), adds = pickedAdds(), tot = grandTotal();
-    return '<div class="sum" id="tfp-sum">' + (D.type === 'repair' ? '<div class="r"><span>Repair</span><span>' + D.items.length + ' item' + (D.items.length > 1 ? 's' : '') + '</span></div>' :
+    return '<div class="sum" id="tfp-sum">' + (D.type === 'repair' ? '<div class="r"><span>' + esc(jobLabel()) + '</span><span>' + D.items.length + ' item' + (D.items.length > 1 ? 's' : '') + '</span></div>' :
       '<div class="r"><span>Roof</span><span><b>' + esc(p ? p.name : '') + '</b></span></div><div class="r"><span>Color</span><span>' + (S.color ? esc(S.color) : '<span class="m">Choose later</span>') + '</span></div>') +
-      (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? 'Repair' : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>+ ' + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
+      (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? (otherTrade() ? 'Job' : 'Repair') : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>+ ' + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
       '<div class="r"><span>' + (adds.length ? 'Total' : 'Price') + '</span><span class="tot">' + money(tot, true) + '</span></div>' +
       (D.depositPct > 0 ? (function (x) { return '<div class="r"><span>Deposit at signing (' + x.dp + '%)</span><span>' + money(x.dep, true) + '</span></div>' +
         '<div class="r"><span>Progress payment, materials delivered (' + x.mp + '%)</span><span>' + money(x.mat, true) + '</span></div>' +
