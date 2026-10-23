@@ -765,8 +765,12 @@
     if (x.dep > 0) parts.push('Deposit of ' + money(x.dep, true) + ' (' + x.dp + '%) at signing. It is refunded in full if you cancel within the cancellation period, and is non-refundable after that.');
     parts.push('Progress payment of ' + money(x.mat, true) + ' (' + x.mp + '%) when the materials are delivered.');
     parts.push('Balance of ' + money(x.bal, true) + ' (' + x.bp + '%) due when the job is done.');
-    if (x.dep > 0) parts.push('If you pay the deposit online, your card or bank account is saved with Stripe. You authorize Team Forte to charge it for the progress payment and the balance above when each is due. If a charge does not go through, we will email you an invoice with a link to pay.');
     return parts.join(' ');
+  }
+  function liveCardAuth() {
+    var x = split(grandTotal());
+    if (!(x.dep > 0) || !D.contract) return '';
+    return 'If you pay the deposit online by card or bank account, that card or bank account is saved securely with our payment processor, Stripe. By signing, you authorize Team Forte to charge it for the progress payment of ' + money(x.mat, true) + ' when the materials are delivered and the final payment of ' + money(x.bal, true) + ' when the work is complete. You will get an email receipt for each charge. If a charge does not go through, we will email you an invoice with a link to pay instead. If you pay the deposit by cash or check, nothing is saved and we will send you an invoice for each later payment.';
   }
   function contractUrl() {
     var u = EXEC + '?r=contract&id=' + encodeURIComponent(D.id);
@@ -776,10 +780,12 @@
   function contractLink(label) { return '<a class="btn ghost block" id="tfp-full" href="' + esc(contractUrl()) + '" target="_blank" rel="noopener">' + esc(label) + '</a>'; }
   function contractHtml() {
     var c = D.contract; if (!c) return '';
-    var dl = [['Contractor', c.contractor + ' · CT Reg. ' + c.hic + '<br>' + c.mailing + ' · ' + c.phone], ['Start date', c.start], ['Completion date', c.end + ' (weather permitting)'], ['Materials', liveMaterials()], ['Payment', livePayment()]];
+    var dl = [['Contractor', c.contractor + ' · CT Reg. ' + c.hic + '<br>' + c.mailing + ' · ' + c.phone], ['Start date', c.start], ['Completion date', c.end + ' (weather permitting; late payments move it back)'], ['Materials', liveMaterials()], ['Payment', livePayment()]];
+    if (liveCardAuth()) dl.push(['Saved card or bank account', liveCardAuth()]);
     if (c.decking) dl.push(['Roof decking', c.decking]);
+    if (c.late) dl.push(['Late payments', c.late]);
     dl.push(['Cleanup', c.cleanup], ['Permit', c.permit], ['Changes', c.changes + ' ' + c.whole]);
-    return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
+    return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : r[0] === 'Saved card or bank account' ? ' id="tfp-ccard"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
       '<details class="terms"><summary>Notice of cancellation</summary><p>You may cancel this transaction, without any penalty or obligation, within three business days from the date you sign. If you cancel, any payments you made will be returned within ten days after we receive your cancellation notice.</p>' +
       '<p>To cancel, sign, date and send the Notice of Cancellation to ' + esc(c.contractor) + (c.email ? ' by email to ' + esc(c.email) + ', or' : '') + ' by mail to ' + esc(c.mailing) + ', no later than midnight of the third business day after you sign (Saturdays, Sundays and Connecticut holidays don’t count). Your signed copy includes two cancellation forms and the exact date.</p></details>';
   }
@@ -803,12 +809,12 @@
       '<label class="f" for="tfp-nm">Your full name</label><input class="inp" id="tfp-nm" autocomplete="name" value="' + esc(D.name || '') + '">' +
       '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
       (D.contract ? '<div class="cancelbox">' + esc(D.contract.cancelLine) + '</div>' : '') +
-      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.</span></label>' +
+      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.' + (liveCardAuth() ? ' If I pay the deposit online, I agree that my card or bank account is saved and charged for the progress and final payments, as described in the contract.' : '') + '</span></label>' +
       (FIN && FIN.on && D.type !== 'repair' ? '<p class="m" style="margin:0 0 10px">Planning to use financing? You can still sign now to hold your spot, and we’ll help you with the application.</p>' : '') +
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
     sigPad();
-    box.querySelectorAll('[data-add]').forEach(function (cb) { cb.onchange = function () { S.add[cb.getAttribute('data-add')] = cb.checked; var s0 = box.querySelector('#tfp-sum'); if (s0) s0.outerHTML = sumHtml(); var cp = box.querySelector('#tfp-cpay'); if (cp) cp.textContent = livePayment(); var fl = box.querySelector('#tfp-full'); if (fl) fl.href = contractUrl(); }; });
+    box.querySelectorAll('[data-add]').forEach(function (cb) { cb.onchange = function () { S.add[cb.getAttribute('data-add')] = cb.checked; var s0 = box.querySelector('#tfp-sum'); if (s0) s0.outerHTML = sumHtml(); var cp = box.querySelector('#tfp-cpay'); if (cp) cp.textContent = livePayment(); var cc = box.querySelector('#tfp-ccard'); if (cc) cc.textContent = liveCardAuth(); var fl = box.querySelector('#tfp-full'); if (fl) fl.href = contractUrl(); }; });
     if (S.built) markRv(box, true);
   }
 
