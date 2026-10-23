@@ -768,7 +768,7 @@
     dl.push(['Cleanup', c.cleanup], ['Permit', c.permit], ['Changes', c.changes + ' ' + c.whole]);
     return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
       '<details class="terms"><summary>Notice of cancellation</summary><p>You may cancel this transaction, without any penalty or obligation, within three business days from the date you sign. If you cancel, any payments you made will be returned within ten business days after we receive your cancellation notice.</p>' +
-      '<p>To cancel, mail or deliver a signed and dated cancellation notice, or any other written notice, to ' + esc(c.contractor) + ', ' + esc(c.mailing) + (c.email ? ', or email ' + esc(c.email) : '') + ', no later than midnight of the third business day after you sign. Your signed copy includes two cancellation forms and the exact date.</p></details>';
+      '<p>To cancel, sign, date and send the Notice of Cancellation to ' + esc(c.contractor) + (c.email ? ' by email to ' + esc(c.email) + ', or' : '') + ' by mail to ' + esc(c.mailing) + ', no later than midnight of the third business day after you sign (Saturdays, Sundays and Connecticut holidays don’t count). Your signed copy includes two cancellation forms and the exact date.</p></details>';
   }
   function renderSign() {
     var box = root.querySelector('#tfp-signbox'), pr = grandTotal(), p = PKGS[S.pick];
