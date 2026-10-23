@@ -53,7 +53,7 @@
     ],
     faq: [
       ['Why might your price be higher than another quote?', 'Most price gaps come from what’s left out. Ask the other contractor if their price includes a full tear-off, ice & water barrier at the eaves and valleys, new drip edge and flashing (not reused), new pipe boots, ridge ventilation, the building permit, and a licensed and insured crew. Every one of those is in this price, in writing. It’s the difference between a roof that leaks in year 5 and one that lasts.'],
-      ['What if you find rotted wood under the old roof?', 'We show you first. Soft or rotted decking is replaced only with your OK, at the per-sheet price in your terms, so there are no surprise bills.'],
+      ['What if you find rotted wood under the old roof?', 'We show you first. Up to 3 sheets of rotted decking are replaced at no extra charge. Past that, extra sheets are replaced only with your written OK, at the per-sheet price in your contract, so there are no surprise bills.'],
       ['How long will it take?', 'Most homes are done in 1 to 3 days, depending on size and weather. We give you a date when you sign.'],
       ['What warranty comes with the roof?', 'Your Owens Corning shingles carry a limited lifetime shingle warranty, and we register it in your name. Ask us about our workmanship warranty; we put it in writing before work starts.'],
       ['Do you offer financing?', '__FINANCE__'],
@@ -711,7 +711,7 @@
             '<ul>' + p.specs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
             (D.signed ? '' : '<button class="pick" type="button" data-pk="' + i + '">' + (i === S.pick ? '✓ Selected' : 'Choose ' + esc(p.label)) + '</button>') + '</div>';
         }).join('') + '</div>' +
-        (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit holds your install date. Balance when the job is done. Price includes permit, tear-off, disposal and cleanup.</div>' : '');
+        (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit holds your install date, ' + (D.matPct || 30) + '% when materials are delivered, and the rest when the job is done. Price includes permit, tear-off, disposal and cleanup.</div>' : '');
     } else {
       var p = PKGS[D.pick] || PKGS[1];
       h = '<p class="k">Your investment</p><h2>Your new roof</h2><div class="opts" style="grid-template-columns:minmax(0,460px)"><div class="opt on"><span class="rib rec">Your roof</span><span class="lv">' + esc(p.label) + '</span><h3>' + esc(p.name) + '</h3>' +
