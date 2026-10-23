@@ -7,6 +7,8 @@
   if (window.__tfp) return; window.__tfp = 1;
 
   var EXEC = 'https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
+  /* open the connections to Google early so the data arrives sooner */
+  ['https://script.google.com', 'https://script.googleusercontent.com'].forEach(function (h) { try { var l = document.createElement('link'); l.rel = 'preconnect'; l.href = h; l.crossOrigin = ''; document.head.appendChild(l); } catch (e) {} });
   var LOGO = 'https://teamsforte.github.io/email-logo.png?v=2';
 
   /* ------------------------------------------------------------------ copy (edit freely) */
@@ -270,6 +272,8 @@
     '#tfp .lnk{background:none;border:0;color:var(--muted);text-decoration:underline;font-weight:600;font-size:13px}#tfp .ck{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin:14px 0}#tfp .ck input{width:20px;height:20px;margin-top:2px;accent-color:#FF5440}' +
     '#tfp .err{color:#B42318;font-size:14px;min-height:20px;margin-top:8px}#tfp .ok{background:#E5F6EC;border:1px solid #BFE6CF;color:#145C34;border-radius:14px;padding:18px;font-size:16px}#tfp .ok .btn{margin-top:12px}' +
     '#tfp .foot{background:var(--navy);color:#c4ccd6;font-size:13px}#tfp .foot .s{padding:24px 16px}#tfp .foot b{color:#fff}' +
+    '#tfp .ske{padding:0 0 40px;max-width:none}#tfp .sk-cover{background:#13202F;padding:70px 22px 60px;display:flex;flex-direction:column;align-items:center;gap:14px}#tfp .sk-card{max-width:520px;margin:22px auto;background:#fff;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px}' +
+    '#tfp .ske i{display:block;width:85%;height:14px;border-radius:7px;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.22),rgba(255,255,255,.08));background-size:200% 100%;animation:tfpsk 1.2s ease-in-out infinite}#tfp .sk-card i{background:linear-gradient(90deg,#eef1f4,#e1e6ec,#eef1f4);background-size:200% 100%}@keyframes tfpsk{0%{background-position:100% 0}100%{background-position:-100% 0}}' +
     '#tfp .load{max-width:520px;margin:0 auto;padding:90px 20px;text-align:center;color:var(--muted)}#tfp .spin{width:38px;height:38px;border:4px solid #dde2e8;border-top-color:var(--red);border-radius:50%;margin:0 auto 14px;animation:tfpspin 1s linear infinite}' +
     '@keyframes tfpspin{to{transform:rotate(360deg)}}' +
     /* animations */
@@ -366,17 +370,34 @@
   }
 
   if (!/^TF-[A-Z0-9]{3,12}$/.test(ID)) { showMsg('Proposal not found', 'This link looks incomplete. Please check the link we sent you, or give us a call.'); return; }
-  root.innerHTML = bar() + '<div class="load"><div class="spin"></div>Loading your roof plan…</div>';
-
-  jsonp(EXEC + '?r=pdata&id=' + encodeURIComponent(ID) + (PRESENT || P.v === '0' ? '&v=0' : ''), 30000).then(function (d) {
-    if (!d || !d.ok) { showMsg('This proposal isn’t available', esc((d && d.error) || 'Please give us a call and we’ll sort it out.')); return; }
+  /* Show the proposal right away: from this phone's saved copy if the customer opened it before, else a page-shaped placeholder.
+     Fresh data loads in the background; the open is counted with a separate small request so the page never waits for it. */
+  var CKEY = 'tfp_pd_' + ID, started = false;
+  function savedCopy() { try { var v = JSON.parse(localStorage.getItem(CKEY) || 'null'); if (v && v.d && v.d.ok && (PRESENT ? v.present && Date.now() - v.t < 10 * 60000 : Date.now() - v.t < 14 * 864e5)) return v.d; } catch (e) {} return null; }
+  function keepCopy(d) { try { localStorage.setItem(CKEY, JSON.stringify({ t: Date.now(), d: d })); } catch (e) {} }
+  function busy() { var nm = root.querySelector('#tfp-nm'), cv = root.querySelector('#tfp-cv'); return (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) || (nm && nm.value && nm.value !== (D && D.name || '')) || !!S.drawn; }
+  function start(d) {
+    var y = started ? window.scrollY : 0;
     D = d;
     S.pick = D.offers ? (D.pick >= 0 ? D.pick : 1) : D.pick;
     S.color = D.color || '';
     S.add = {};
     if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else build();
-    if (PAID) checkPaid();
-  }).catch(function () { showMsg('We couldn’t load your proposal', 'Please check your connection and refresh the page, or give us a call.'); });
+    if (started && y) window.scrollTo(0, y);
+    if (PAID && !started) checkPaid();
+    started = true;
+  }
+  var saved = savedCopy(); // presenting: the copy the app just handed over (fresh); customers: their last visit
+  if (saved) setTimeout(function () { if (!started) start(saved); }, 0); // after the rest of this file has set up
+  else root.innerHTML = bar() + '<div class="load ske"><div class="sk-cover"><i style="width:40%"></i><i style="width:75%;height:26px"></i><i style="width:55%"></i></div><div class="sk-card"><i></i><i></i><i style="width:60%"></i></div><p class="m" style="text-align:center">Getting your roof plan ready…</p></div>';
+  jsonp(EXEC + '?r=pdata&v=0&id=' + encodeURIComponent(ID), 30000).then(function (d) {
+    if (!d || !d.ok) { try { localStorage.removeItem(CKEY); } catch (e) {} showMsg('This proposal isn’t available', esc((d && d.error) || 'Please give us a call and we’ll sort it out.')); return; }
+    var changed = !saved || JSON.stringify(saved) !== JSON.stringify(d);
+    if (!PRESENT) keepCopy(d);
+    if (!started) start(d);
+    else if (changed && !busy()) start(d);
+    if (!PRESENT && P.v !== '0') jsonp(EXEC + '?r=pview&id=' + encodeURIComponent(ID), 15000).catch(function () {});
+  }).catch(function () { if (!started) showMsg('We couldn’t load your proposal', 'Please check your connection and refresh the page, or give us a call.'); });
 
   /* ------------------------------------------------------------------ payments */
   function payBtn(kind, amount, label) {
