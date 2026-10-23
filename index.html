@@ -587,7 +587,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='24';
+var APP_VERSION='25';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -3122,6 +3122,16 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   function tradePick(cur,id,withRoof){return '<select class="in" id="'+id+'" style="margin-bottom:12px">'+(withRoof?'<optgroup label="Roofing"><option value="Roofing"'+(cur==='Roofing'?' selected':'')+'>Roof repair</option></optgroup>':'')+
     '<optgroup label="Home Improvement">'+HI_SERVICES.map(function(t){return '<option value="'+t+'"'+(cur===t?' selected':'')+'>'+esc(TRADE_LABEL[t])+'</option>';}).join('')+'</optgroup></select>';}
   function tradeOf(x){return x&&TRADE_LABEL[x.trade]?x.trade:'Roofing';}
+  var PLAN_WORD={Flooring:'flooring plan',Kitchens:'kitchen plan',Bathrooms:'bathroom plan',Painting:'painting plan',Carpentry:'carpentry plan',Outdoor:'outdoor project plan',Handyman:'project plan'};
+  var LEVEL_HINT={Flooring:['Upgrade to waterproof vinyl plank','Upgrade to hardwood'],Kitchens:['Upgrade to semi-custom cabinets','Upgrade to custom cabinets'],Bathrooms:['Upgrade to semi-frameless','Upgrade to frameless'],Painting:['Premium paint','Premium paint with full prep'],Carpentry:['Upgrade to stain-grade wood','Upgrade to custom hardwood'],Outdoor:['Upgrade to cedar','Upgrade to composite or vinyl']};
+  function hiOf(x){var t=x&&x.type==='repair'?tradeOf(x):'Roofing';return t!=='Roofing'?t:'';}
+  function planOf(x){return PLAN_WORD[hiOf(x)]||'roof plan';}
+  function capFirst(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+  /* Home Improvement proposals can offer two upgrades; the customer picks one or keeps the job as quoted. */
+  function levelsBlock(x){var t=hiOf(x);if(!t||!LEVEL_HINT[t])return '';var cur=(x.addons||[]).filter(function(a){return a.grp==='lvl';}),hint=LEVEL_HINT[t];
+    return '<label class="f">Upgrade options <span class="hint" style="font-weight:500">· optional. The customer picks one or keeps the job as quoted. Leave the price empty to skip.</span></label>'+[0,1].map(function(i){var o=cur[i]||{};
+      return '<div class="card" style="padding:10px;margin:6px 0"><input class="in" data-lvn="'+i+'" value="'+esc(o.name||'')+'" placeholder="'+esc(hint[i])+'"><input class="in mt" data-lvd="'+i+'" value="'+esc(o.desc||'')+'" placeholder="What changes (optional)"><div class="row mt"><div><label class="f" style="margin-top:0;font-size:12px">Adds to the price</label><input class="in money" data-lvp="'+i+'" inputmode="decimal" value="'+(o.total||'')+'" placeholder="$"></div></div></div>';}).join('');}
+  function levelsIn(ov,x){var t=hiOf(x);if(!t||!LEVEL_HINT[t])return undefined;return [0,1].map(function(i){var n=ov.querySelector('[data-lvn="'+i+'"]').value.trim()||LEVEL_HINT[t][i];return {name:n,desc:ov.querySelector('[data-lvd="'+i+'"]').value.trim(),total:Number(String(ov.querySelector('[data-lvp="'+i+'"]').value).replace(/[^\d.]/g,''))||0};}).filter(function(l){return l.total>0;});}
   function book(t){var r=M.repairs||{};if(r.trades&&r.trades[t])return r.trades[t];return t==='Roofing'?{min:r.min||0,items:r.items||[]}:{min:0,items:[]};}
   function repairTotal(items,trade){var t=(items||[]).reduce(function(n,it){return n+(Number(it.qty)||0)*(Number(it.price)||0);},0);return Math.round(Math.max(Number(book(trade||'Roofing').min)||0,t)*100)/100;}
   /* ----- quick count on site: rooms -> painting / baseboard / flooring / drywall quantities ----- */
@@ -3319,7 +3329,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         '</div>';
     }
     if(x.status==='done'||x.status==='archived')return '';
-    return '<div class="card"><h2>Roof plan & signature</h2><p class="sub" style="margin:0">A presentation with their roof, your inspection photos, the options and prices. Show it at the table or send it, and they can sign on the spot. When they sign, the job is approved for you'+(s.depositPct?' and they can pay the '+s.depositPct+'% deposit':'')+'.</p>'+
+    return '<div class="card"><h2>'+capFirst(planOf(x))+' & signature</h2><p class="sub" style="margin:0">A presentation with '+(hiOf(x)?'your photos, the scope, the price and the answers to common questions':'their roof, your inspection photos, the options and prices')+'. Show it at the table or send it, and they can sign on the spot. When they sign, the job is approved for you'+(s.depositPct?' and they can pay the '+s.depositPct+'% deposit':'')+'.</p>'+
       (x.proposalSentAt?'<p class="hint">Sent '+dateStr(x.proposalSentAt)+(function(o){return o.n?' · opened '+o.n+'×, last '+dateStr(o.last)+' '+new Date(o.last).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):' · not opened yet';})(opens(x))+'</p>':'')+
       (contractGaps().length?'<div class="note">Before proposals can be signed, finish the contract setup ('+esc(contractGaps().join(', '))+') in Spending › Settings › Contract.</div>':'')+
       '<button class="btn block mt" data-m="propose">'+(x.proposalSentAt?'Send again or present':'Present or send for signature')+'</button>'+
@@ -3329,7 +3339,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     var x=q();var rep=x.type==='repair';var pick=x.pick>=0?x.pick:1;
     var sd0=addDaysYmd(todayYmd(),14),ed0=addDaysYmd(x.startDate||sd0,rep?0:2);
     function ofv(i){if(x.offers&&x.offers[i]>0)return x.offers[i];if(i===x.pick&&x.contractPrice>0)return x.contractPrice;return mid(x,i)||'';}
-    var ov=sheet('<h3>Roof plan & signature'+closeBtn()+'</h3>'+
+    var ov=sheet('<h3>'+capFirst(planOf(x))+' & signature'+closeBtn()+'</h3>'+
       (rep?kv('Repair total','<span class="money">'+money(x.contractPrice)+'</span>'):
         '<label class="f">Firm prices <span class="hint" style="font-weight:500">· the customer picks one. Clear a box to leave that option out.</span></label>'+
         '<div class="row">'+PK.map(function(p,i){return '<div><label class="f" style="margin-top:0;font-size:12px">'+p.label+'</label><input class="in money" data-of="'+i+'" inputmode="decimal" value="'+ofv(i)+'"><span class="hint" style="font-size:11px">'+(range(x,i)||' ')+'</span></div>';}).join('')+'</div>'+
@@ -3337,24 +3347,24 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         '<label class="f">Color <span class="hint" style="font-weight:500">· optional, they can pick it in the plan</span></label><input class="in" id="pcl" value="'+esc(x.color||'')+'" placeholder="Estate Gray">')+
       '<div class="row"><div><label class="f">Start date</label><input class="in" type="date" id="psd" value="'+esc(x.startDate||sd0)+'"></div><div><label class="f">Completion date</label><input class="in" type="date" id="ped" value="'+esc(x.endDate||ed0)+'"></div></div>'+
       '<p class="hint">Connecticut contracts need both dates. Your best estimate; the contract says weather permitting.</p>'+
-      addonsBlock(x)+
+      addonsBlock(x)+levelsBlock(x)+
       (contractGaps().length?'<div class="note">Finish the contract setup first ('+esc(contractGaps().join(', '))+'): Spending › Settings › Contract.</div>':'')+
       '<label class="f">Customer email</label><input class="in" id="pem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
       '<button class="btn block mt" id="ppres">Present now on this device</button>'+
       '<div class="acts"><button class="btn ghost" id="pemail">Email it</button><button class="btn ghost" id="plink">Text or copy link</button></div><div id="pout"></div>');
     if(!rep)ov.querySelector('#ppk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#ppk button').forEach(function(z){var on=z===b;z.classList.toggle('on',on);z.querySelector('span').textContent=on?'Recommended':' ';});};
     function offersIn(){return [0,1,2].map(function(i){return Number(String(ov.querySelector('[data-of="'+i+'"]').value).replace(/[^\d.]/g,''))||0;});}
-    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim(),startDate:ov.querySelector('#psd').value,endDate:ov.querySelector('#ped').value,addons:addonsIn(ov)};if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
+    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim(),startDate:ov.querySelector('#psd').value,endDate:ov.querySelector('#ped').value,addons:addonsIn(ov)};var lv=levelsIn(ov,x);if(lv!==undefined)a.levels=lv;if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
     function okPrices(a){if(!a.startDate||!a.endDate){toast('Add the start and completion dates.',true);return false;}if(a.endDate<a.startDate){toast('The completion date is before the start date.',true);return false;}if(rep)return true;if(!(a.contractPrice>0)){toast('Enter a price for the recommended option ('+PK[pick].label+').',true);return false;}return true;}
     ov.querySelector('#ppres').onclick=function(){var b=this;var a=args('present');if(!okPrices(a))return;b.disabled=true;var w=null;try{w=window.open('about:blank','_blank');}catch(e){}
-      try{if(w)w.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#13202F;color:#C4CCD6;font:600 15px Montserrat,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center"><div><div style="font-size:22px;font-weight:800;letter-spacing:.08em;color:#fff">TEAM <span style="color:#FF5440">FORTE</span></div><p>Getting the roof plan ready…</p></div></body>');}catch(e){}
+      try{if(w)w.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#13202F;color:#C4CCD6;font:600 15px Montserrat,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center"><div><div style="font-size:22px;font-weight:800;letter-spacing:.08em;color:#fff">TEAM <span style="color:#FF5440">FORTE</span></div><p>Getting the '+planOf(x)+' ready…</p></div></body>');}catch(e){}
       call('sendProposal',a).then(function(r){var pd=r.pdata;delete r.pdata;mergeQ(r);var u=r.presentUrl||presentUrl(r);
         if(pd&&pd.ok){try{localStorage.setItem('tfp_pd_'+r.id,JSON.stringify({t:Date.now(),d:pd,present:1}));}catch(e){}}
         if(w&&!w.closed)w.location.href=u;else location.href=u;closeSheet();render();}).catch(function(e){if(w)try{w.close();}catch(z){}b.disabled=false;err(e);});};
     ov.querySelector('#pemail').onclick=function(){var b=this;var a=args('email');if(!okPrices(a))return;if(!validEmail(a.email)){toast('Add the customer’s email.',true);return;}b.disabled=true;
       call('sendProposal',a).then(function(r){mergeQ(r);closeSheet();render();toast('Proposal emailed to '+a.email);}).catch(function(e){b.disabled=false;err(e);});};
     ov.querySelector('#plink').onclick=function(){var b=this;var a=args('none');if(!okPrices(a))return;b.disabled=true;
-      call('sendProposal',a).then(function(r){mergeQ(r);var url=r.proposalUrl;var msg='Hi'+(r.name?' '+r.name.split(' ')[0]:'')+', here is your Team Forte roof plan with the photos from today, your options and prices. You can review and sign it here: '+url;
+      call('sendProposal',a).then(function(r){mergeQ(r);var url=r.proposalUrl;var msg='Hi'+(r.name?' '+r.name.split(' ')[0]:'')+', here is your Team Forte '+planOf(x)+(hiOf(x)?' with your price':' with the photos from today, your options and prices')+'. You can review and sign it here: '+url;
         ov.querySelector('#pout').innerHTML='<a class="btn block mt" href="'+esc(smsHref(r.phone,msg))+'" target="_top">Text it'+(r.phone?' to '+esc(r.phone):'')+'</a><textarea class="in mt" readonly style="min-height:64px;font-size:13px">'+esc(url)+'</textarea>';
         render();}).catch(function(e){b.disabled=false;err(e);});};
   }

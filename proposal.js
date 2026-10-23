@@ -100,6 +100,7 @@
   var NOTES = {
     cover: 'Thank them for their time. “Before we talk numbers, let me show you what we found and exactly how we’d do the job.”',
     today: 'Walk through size, pitch and layers. Point out the garage or extra roofs. “This is measured from satellite and checked on your roof today.”',
+    rooms: 'Go room by room through the sizes you measured, so the price makes sense before they see it.',
     found: 'Go photo by photo and let them react. Tie each one to what happens if they wait.',
     work: '“These are recent jobs by the same crew that would do your roof.”',
     why: 'Licensed and insured, honest advice, real reviews. Keep it short.',
@@ -620,7 +621,7 @@
   }
   function depositText(p) { return D.depositPct > 0 ? money(Math.round(p * D.depositPct) / 100, true) : ''; }
   function split(t) { var mp = D.matPct || 30, dp = D.depositPct || 0, dep = Math.round(t * dp) / 100, mat = Math.round(t * mp) / 100; return { dep: dep, mat: mat, bal: Math.max(0, Math.round((t - dep - mat) * 100) / 100), dp: dp, mp: mp, bp: Math.max(0, 100 - dp - mp) }; }
-  function planLine() { var x = split(0); return x.dp + '% deposit at signing holds your install date, ' + x.mp + '% progress payment when materials are delivered, and the final ' + x.bp + '% when the job is done.'; }
+  function planLine() { var x = split(0); return x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, ' + x.mp + '% progress payment when materials are delivered, and the final ' + x.bp + '% when the job is done.'; }
 
   function build() {
     var secs = [], first = esc(D.first || '');
@@ -645,6 +646,19 @@
         '<div class="rlist">' + D.roofs.map(function (r, k) { return '<div><span><i style="background:' + ROOF_COLORS[k % 6] + '"></i><b>' + esc(r.n) + '</b></span><span>' + Number(r.s).toLocaleString('en-US') + ' sq ft' + (r.p ? ' · ' + esc(r.p) : '') + '</span></div>'; }).join('') + '</div>';
       secs.push(['today', '<section class="slide" data-t="Your roof"><div class="s"><p class="k">Your roof today</p><h2>What we measured</h2>' +
         (house ? '<div class="split"><div class="media" id="tfp-map"></div><div>' + statsHtml + '</div></div>' : statsHtml) + '</div></section>']);
+    }
+    /* 2b. rooms we measured (Home Improvement quick count) */
+    if (otherTrade() && (D.rooms || []).length) {
+      var paint = otherTrade() === 'Painting', fl = 0, wl = 0;
+      var rr = D.rooms.map(function (r) {
+        var f = Math.round(r.l * r.w), w = r.h > 0 ? Math.max(0, Math.round(2 * (r.l + r.w) * r.h - (r.d || 0) * 21 - (r.win || 0) * 15)) : 0;
+        fl += f; wl += w;
+        return '<div><span><b>' + esc(r.n || 'Room') + '</b></span><span>' + r.l + ' × ' + r.w + ' ft · ' + (paint && w ? w.toLocaleString('en-US') + ' sq ft of walls' : f.toLocaleString('en-US') + ' sq ft') + '</span></div>';
+      }).join('');
+      var tl = [[String(D.rooms.length), D.rooms.length === 1 ? 'room' : 'rooms'], paint && wl ? [wl.toLocaleString('en-US'), 'sq ft of walls'] : [fl.toLocaleString('en-US'), 'sq ft of floor']];
+      secs.push(['rooms', '<section class="slide" data-t="What we measured"><div class="s"><p class="k">Your ' + esc(planWord()) + '</p><h2>What we measured</h2>' +
+        '<div class="stats two">' + tl.map(function (t) { return '<div class="stat"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>'; }).join('') + '</div>' +
+        '<div class="rlist">' + rr + '</div></div></section>']);
     }
     /* 3. what we found + what happens if you wait */
     if (D.insp.length) {
@@ -691,11 +705,11 @@
     if (D.type !== 'repair') secs.push(['color', '<section class="slide" data-t="Your color"><div class="s" id="tfp-color"></div></section>']);
     /* 10. timeline */
     secs.push(['steps', '<section class="slide" data-t="What happens next"><div class="s"><p class="k">What happens next</p><h2>From yes to done</h2><ol class="tl">' +
-      (otherTrade() ? GENERIC_STEPS : COPY.steps).map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
+      (otherTrade() ? ((D.copy && D.copy.steps) || GENERIC_STEPS) : COPY.steps).map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
     /* 11. questions */
     var dep = D.depositPct > 0 ? 'A ' + planLine() : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
     secs.push(['faq', '<section class="slide" data-t="Questions"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
-      COPY.faq.filter(function (f) { return (f[1] !== '__FINANCE__' || (FIN && FIN.on)) && !(otherTrade() && ROOF_ONLY_FAQ.indexOf(f[0]) >= 0); }).map(function (f) { return otherTrade() && /protect my yard/.test(f[0]) ? ['Will you protect my home?', 'Yes. We cover floors and furniture near the work, clean up every day, and leave the work area broom-clean.'] : f; }).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
+      ((otherTrade() && D.copy && D.copy.faq) || []).concat(COPY.faq.filter(function (f) { return (f[1] !== '__FINANCE__' || (FIN && FIN.on)) && !(otherTrade() && ROOF_ONLY_FAQ.indexOf(f[0]) >= 0); }).map(function (f) { return otherTrade() && /protect my yard/.test(f[0]) ? ['Will you protect my home?', 'Yes. We cover floors and furniture near the work, clean up every day, and leave the work area broom-clean.'] : f; })).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
       '<p class="m" style="margin-top:16px">Something else on your mind?</p><div class="ask"><a class="btn ghost" href="' + esc(smsHref('Hi Team Forte, I have a question about proposal ' + D.id + ': ')) + '">' + ICON.chat + 'Text us a question</a><a class="btn ghost" href="' + phoneHref() + '">' + ICON.phone + 'Call ' + esc(COPY.phone) + '</a></div></div></section>']);
     /* 12. sign */
     secs.push(['sign', '<section class="slide" id="tfp-sign" data-t="Accept & sign"><div class="s" id="tfp-signbox"></div></section>']);
@@ -732,8 +746,9 @@
     var box = root.querySelector('#tfp-price'), h;
     if (D.type === 'repair') {
       h = '<p class="k">Your investment</p><h2>' + (otherTrade() ? 'Your ' + esc(otherTrade().toLowerCase()) + ' job' : 'Your repair') + '</h2><div class="sum">' + D.items.map(function (it) {
-        return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>';
+        return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty + (/ft|LF|hour/i.test(it.unit || '') ? ' ' + esc(it.unit) + (/hour$/i.test(it.unit) ? 's' : '') : '') : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>';
       }).join('') + '<div class="r"><span><b>Total</b></span><span class="tot">' + money(D.signed && D.basePrice ? D.basePrice : D.price, true) + '</span></div></div>' +
+        (levels().length && !D.signed ? '<p class="k" style="margin-top:18px">Upgrade options</p><div class="sum">' + levels().map(function (a) { return '<div class="r"><span>' + esc(a.name) + (a.desc ? '<br><small class="m">' + esc(a.desc) + '</small>' : '') + '</span><span>+' + money(a.total, true) + '</span></div>'; }).join('') + '</div><p class="m">Pick one when you sign, or keep the job as quoted.</p>' : '') +
         (D.depositPct > 0 ? '<div class="dep">' + planLine() + '</div>' : '');
     } else if (D.offers) {
       var rec = D.pick >= 0 ? D.pick : 1;
@@ -774,15 +789,20 @@
     var p = PKGS[S.pick], base = D.signed ? (D.basePrice || D.price) : chosenPrice(), adds = pickedAdds(), tot = grandTotal();
     return '<div class="sum" id="tfp-sum">' + (D.type === 'repair' ? '<div class="r"><span>' + esc(jobLabel()) + '</span><span>' + D.items.length + ' item' + (D.items.length > 1 ? 's' : '') + '</span></div>' :
       '<div class="r"><span>Roof</span><span><b>' + esc(p ? p.name : '') + '</b></span></div><div class="r"><span>Color</span><span>' + (S.color ? esc(S.color) : '<span class="m">Choose later</span>') + '</span></div>') +
-      (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? (otherTrade() ? 'Job' : 'Repair') : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>+ ' + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
+      (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? (otherTrade() ? 'Job' : 'Repair') : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>' + (a.grp === 'lvl' ? 'Option chosen: ' : '+ ') + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
       '<div class="r"><span>' + (adds.length ? 'Total' : 'Price') + '</span><span class="tot">' + money(tot, true) + '</span></div>' +
       (D.depositPct > 0 ? (function (x) { return '<div class="r"><span>Deposit at signing (' + x.dp + '%)</span><span>' + money(x.dep, true) + '</span></div>' +
         '<div class="r"><span>Progress payment, materials delivered (' + x.mp + '%)</span><span>' + money(x.mat, true) + '</span></div>' +
         '<div class="r"><span>Final payment, job done (' + x.bp + '%)</span><span>' + money(x.bal, true) + '</span></div>'; })(split(tot)) : '') + '</div>';
   }
+  function levels() { return (D.addons || []).filter(function (a) { return a.grp === 'lvl'; }); }
   function addsHtml() {
     if (D.signed || !(D.addons || []).length) return '';
-    return '<p class="k" style="margin-top:6px">Add to your project <span class="m" style="text-transform:none;letter-spacing:0;font-weight:500">· optional</span></p>' + D.addons.map(function (a) {
+    var lv = levels(), ad = D.addons.filter(function (a) { return a.grp !== 'lvl'; }), cur = lv.filter(function (a) { return S.add[a.key]; })[0], h = '';
+    if (lv.length) h = '<p class="k" style="margin-top:6px">Choose your option</p><label class="adl"><input type="radio" name="tfp-lvl" data-add=""' + (cur ? '' : ' checked') + '><span>As quoted<small>' + esc(jobLabel()) + '</small></span><b>' + money(chosenPrice()) + '</b></label>' +
+      lv.map(function (a) { return '<label class="adl"><input type="radio" name="tfp-lvl" data-add="' + esc(a.key) + '"' + (S.add[a.key] ? ' checked' : '') + '><span>' + esc(a.name) + (a.desc ? '<small>' + esc(a.desc) + '</small>' : '') + '</span><b>+' + money(a.total) + '</b></label>'; }).join('');
+    if (!ad.length) return h;
+    return h + '<p class="k" style="margin-top:6px">Add to your project <span class="m" style="text-transform:none;letter-spacing:0;font-weight:500">· optional</span></p>' + ad.map(function (a) {
       return '<label class="adl"><input type="checkbox" data-add="' + esc(a.key) + '"' + (S.add[a.key] ? ' checked' : '') + '><span>' + esc(a.name) + '<small>' + esc(String(a.qty)) + ' ' + esc(a.unit) + (a.qty > 1 ? ' × ' + money(a.price, true) : '') + '</small></span><b>+' + money(a.total) + '</b></label>';
     }).join('');
   }
@@ -817,6 +837,7 @@
     if (c.decking) dl.push(['Roof decking', c.decking]);
     if (c.late) dl.push(['Late payments', c.late]);
     if (c.siteMaterials) dl.push(['Materials on site', c.siteMaterials]);
+    (c.extra || []).forEach(function (x) { dl.push([x.h, x.t]); });
     dl.push(['Cleanup', c.cleanup], ['Permit', c.permit], ['Changes', c.changes + ' ' + c.whole]);
     return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : r[0] === 'Saved card or bank account' ? ' id="tfp-ccard"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
       '<details class="terms"><summary>Notice of cancellation</summary><p>You may cancel this transaction, without any penalty or obligation, within three business days from the date you sign. If you cancel, any payments you made will be returned within ten days after we receive your cancellation notice.</p>' +
@@ -847,7 +868,7 @@
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
     sigPad();
-    box.querySelectorAll('[data-add]').forEach(function (cb) { cb.onchange = function () { S.add[cb.getAttribute('data-add')] = cb.checked; var s0 = box.querySelector('#tfp-sum'); if (s0) s0.outerHTML = sumHtml(); var cp = box.querySelector('#tfp-cpay'); if (cp) cp.textContent = livePayment(); var cc = box.querySelector('#tfp-ccard'); if (cc) cc.textContent = liveCardAuth(); var fl = box.querySelector('#tfp-full'); if (fl) fl.href = contractUrl(); }; });
+    box.querySelectorAll('[data-add]').forEach(function (cb) { cb.onchange = function () { if (cb.type === 'radio') { levels().forEach(function (a) { S.add[a.key] = false; }); if (cb.getAttribute('data-add')) S.add[cb.getAttribute('data-add')] = true; } else S.add[cb.getAttribute('data-add')] = cb.checked; var s0 = box.querySelector('#tfp-sum'); if (s0) s0.outerHTML = sumHtml(); var cp = box.querySelector('#tfp-cpay'); if (cp) cp.textContent = livePayment(); var cc = box.querySelector('#tfp-ccard'); if (cc) cc.textContent = liveCardAuth(); var fl = box.querySelector('#tfp-full'); if (fl) fl.href = contractUrl(); }; });
     if (S.built) markRv(box, true);
   }
 
