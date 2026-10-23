@@ -587,6 +587,8 @@
     return h + '</div>';
   }
   function depositText(p) { return D.depositPct > 0 ? money(Math.round(p * D.depositPct) / 100, true) : ''; }
+  function split(t) { var mp = D.matPct || 30, dp = D.depositPct || 0, dep = Math.round(t * dp) / 100, mat = Math.round(t * mp) / 100; return { dep: dep, mat: mat, bal: Math.max(0, Math.round((t - dep - mat) * 100) / 100), dp: dp, mp: mp, bp: Math.max(0, 100 - dp - mp) }; }
+  function planLine() { var x = split(0); return x.dp + '% deposit at signing holds your install date, ' + x.mp + '% progress payment when materials are delivered, and the final ' + x.bp + '% when the job is done.'; }
 
   function build() {
     var secs = [], first = esc(D.first || '');
@@ -659,7 +661,7 @@
     secs.push(['steps', '<section class="slide" data-t="What happens next"><div class="s"><p class="k">What happens next</p><h2>From yes to done</h2><ol class="tl">' +
       COPY.steps.map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
     /* 11. questions */
-    var dep = D.depositPct > 0 ? 'A ' + D.depositPct + '% deposit holds your spot on the schedule. The balance is due when the job is done.' : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
+    var dep = D.depositPct > 0 ? 'A ' + planLine() : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
     secs.push(['faq', '<section class="slide" data-t="Questions"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
       COPY.faq.filter(function (f) { return f[1] !== '__FINANCE__' || (FIN && FIN.on); }).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
       '<p class="m" style="margin-top:16px">Something else on your mind?</p><div class="ask"><a class="btn ghost" href="' + esc(smsHref('Hi Team Forte, I have a question about proposal ' + D.id + ': ')) + '">' + ICON.chat + 'Text us a question</a><a class="btn ghost" href="' + phoneHref() + '">' + ICON.phone + 'Call ' + esc(COPY.phone) + '</a></div></div></section>']);
@@ -700,7 +702,7 @@
       h = '<p class="k">Your investment</p><h2>Your repair</h2><div class="sum">' + D.items.map(function (it) {
         return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>';
       }).join('') + '<div class="r"><span><b>Total</b></span><span class="tot">' + money(D.signed && D.basePrice ? D.basePrice : D.price, true) + '</span></div></div>' +
-        (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit (' + depositText(D.price) + ') to schedule · balance when the job is done</div>' : '');
+        (D.depositPct > 0 ? '<div class="dep">' + planLine() + '</div>' : '');
     } else if (D.offers) {
       var rec = D.pick >= 0 ? D.pick : 1;
       h = '<p class="k">Your investment</p><h2>Three ways to do this roof</h2>' + lockLine() + '<p class="lead">Same crew, same full system and cleanup. The difference is the shingle. Tap the one you want.</p><div class="opts">' +
@@ -711,12 +713,12 @@
             '<ul>' + p.specs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
             (D.signed ? '' : '<button class="pick" type="button" data-pk="' + i + '">' + (i === S.pick ? '✓ Selected' : 'Choose ' + esc(p.label)) + '</button>') + '</div>';
         }).join('') + '</div>' +
-        (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit holds your install date, ' + (D.matPct || 30) + '% when materials are delivered, and the rest when the job is done. Price includes permit, tear-off, disposal and cleanup.</div>' : '');
+        (D.depositPct > 0 ? '<div class="dep">' + planLine() + ' Price includes permit, tear-off, disposal and cleanup.</div>' : '');
     } else {
       var p = PKGS[D.pick] || PKGS[1];
       h = '<p class="k">Your investment</p><h2>Your new roof</h2><div class="opts" style="grid-template-columns:minmax(0,460px)"><div class="opt on"><span class="rib rec">Your roof</span><span class="lv">' + esc(p.label) + '</span><h3>' + esc(p.name) + '</h3>' +
         '<div class="pr">' + money(D.signed && D.basePrice ? D.basePrice : D.price) + '</div><div class="m">' + esc(p.desc) + '</div><ul>' + p.specs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div></div>' +
-        (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit holds your install date. Balance when the job is done.</div>' : '');
+        (D.depositPct > 0 ? '<div class="dep">' + planLine() + '</div>' : '');
     }
     box.innerHTML = h + financeBox();
     if (S.built) { markRv(box, true); var on = box.querySelector('.opt.on'); if (on && !CALM) { on.classList.add('pop'); } }
@@ -742,7 +744,9 @@
       '<div class="r"><span>Roof</span><span><b>' + esc(p ? p.name : '') + '</b></span></div><div class="r"><span>Color</span><span>' + (S.color ? esc(S.color) : '<span class="m">Choose later</span>') + '</span></div>') +
       (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? 'Repair' : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>+ ' + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
       '<div class="r"><span>' + (adds.length ? 'Total' : 'Price') + '</span><span class="tot">' + money(tot, true) + '</span></div>' +
-      (D.depositPct > 0 ? '<div class="r"><span>Deposit to schedule (' + D.depositPct + '%)</span><span>' + depositText(tot) + '</span></div>' : '') + '</div>';
+      (D.depositPct > 0 ? (function (x) { return '<div class="r"><span>Deposit at signing (' + x.dp + '%)</span><span>' + money(x.dep, true) + '</span></div>' +
+        '<div class="r"><span>Progress payment, materials delivered (' + x.mp + '%)</span><span>' + money(x.mat, true) + '</span></div>' +
+        '<div class="r"><span>Final payment, job done (' + x.bp + '%)</span><span>' + money(x.bal, true) + '</span></div>'; })(split(tot)) : '') + '</div>';
   }
   function addsHtml() {
     if (D.signed || !(D.addons || []).length) return '';
@@ -757,17 +761,26 @@
     return 'Owens Corning ' + p.label + ' shingles' + (S.color ? ' in ' + S.color : ' (color chosen with you before materials are ordered)') + ', with the Owens Corning underlayment, starter, ice & water barrier, hip & ridge and ventilation listed in the scope.';
   }
   function livePayment() {
-    var t = grandTotal(), dep = D.depositPct > 0 ? Math.round(t * D.depositPct) / 100 : 0;
-    if (!(dep > 0)) return 'Full price of ' + money(t, true) + ' due when the job is done.';
-    return 'Deposit of ' + money(dep, true) + ' (' + D.depositPct + '%) at signing. It is refunded in full if you cancel within the cancellation period, and is non-refundable after that. Balance of ' + money(t - dep, true) + ' due when the job is done.';
+    var x = split(grandTotal()), parts = [];
+    if (x.dep > 0) parts.push('Deposit of ' + money(x.dep, true) + ' (' + x.dp + '%) at signing. It is refunded in full if you cancel within the cancellation period, and is non-refundable after that.');
+    parts.push('Progress payment of ' + money(x.mat, true) + ' (' + x.mp + '%) when the materials are delivered.');
+    parts.push('Balance of ' + money(x.bal, true) + ' (' + x.bp + '%) due when the job is done.');
+    if (x.dep > 0) parts.push('If you pay the deposit online, your card or bank account is saved with Stripe. You authorize Team Forte to charge it for the progress payment and the balance above when each is due. If a charge does not go through, we will email you an invoice with a link to pay.');
+    return parts.join(' ');
   }
+  function contractUrl() {
+    var u = EXEC + '?r=contract&id=' + encodeURIComponent(D.id);
+    if (!D.signed) u += (D.offers && S.pick >= 0 ? '&pick=' + S.pick : '') + '&adds=' + encodeURIComponent(pickedAdds().map(function (a) { return a.key; }).join(',')) + (S.color ? '&color=' + encodeURIComponent(S.color) : '');
+    return u;
+  }
+  function contractLink(label) { return '<a class="btn ghost block" id="tfp-full" href="' + esc(contractUrl()) + '" target="_blank" rel="noopener">' + esc(label) + '</a>'; }
   function contractHtml() {
     var c = D.contract; if (!c) return '';
-    var dl = [['Contractor', c.contractor + ' · CT HIC ' + c.hic + '<br>' + c.mailing + ' · ' + c.phone], ['Start date', c.start], ['Completion date', c.end + ' (weather permitting)'], ['Materials', liveMaterials()], ['Payment', livePayment()]];
+    var dl = [['Contractor', c.contractor + ' · CT Reg. ' + c.hic + '<br>' + c.mailing + ' · ' + c.phone], ['Start date', c.start], ['Completion date', c.end + ' (weather permitting)'], ['Materials', liveMaterials()], ['Payment', livePayment()]];
     if (c.decking) dl.push(['Roof decking', c.decking]);
     dl.push(['Cleanup', c.cleanup], ['Permit', c.permit], ['Changes', c.changes + ' ' + c.whole]);
     return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
-      '<details class="terms"><summary>Notice of cancellation</summary><p>You may cancel this transaction, without any penalty or obligation, within three business days from the date you sign. If you cancel, any payments you made will be returned within ten business days after we receive your cancellation notice.</p>' +
+      '<details class="terms"><summary>Notice of cancellation</summary><p>You may cancel this transaction, without any penalty or obligation, within three business days from the date you sign. If you cancel, any payments you made will be returned within ten days after we receive your cancellation notice.</p>' +
       '<p>To cancel, sign, date and send the Notice of Cancellation to ' + esc(c.contractor) + (c.email ? ' by email to ' + esc(c.email) + ', or' : '') + ' by mail to ' + esc(c.mailing) + ', no later than midnight of the third business day after you sign (Saturdays, Sundays and Connecticut holidays don’t count). Your signed copy includes two cancellation forms and the exact date.</p></details>';
   }
   function renderSign() {
@@ -776,16 +789,17 @@
     if (D.signed) {
       var payPart = '';
       if (D.stripe && D.depositDue > 0) payPart = '<div style="margin-top:14px">' + payBtn('deposit', D.depositDue, 'Pay the ' + money(D.depositDue, true) + ' deposit now') + '</div>';
-      else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Balance of ' + money(D.balance, true) + ' is due when the job is done.' : ' Paid in full.') + '</p>';
+      else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Remaining: ' + money(D.balance, true) + ' (progress payment when materials are delivered, final payment when the job is done). We’ll send each one when it’s due.' : ' Paid in full.') + '</p>';
       else if (D.depositLink) payPart = '<br><a class="btn" href="' + esc(D.depositLink) + '" target="_top">Pay the ' + depositText(pr) + ' deposit</a>';
       box.innerHTML = '<p class="k">Signed</p><h2>Thank you, ' + esc(D.signed.name) + '!</h2>' + sum +
         '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Signed on ' + esc(D.signed.date) + '.</b> We’ll call you to schedule.' + payPart + '</div>' +
-        (D.cancelBy ? '<p class="m" style="margin-top:12px">You can cancel until midnight of ' + esc(D.cancelBy) + '. The cancellation form is in your signed copy.</p>' : '');
+        (D.cancelBy ? '<p class="m" style="margin-top:12px">You can cancel until midnight of ' + esc(D.cancelBy) + '. The cancellation form is in your signed copy.</p>' : '') +
+        (D.contract ? contractLink('View your signed contract') : '');
       if (S.built) markRv(box, true);
       return;
     }
     box.innerHTML = '<p class="k">Ready when you are</p><h2>Accept & sign</h2>' + lockLine() + addsHtml() + sum +
-      (D.terms ? '<div class="terms"><b>Terms.</b> ' + esc(D.terms) + '</div>' : '') + contractHtml() +
+      (D.terms ? '<div class="terms"><b>Terms.</b> ' + esc(D.terms) + '</div>' : '') + (D.contract ? contractLink('Read the full contract and cancellation notice') : '') + contractHtml() +
       '<label class="f" for="tfp-nm">Your full name</label><input class="inp" id="tfp-nm" autocomplete="name" value="' + esc(D.name || '') + '">' +
       '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
       (D.contract ? '<div class="cancelbox">' + esc(D.contract.cancelLine) + '</div>' : '') +
@@ -794,7 +808,7 @@
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
     sigPad();
-    box.querySelectorAll('[data-add]').forEach(function (cb) { cb.onchange = function () { S.add[cb.getAttribute('data-add')] = cb.checked; var s0 = box.querySelector('#tfp-sum'); if (s0) s0.outerHTML = sumHtml(); var cp = box.querySelector('#tfp-cpay'); if (cp) cp.textContent = livePayment(); }; });
+    box.querySelectorAll('[data-add]').forEach(function (cb) { cb.onchange = function () { S.add[cb.getAttribute('data-add')] = cb.checked; var s0 = box.querySelector('#tfp-sum'); if (s0) s0.outerHTML = sumHtml(); var cp = box.querySelector('#tfp-cpay'); if (cp) cp.textContent = livePayment(); var fl = box.querySelector('#tfp-full'); if (fl) fl.href = contractUrl(); }; });
     if (S.built) markRv(box, true);
   }
 
