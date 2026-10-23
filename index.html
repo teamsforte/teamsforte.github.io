@@ -587,7 +587,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='22';
+var APP_VERSION='23';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var KINDS=[['replacement','Replacement'],['repair','Repair'],['flat','Flat roof'],['flashing','Chimney & flashing'],['gutters','Gutters'],['skylight','Skylights']];
@@ -2290,13 +2290,14 @@ var MAT=(function(){
   }
   var COLORS=COLOR_BOOK.reduce(function(a,b){b.colors.forEach(function(c){if(a.indexOf(c)<0)a.push(c);});return a;},[]);
   var PITCHES=['2/12','3/12','4/12','5/12','6/12','7/12','8/12','9/12','10/12','11/12','12/12','14/12','16/12'];
-  function newEst(){M.est={type:(M.est&&M.est.type)||'replacement',trade:(M.est&&M.est.trade)||'Roofing',items:[],address:'',name:'',phone:'',email:'',lat:0,lng:0,roofs:[],layers:1,pick:1,color:'',m:null,busy:false};}
+  function newEst(){M.est={type:(M.est&&M.est.type)||'replacement',trade:(M.est&&M.est.trade)||'Roofing',items:[],rooms:null,address:'',name:'',phone:'',email:'',lat:0,lng:0,roofs:[],layers:1,pick:1,color:'',m:null,busy:false};}
   function typeSeg(e){return '<div class="seg mt" id="etype">'+[['replacement','Roof replacement'],['repair','Itemized job']].map(function(t){return '<button type="button" class="'+(e.type===t[0]?'on':'')+'" data-et="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';}
   function renderNewRepair(){
     var e=M.est;e.trade=TRADE_LABEL[e.trade]?e.trade:'Roofing';
     var h=bar('<button class="back" data-m="back">'+ICON.back+'Quotes</button><div class="bar-title">New estimate</div>')+'<div class="wrap" id="ew">'+typeSeg(e)+tradeSeg(e.trade,'etrade');
     h+='<div class="card"><h2>Address</h2><textarea class="in" id="ea" rows="2" placeholder="45 Woodin St, Hamden, CT" style="min-height:64px">'+esc(e.address)+'</textarea></div>';
     h+='<div class="card"><h2>'+esc(TRADE_LABEL[e.trade])+' <small>prices from ⚙ Quote prices</small></h2><div id="ers"></div>'+addRepairSelect('es',e.trade)+'<div class="tot mt" id="ert"></div></div>';
+    if(e.trade!=='Roofing')h+='<div class="card" id="erooms">'+roomsCardBody(e.rooms,'erm')+'</div>';
     h+='<div class="card"><h2>Customer <small>optional</small></h2>'+
       '<label class="f">Name</label><input class="in" data-ef="name" value="'+esc(e.name)+'" autocomplete="off">'+
       '<div class="row"><div><label class="f">Phone</label><input class="in" data-ef="phone" inputmode="tel" value="'+esc(e.phone)+'"></div><div><label class="f">Email</label><input class="in" data-ef="email" type="email" value="'+esc(e.email)+'"></div></div></div>'+
@@ -2310,6 +2311,8 @@ var MAT=(function(){
     draw();wireItems(root,e.items,'es',draw,function(){return e.trade;});
     root.addEventListener('input',function(ev){var t=ev.target;if(t.id==='ea')e.address=t.value;if(t.hasAttribute('data-ef'))e[t.getAttribute('data-ef')]=t.value;});
     document.getElementById('etype').onclick=function(ev){var b=ev.target.closest('[data-et]');if(!b)return;e.type=b.getAttribute('data-et');render();};
+    var erb=document.getElementById('erooms');if(erb)erb.onclick=function(ev){if(!ev.target.closest('[data-m=erm]'))return;
+      roomsSheet(e.rooms,e.items,e.trade,function(rooms,items){e.rooms=rooms;e.items.length=0;items.forEach(function(it){e.items.push(it);});render();});};
     document.getElementById('etrade').onclick=function(ev){var b=ev.target.closest('[data-tr]');if(!b)return;var t=b.getAttribute('data-tr');if(t===e.trade)return;
       if(e.items.some(function(it){return !it.custom;})&&!confirm('Switch to '+t+'? The items you added stay; prices come from the '+t.toLowerCase()+' list from now on.'))return;e.trade=t;render();};
   }
@@ -3048,7 +3051,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(!items.length){toast('Add at least one item.',true);return;}
     if(send&&!validEmail(e.email)){toast('Add the customer\u2019s email to send it.',true);return;}
     var btns=app.querySelectorAll('[data-m=saveest]');btns.forEach(function(b){b.disabled=true;});
-    call('createQuote',{type:'repair',trade:e.trade,address:e.address,items:items,name:e.name,phone:e.phone,email:e.email})
+    call('createQuote',{type:'repair',trade:e.trade,rooms:e.rooms,address:e.address,items:items,name:e.name,phone:e.phone,email:e.email})
       .then(function(r){mergeQ(r);if(send)return call('sendProposal',{id:r.id,send:'email',email:e.email}).then(function(r2){mergeQ(r2);return {r:r2,mailed:true};});return {r:r};})
       .then(function(o){M.qid=o.r.id;M.view='quote';M.qfilter='new';newEst();render();window.scrollTo(0,0);toast(o.mailed?'Saved and sent for signature':'Quote saved');})
       .catch(function(er){btns.forEach(function(b){b.disabled=false;});err(er);});
@@ -3117,6 +3120,56 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   function book(t){var r=M.repairs||{};if(r.trades&&r.trades[t])return r.trades[t];return t==='Roofing'?{min:r.min||0,items:r.items||[]}:{min:0,items:[]};}
   function tradeSeg(cur,id){return '<div class="seg mt" id="'+id+'" style="margin-bottom:12px">'+SERVICES.map(function(t){return '<button type="button" class="'+(cur===t?'on':'')+'" data-tr="'+t+'">'+t+'</button>';}).join('')+'</div>';}
   function repairTotal(items,trade){var t=(items||[]).reduce(function(n,it){return n+(Number(it.qty)||0)*(Number(it.price)||0);},0);return Math.round(Math.max(Number(book(trade||'Roofing').min)||0,t)*100)/100;}
+  /* ----- quick count on site: rooms -> painting / baseboard / flooring / drywall quantities ----- */
+  var DOOR_SF=21,WIN_SF=15,DOOR_W=3,SHEET_SF=32;
+  function roomCalc(list){var t={walls:0,ceil:0,floor:0,trim:0,doors:0,sheets:0,rooms:0};var dw=0;
+    (list||[]).forEach(function(r){var l=Number(r.l)||0,w=Number(r.w)||0,h=Number(r.h)||0,d=Number(r.d)||0,wi=Number(r.win)||0;if(!(l>0&&w>0))return;t.rooms++;
+      var per=2*(l+w),wall=Math.max(0,per*h-d*DOOR_SF-wi*WIN_SF),area=l*w;
+      t.walls+=wall;if(r.c!==false)t.ceil+=area;t.floor+=area;t.trim+=Math.max(0,per-d*DOOR_W);t.doors+=d;dw+=wall+area;});
+    t.sheets=dw>0?Math.ceil(dw*1.1/SHEET_SF):0;['walls','ceil','floor','trim'].forEach(function(k){t[k]=Math.round(t[k]);});return t;}
+  function roomOuts(t){return [
+    {k:'walls',t:'Painting',key:'p_walls',label:'Paint walls',qty:t.walls,u:'sq ft'},
+    {k:'ceil',t:'Painting',key:'p_ceilsf',label:'Paint ceilings',qty:t.ceil,u:'sq ft'},
+    {k:'ptrim',t:'Painting',key:'p_trim',label:'Paint trim & baseboard',qty:t.trim,u:'LF'},
+    {k:'pdoor',t:'Painting',key:'p_door',label:'Paint doors',qty:t.doors,u:'doors'},
+    {k:'base',t:'Carpentry',key:'c_base',label:'Install baseboard',qty:t.trim,u:'LF'},
+    {k:'floor',t:'Carpentry',key:'c_floor',label:'Flooring (+10% waste)',qty:Math.ceil(t.floor*1.1),u:'sq ft'},
+    {k:'dw',t:'Handyman',key:'h_dwhang',label:'Drywall, walls + ceilings (+10% waste)',qty:t.sheets,u:'sheets'}];}
+  function roomsCardBody(rooms,act){var list=(rooms&&rooms.list)||[];var t=roomCalc(list);
+    return '<h2>Room measurements <small>quick count on site</small></h2>'+(t.rooms?
+      kv(t.rooms+' room'+(t.rooms===1?'':'s'),'')+kv('Walls',t.walls.toLocaleString()+' sq ft')+kv('Ceilings / floor',t.ceil.toLocaleString()+' / '+t.floor.toLocaleString()+' sq ft')+kv('Baseboard',t.trim+' LF · '+t.doors+' door'+(t.doors===1?'':'s')):
+      '<p class="hint">Type each room’s length × width × ceiling height and the app works out walls, ceilings, baseboard, flooring and drywall.</p>')+
+      (act?'<button class="btn ghost block mt" data-m="'+act+'">'+(t.rooms?'Edit rooms':ICON.plus+'Add rooms')+'</button>':'');}
+  function roomsSheet(rooms,items,trade,done){
+    var list=((rooms&&rooms.list)||[]).map(function(r){return Object.assign({},r);});if(!list.length)list.push({n:'Room 1',l:'',w:'',h:8,d:1,win:1,c:true});
+    var outs0=roomOuts(roomCalc([]));var use=(rooms&&rooms.use)?rooms.use.slice():outs0.filter(function(o){return o.t===trade&&o.k!=='floor';}).map(function(o){return o.k;});
+    var ov=sheet('<h3>Room measurements'+closeBtn()+'</h3><p class="hint">Feet. Doors and windows are taken off the wall area (3×7 door, 3×5 window).</p><div id="rml"></div>'+
+      '<button type="button" class="btn ghost block mt" id="rmadd">'+ICON.plus+'Add room</button><div id="rmout" class="mt"></div><button class="btn block mt" id="rmsv">Fill the quote</button>');
+    function num(v){return Number(String(v).replace(/[^\d.]/g,''))||0;}
+    function f(i,k,lab,v,mode){return '<div><label class="f" style="margin-top:6px">'+lab+'</label><input class="in money" inputmode="'+(mode||'decimal')+'" data-ri="'+i+'" data-rk="'+k+'" value="'+(v===''||v==null?'':v)+'"></div>';}
+    function drawList(){ov.querySelector('#rml').innerHTML=list.map(function(r,i){
+      return '<div style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px"><div class="row" style="gap:6px;align-items:center"><input class="in" data-ri="'+i+'" data-rk="n" value="'+esc(r.n||'')+'" placeholder="Room name"><button type="button" class="x" data-rmrm="'+i+'" aria-label="Remove room" style="flex:0 0 auto">'+ICON.x+'</button></div>'+
+        '<div class="row" style="gap:6px">'+f(i,'l','Length',r.l)+f(i,'w','Width',r.w)+f(i,'h','Ceiling ht',r.h)+'</div>'+
+        '<div class="row" style="gap:6px">'+f(i,'d','Doors',r.d,'numeric')+f(i,'win','Windows',r.win,'numeric')+'<div><label class="f" style="margin-top:6px">Ceiling</label><label class="remember" style="margin:8px 0 0"><input type="checkbox" data-ri="'+i+'" data-rk="c"'+(r.c!==false?' checked':'')+'> paint</label></div></div></div>';}).join('');}
+    function drawOut(){var t=roomCalc(list);
+      ov.querySelector('#rmout').innerHTML='<label class="f">Add to the quote</label><div class="adds">'+roomOuts(t).map(function(o){var b=(book(o.t).items||[]).filter(function(it){return it.key===o.key;})[0];
+        return '<div class="add"><label><input type="checkbox" data-ro="'+o.k+'"'+(use.indexOf(o.k)>=0?' checked':'')+(b?'':' disabled')+'><span>'+esc(o.label)+'<small>'+o.qty.toLocaleString()+' '+esc(o.u)+(b?' × '+money(b.price)+' = '+money(o.qty*b.price):' · not in the '+o.t.toLowerCase()+' price book')+'</small></span></label></div>';}).join('')+'</div>';}
+    drawList();drawOut();
+    var sh=ov.querySelector('.sheet');
+    sh.addEventListener('input',function(ev){var t=ev.target,i=t.getAttribute('data-ri');if(i==null)return;var k=t.getAttribute('data-rk');if(k==='c')return;list[+i][k]=k==='n'?t.value:num(t.value);drawOut();});
+    sh.addEventListener('change',function(ev){var t=ev.target;if(t.getAttribute('data-rk')==='c'){list[+t.getAttribute('data-ri')].c=t.checked;drawOut();return;}
+      var ok=t.getAttribute('data-ro');if(ok){use=use.filter(function(k){return k!==ok;});if(t.checked)use.push(ok);}});
+    sh.addEventListener('click',function(ev){var rm=ev.target.closest('[data-rmrm]');if(rm){list.splice(+rm.getAttribute('data-rmrm'),1);drawList();drawOut();}});
+    ov.querySelector('#rmadd').onclick=function(){var last=list[list.length-1]||{h:8};list.push({n:'Room '+(list.length+1),l:'',w:'',h:last.h||8,d:1,win:1,c:true});drawList();drawOut();};
+    ov.querySelector('#rmsv').onclick=function(){
+      var clean=list.filter(function(r){return num(r.l)>0&&num(r.w)>0;});if(!clean.length){toast('Type the length and width of at least one room.',true);return;}
+      var outs=roomOuts(roomCalc(clean)),before=(rooms&&rooms.use)||[],next=items.map(function(it){return Object.assign({},it);});
+      outs.forEach(function(o){var at=-1;next.forEach(function(it,j){if(it.key===o.key)at=j;});
+        if(use.indexOf(o.k)>=0&&o.qty>0){var b=(book(o.t).items||[]).filter(function(it){return it.key===o.key;})[0];if(!b)return;
+          if(at>=0)next[at].qty=o.qty;else next.push({key:b.key,name:b.name,unit:b.unit,qty:o.qty,price:b.price,cost:Number(b.cost)||0});}
+        else if(at>=0&&before.indexOf(o.k)>=0)next.splice(at,1);});
+      closeSheet();done({list:clean,use:use},next);};
+  }
   function itemCost(items){return (items||[]).reduce(function(n,it){return n+(Number(it.qty)||0)*(Number(it.cost)||0);},0);}
   /* owner-only estimate of profit from the price book costs; never sent to customers */
   function profitLine(items,total){var c=itemCost(items);if(!(c>0))return '<p class="hint" style="margin-top:6px">Add your costs in ⚙ Quote prices to see the profit here.</p>';
@@ -3163,7 +3216,8 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       items.map(function(it){return kv(esc(it.name)+'<br><small class="hint">'+it.qty+' '+esc(units(it.unit,it.qty))+' × '+money(it.price)+'</small>','<span class="money">'+money(it.qty*it.price)+'</span>');}).join('')+
       (sub<tot?kv('Minimum charge',''):'')+
       '<div class="tot"><div class="kv grand"><span>'+((x.chosen||[]).length?'Items total':'Total')+'</span><b class="money">'+money(tot)+'</b></div>'+profitLine(items,tot)+'</div>'+
-      (x.status==='new'&&!x.signedAt?'<button class="btn ghost block mt" data-m="edititems">Edit items</button>':'')+'</div>';
+      (x.status==='new'&&!x.signedAt?'<button class="btn ghost block mt" data-m="edititems">Edit items</button>':'')+'</div>'+
+      (tradeOf(x)!=='Roofing'&&(x.rooms||(x.status==='new'&&!x.signedAt))?'<div class="card">'+roomsCardBody(x.rooms,x.status==='new'&&!x.signedAt?'qrooms':'')+'</div>':'');
   }
   function approveRepairCard(x){
     return '<div class="card"><h2>Approve job</h2><p class="sub">Approving adds the job to Photos and starts its materials list and job costs. If the customer signs online, this happens on its own.</p>'+
@@ -3493,6 +3547,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='editcust'){editCustSheet();return;}
     if(a==='ghlsync'){call('ghlSyncNow',{id:M.qid}).then(function(r){mergeQ(r);render();toast('Synced to GoHighLevel');}).catch(function(e){load().then(render);err(e);});return;}
     if(a==='edititems'){editItemsSheet();return;}
+    if(a==='qrooms'){var xr=q();roomsSheet(xr.rooms,xr.items||[],tradeOf(xr),function(rooms,items){saveQ({rooms:rooms,items:items,contractPrice:repairTotal(items,tradeOf(xr))},'Rooms saved');});return;}
     if(a==='approverep'){t.disabled=true;saveQ({status:'approved'},'Approved').then(function(){M.qfilter='approved';call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);});}).catch(function(){t.disabled=false;});return;}
     if(a==='propose'){proposeSheet();return;}
     if(a==='conew'){coSheet('');return;}
