@@ -784,6 +784,7 @@
     if (liveCardAuth()) dl.push(['Saved card or bank account', liveCardAuth()]);
     if (c.decking) dl.push(['Roof decking', c.decking]);
     if (c.late) dl.push(['Late payments', c.late]);
+    if (c.siteMaterials) dl.push(['Materials on site', c.siteMaterials]);
     dl.push(['Cleanup', c.cleanup], ['Permit', c.permit], ['Changes', c.changes + ' ' + c.whole]);
     return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : r[0] === 'Saved card or bank account' ? ' id="tfp-ccard"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
       '<details class="terms"><summary>Notice of cancellation</summary><p>You may cancel this transaction, without any penalty or obligation, within three business days from the date you sign. If you cancel, any payments you made will be returned within ten days after we receive your cancellation notice.</p>' +
