@@ -207,6 +207,17 @@ body.has-tabs .toast{bottom:calc(80px + env(safe-area-inset-bottom))}
 .src.manual{background:#E7EEFF;color:#2B4FC7}
 .src.starter{background:#FFF4D6;color:#8A5A00}
 .note{background:#FFF8E6;border:1px solid #F3DFA8;border-radius:10px;padding:10px 12px;font-size:13px;color:#5C4400;margin:10px 0}
+.note.warn{background:#FFF1EF;border-color:#F6C7BF;color:#7A2316}
+.co{border-top:1px solid var(--line);padding:8px 0 4px}
+.co:first-of-type{border-top:0}
+.adds{display:grid;gap:6px}
+.add{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.add label{flex:1;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;min-width:0}
+.add label input{width:20px;height:20px;accent-color:var(--red);flex:none}
+.add label small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.add .in{flex:0 0 76px;min-height:38px;padding:6px 8px}
+.add i{font-style:normal;font-size:12px;color:var(--muted);flex:0 0 36px}
+.sigpad{width:100%;height:120px;border:2px dashed #B9C3CE;border-radius:10px;background:#fff;touch-action:none;display:block;margin-top:6px}
 .note.ok{background:var(--green-bg);border-color:#BFE6CF;color:#145C34}
 .res{display:block;width:100%;text-align:left;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
 .res b{display:block}
@@ -276,6 +287,37 @@ body.dragging,body.dragging *{cursor:grabbing!important;-webkit-user-select:none
 @media(hover:hover){.fv-nav{display:flex}}
 .seg.kinds{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
 .seg.kinds button{font-size:13px;line-height:1.15;padding:4px 6px}
+.mtag{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#9A6A00;background:#FFF4D6;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:1px}
+.mtag.ok{color:var(--green);background:var(--green-bg)}
+.mz{position:fixed;inset:0;z-index:45;background:var(--navy);display:flex;flex-direction:column}
+.mz-top{display:flex;align-items:center;gap:10px;color:#fff;padding:calc(8px + env(safe-area-inset-top)) 10px 8px}
+.mz-top b{flex:1;text-align:center;font-size:16px}
+.mz-btn{color:#fff;min-width:44px;min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:9px}
+.mz-btn svg{width:22px;height:22px}
+.mz-save{background:var(--red);font-weight:800;padding:0 16px}
+.mz-save[disabled]{opacity:.6}
+.mz-map{flex:1;min-height:200px;position:relative;background:#1c2a1f}
+.mz-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#C4CCD6;font-weight:600;padding:20px;text-align:center}
+.mz-panel{background:#fff;border-radius:16px 16px 0 0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));max-height:44vh;overflow:auto}
+.mz-types{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.mz-types button{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:5px;justify-content:center;border:1.5px solid var(--line);border-radius:999px;padding:8px 4px;font-weight:700;font-size:13px;background:#fff;white-space:nowrap}
+.mz-types button i{width:9px;height:9px;border-radius:50%;flex:none}
+.mz-types button.on{border-color:var(--navy);background:var(--navy);color:#fff}
+.mz-read{font-size:14px;color:var(--ink);margin:10px 0 8px;min-height:20px}
+.mz-read span{color:var(--muted)}
+.mz-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mz-acts .btn{min-height:44px}
+.mz-pitch{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin:10px 0 0}
+.mz-pitch select{border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;font-weight:700;background:#fff}
+.mz-pitch span{font-weight:500;color:var(--muted);font-size:12px}
+.mz-ls{margin:10px 0 0;border-top:1px solid var(--line)}
+.mz-li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.mz-li i{width:10px;height:10px;border-radius:50%;flex:none}
+.mz-li span{flex:1}
+.mz-li button{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.mz-li button svg{width:16px;height:16px}
+.mz-tot{font-size:13.5px;margin:8px 0 0;color:var(--ink)}
+.mz-lbl{background:rgba(19,32,47,.85);padding:2px 6px;border-radius:6px;transform:translateY(-14px)}
 .netpill{position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:60;background:#FFF4E5;color:#7A4B00;border:1px solid #F5D7A6;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;pointer-events:none}
 </style>
 </head>
@@ -545,7 +587,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='18';
+var APP_VERSION='20';
 var SERVICES=['Roofing','Carpentry','Painting','Handyman'];
 var STAGES=[['before','Before'],['during','During'],['after','After']];
 var KINDS=[['replacement','Replacement'],['repair','Repair'],['flat','Flat roof'],['flashing','Chimney & flashing'],['gutters','Gutters'],['skylight','Skylights']];
@@ -785,9 +827,9 @@ function formData(f){return{kind:f.elements.service.value==='Roofing'&&f.element
 
 function saveDetails(f){
   var j=job();var b=f.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving…';
-  var d=formData(f);d.id=j.id;
+  var d=formData(f);d.id=j.id;d.base={title:j.title,town:j.town,address:j.address,description:j.description,date:j.date};
   call('saveJob',d).then(function(r){merge(r);toast('Saved');render();})
-    .catch(function(e){b.disabled=false;b.textContent='Save details';toast(e.message,true);});
+    .catch(function(e){b.disabled=false;b.textContent='Save details';if(isConflict(e))conflictBox(e,reloadJobs);else toast(e.message,true);});
 }
 
 function merge(r){
@@ -828,6 +870,12 @@ function sheetDirty(ov){return Array.prototype.some.call(ov.querySelectorAll('in
   if(i.type==='checkbox'||i.type==='radio')return i.checked!==i.defaultChecked;if(i.type==='file'||i.type==='search')return false;return i.value!==i.defaultValue;});}
 function closeSheet(){var o=document.getElementById('ov');if(o)o.remove();document.body.style.overflow='';}
 function closeBtn(){return '<button class="x" data-close aria-label="Close">'+ICON.x+'</button>';}
+
+function isConflict(x){return /^CONFLICT/.test((x&&x.message)||'');}
+function conflictBox(x,reload){
+  confirmBox('Changed on another phone',String(x.message).replace(/^CONFLICT:\s*/,''),'Reload').then(function(ok){if(ok)reload();});
+}
+function reloadJobs(){return call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);render();toast('Reloaded');}).catch(function(x){toast(x.message,true);});}
 
 function confirmBox(title,text,okLabel){
   return new Promise(function(res){
@@ -1210,12 +1258,12 @@ app.addEventListener('click',function(e){
   if(a==='add'){if(S.upload){toast('Wait for the current upload to finish.');return;}pickStage=t.getAttribute('data-stage');picker.click();return;}
   if(a==='drive'){if(S.upload){toast('Wait for the current upload to finish.');return;}driveSheet(t.getAttribute('data-stage'));return;}
   if(a==='tog'){
-    var j=job(),k=t.getAttribute('data-k'),v=!j[k],d={id:j.id};d[k]=v;
+    var j=job(),k=t.getAttribute('data-k'),v=!j[k],d={id:j.id,base:{}};d[k]=v;d.base[k]=j[k];
     if(k==='featured'&&v&&!j.published){d.published=true;}
     t.classList.toggle('on',v);
     call('saveJob',d).then(function(r){merge(r);render();
       toast(k==='published'?(v?'Showing on the website':'Hidden from the website'):(v?'Showing on the homepage':'Removed from the homepage'));
-    }).catch(function(err){t.classList.toggle('on',!v);toast(err.message,true);});
+    }).catch(function(err){t.classList.toggle('on',!v);if(isConflict(err))conflictBox(err,reloadJobs);else toast(err.message,true);});
     return;
   }
   if(a==='deljob'){
@@ -1303,7 +1351,7 @@ var MAT=(function(){
         return '<button class="q" data-m="openq" data-id="'+esc(x.id)+'"><div class="top"><div style="min-width:0"><div class="nm">'+esc(x.name||(x.source==='app'?'Customer':'Website visitor'))+'</div>'+
           '<div class="ad">'+esc(x.address||'')+'</div></div><div class="rg money">'+esc(pr)+'</div></div>'+
           '<div class="pills"><span class="pill '+x.status+'">'+ST_LABEL[x.status]+'</span>'+
-          (x.type==='repair'?'<span class="pill">Repair · '+(x.items||[]).length+' item'+((x.items||[]).length===1?'':'s')+'</span>':'<span class="pill">'+Math.round(sqft(x)).toLocaleString()+' sq ft</span>')+
+          (x.type==='repair'?'<span class="pill">Repair · '+(x.items||[]).length+' item'+((x.items||[]).length===1?'':'s')+'</span>':'<span class="pill">'+(sqft(x)>0?Math.round(sqft(x)).toLocaleString()+' sq ft':'Measure needed')+'</span>')+
           (x.signedAt?'<span class="pill done">✓ Signed</span>':x.proposalSentAt?'<span class="pill">Sent for signature</span>':'')+
           (pk?'<span class="pill">OC '+esc(pk.label)+(x.color?' · '+esc(x.color):'')+'</span>':'')+
           (x.lead&&x.lead.inspectionDay?'<span class="pill" style="background:#FFE8E3;color:#B4321F">Inspection requested</span>':'')+
@@ -1339,17 +1387,316 @@ var MAT=(function(){
       (x.layers>1?kv('Layers to tear off',String(x.layers)):'')+
       (x.link&&!rep?'<div class="acts"><button class="btn" data-m="share">Send quote</button><a class="btn ghost" href="'+esc(x.link)+'" target="_blank" rel="noopener">View quote page</a></div>':'')+
       ghlLine(x)+'</div>';
-    if(rep)h+=repairCard(x);
-    h+=proposalCard(x)+paymentsCard(x);
-    if(x.status==='new')h+=rep?approveRepairCard(x):approveCard(x);
-    else h+=scheduleCard(x)+profitCard(x)+jobCards(x);
-    h+=inspectionCard(x);
-    if(x.status==='done')h+=wrapCard(x);
+    if(x.status==='new'){
+      h+=measCard(x);
+      if(rep)h+=repairCard(x);
+      h+=proposalCard(x)+changeOrdersCard(x)+paymentsCard(x);
+      h+=rep?approveRepairCard(x):approveCard(x);
+      h+=inspectionCard(x);
+    }else{
+      var jobTabs=[['money','Money'],['roof','Roof & materials'],['photos','Photos']];
+      var curTab=jobTabs.some(function(t){return t[0]===M.jobTab;})?M.jobTab:'money';
+      h+='<div class="seg" style="margin:12px 0" role="tablist">'+jobTabs.map(function(t){return '<button type="button" class="'+(t[0]===curTab?'on':'')+'" data-m="jtab" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';
+      if(curTab==='money')h+=proposalCard(x)+changeOrdersCard(x)+paymentsCard(x)+scheduleCard(x)+profitCard(x);
+      else if(curTab==='roof')h+=(rep?measCard(x)+repairCard(x):'')+jobCards(x);
+      else h+=inspectionCard(x)+(x.status==='done'?wrapCard(x):'');
+      if(isOwner()&&x.signedAt&&!x.cancelledAt)h+='<details class="card more"><summary>Other actions</summary><p class="hint">Only if the customer has cancelled in writing. This archives the job.</p><button class="btn danger block mt" data-m="cxl">Customer cancelled</button></details>';
+    }
     h+='</div>';
     app.innerHTML=h;
     wireQuote(x);
     var ds=document.getElementById('depseg');
     if(ds)ds.onclick=function(e){var b=e.target.closest('[data-dep]');if(!b||b.classList.contains('on'))return;saveQ({depositStatus:b.getAttribute('data-dep')},b.getAttribute('data-dep')==='paid'?'Deposit marked paid':'Saved');};
+  }
+
+  /* ----- roof measurements without approving + tap-to-measure on the satellite photo ----- */
+  var MT_TYPES=[['ridge','Ridge','#FF5440'],['hip','Hip','#FFB020'],['valley','Valley','#3DA5FF'],['eave','Eave','#35C46A'],['rake','Rake','#C77DFF']];
+  var MT_KEY={ridge:'ridges',hip:'hips',valley:'valleys',eave:'eaves',rake:'rakes'};
+  function mtColor(t){for(var i=0;i<MT_TYPES.length;i++)if(MT_TYPES[i][0]===t)return MT_TYPES[i][2];return '#fff';}
+  function mtLabel(t){for(var i=0;i<MT_TYPES.length;i++)if(MT_TYPES[i][0]===t)return MT_TYPES[i][1];return t;}
+  function mtRise(p){return TAKEOFF.pitchRise(p)||0;}
+  /* Ridges and eaves are level, so the photo length is the real length. Hips and valleys run diagonally down the slope; rakes run straight down it. */
+  function mtTrue(t,plan,pitch){var r=mtRise(pitch)/12;if(t==='hip'||t==='valley')return plan*Math.sqrt(1+r*r/2);if(t==='rake')return plan*Math.sqrt(1+r*r);return plan;}
+  function mtFeet(pts){var ft=0,R=20902231,rad=Math.PI/180;
+    for(var i=1;i<pts.length;i++){var a=pts[i-1],b=pts[i],dLat=(b[0]-a[0])*rad,dLng=(b[1]-a[1])*rad;
+      var h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a[0]*rad)*Math.cos(b[0]*rad)*Math.sin(dLng/2)*Math.sin(dLng/2);
+      ft+=2*R*Math.asin(Math.min(1,Math.sqrt(h)));}
+    return ft;}
+  function mtTotals(lines){var t={};(lines||[]).forEach(function(l){t[l.t]=(t[l.t]||0)+(Number(l.len)||0);});return t;}
+  function applyTraced(m,lines){
+    var t=mtTotals(lines);m.est=Object.assign({},m.est||{});
+    Object.keys(MT_KEY).forEach(function(k){if(t[k]>0){m[MT_KEY[k]]=Math.round(t[k]);delete m.est[MT_KEY[k]];}});
+    m.traced=lines||[];return m;}
+  function emptyMeas(){return {area:0,eaves:0,rakes:0,ridges:0,hips:0,valleys:0,pitch:'',roofs:[],est:{}};}
+  /* Measurements for a quote: saved numbers once approved, otherwise the estimate from the roof outline, with any lines measured on the photo on top */
+  function measFor(x){
+    var saved=x.meas||{},m;
+    if(x.status!=='new'&&saved.area)m=JSON.parse(JSON.stringify(saved));
+    else m=(x.roofs&&x.roofs.length)?TAKEOFF.estimate(x.roofs):emptyMeas();
+    if(!m.pitch&&saved.pitch)m.pitch=saved.pitch;
+    return applyTraced(m,saved.traced||[]);
+  }
+  function capBundles(m){var lf=(Number(m.ridges)||0)+(Number(m.hips)||0);return {lf:Math.round(lf),bundles:Math.ceil(lf*1.05/33)};}
+  function measCard(x){
+    var m=measFor(x),est=m.est||{},tr=m.traced||[],hasRoof=!!m.area;
+    function tag(k){return est[k]?'<i class="mtag">est.</i>':(m[k]&&tr.some(function(l){return MT_KEY[l.t]===k;})?'<i class="mtag ok">measured</i>':'');}
+    function row(k,label){if(!hasRoof&&!m[k])return '';return kv(label+tag(k),m[k]?Math.round(m[k]).toLocaleString()+' ft':'—');}
+    var cap=capBundles(m);
+    var h='<div class="card"><h2>Roof measurements <small>no approval needed</small></h2>';
+    if(hasRoof){
+      h+=kv('Roof area',Math.round(m.area).toLocaleString()+' sq ft · '+(Math.round(m.area/10)/10)+' squares');
+      (m.roofs||[]).length>1&&(m.roofs||[]).forEach(function(r){h+=kv('&nbsp;&nbsp;'+esc(r.name),Math.round(r.sqft).toLocaleString()+' sq ft · '+esc(r.pitch||'pitch ?'));});
+      h+=kv('Main pitch',esc(m.pitch||'?'));
+    }
+    h+=row('ridges','Ridges')+row('hips','Hips')+row('valleys','Valleys')+row('eaves','Eaves')+row('rakes','Rakes');
+    if(cap.lf)h+=kv('Hip &amp; ridge cap','<span class="money">'+cap.bundles+' bundle'+(cap.bundles===1?'':'s')+'</span> <span class="hint">('+cap.lf+' LF + 5%, 33 LF each)</span>');
+    if(['ridges','hips','valleys','eaves','rakes'].some(function(k){return est[k]&&m[k];}))
+      h+='<p class="hint"><b>est.</b> = rough guess from the roof outline, not measured. For a repair, measure it on the satellite photo.</p>';
+    if(!hasRoof&&!tr.length)h+='<p class="hint">Measure the ridges, hips or other lines you need on the satellite photo.</p>';
+    h+='<button class="btn dark block mt" data-m="measuretool">'+(tr.length?'Edit measured lines ('+tr.length+')':'Measure on satellite photo')+'</button>';
+    if(!canMeasureHere())h+='<p class="hint">Needs the Google Maps key (Quotes › Quote prices).</p>';
+    return h+'</div>';
+  }
+  function measureTool(){
+    var x=q();
+    if(!canMeasureHere()){toast('Add the Google Maps key under Quote prices first.',true);return;}
+    var base=measFor(x);
+    var st={type:'ridge',pitch:base.pitch||'6/12',lines:JSON.parse(JSON.stringify((x.meas&&x.meas.traced)||[])),cur:[],dirty:false,map:null,objs:[],curObjs:[]};
+    var pitches=[];for(var p=0;p<=18;p++)pitches.push(p+'/12');
+    if(pitches.indexOf(st.pitch)<0)pitches.push(st.pitch);
+    var ov=document.createElement('div');ov.className='mz';ov.id='mz';
+    ov.innerHTML='<div class="mz-top"><button type="button" class="mz-btn" data-z="close" aria-label="Close">'+ICON.x+'</button><b>Measure roof</b><button type="button" class="mz-btn mz-save" data-z="save">Save</button></div>'+
+      '<div class="mz-map" id="mzmap"><div class="mz-load">Loading satellite photo…</div></div>'+
+      '<div class="mz-panel"><div class="mz-types" id="mztypes">'+MT_TYPES.map(function(t){return '<button type="button" data-zt="'+t[0]+'"><i style="background:'+t[2]+'"></i>'+t[1]+'</button>';}).join('')+'</div>'+
+      '<div class="mz-read" id="mzread"></div>'+
+      '<div class="mz-acts"><button type="button" class="btn ghost" data-z="undo">Undo point</button><button type="button" class="btn" data-z="finish">Finish line</button></div>'+
+      '<label class="mz-pitch">Pitch <select id="mzpitch">'+pitches.map(function(v){return '<option'+(v===st.pitch?' selected':'')+'>'+esc(v)+'</option>';}).join('')+'</select><span>used for hips, valleys and rakes</span></label>'+
+      '<div id="mzlist"></div></div>';
+    document.body.appendChild(ov);document.body.style.overflow='hidden';
+    function g(id){return ov.querySelector('#'+id);}
+    function clearObjs(a){a.forEach(function(o){o.setMap(null);});a.length=0;}
+    function ll(p){return {lat:p[0],lng:p[1]};}
+    function label(map,pos,text,color){return new google.maps.Marker({map:map,position:pos,clickable:false,icon:{path:google.maps.SymbolPath.CIRCLE,scale:0},label:{text:text,color:'#fff',fontSize:'12px',fontWeight:'800',className:'mz-lbl'}});}
+    function drawLines(){
+      if(!st.map)return;clearObjs(st.objs);
+      st.lines.forEach(function(l,i){
+        var c=mtColor(l.t);
+        st.objs.push(new google.maps.Polyline({map:st.map,path:l.pts.map(ll),strokeColor:c,strokeWeight:4,strokeOpacity:.95,clickable:false}));
+        var mid=l.pts[Math.floor((l.pts.length-1)/2)],nxt=l.pts[Math.floor((l.pts.length-1)/2)+1]||mid;
+        st.objs.push(label(st.map,{lat:(mid[0]+nxt[0])/2,lng:(mid[1]+nxt[1])/2},Math.round(l.len)+' ft',c));
+      });
+    }
+    function drawCur(){
+      if(!st.map)return;clearObjs(st.curObjs);
+      var c=mtColor(st.type);
+      if(st.cur.length>1)st.curObjs.push(new google.maps.Polyline({map:st.map,path:st.cur.map(ll),strokeColor:c,strokeWeight:3,strokeOpacity:0,clickable:false,
+        icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,strokeColor:c,scale:3},offset:'0',repeat:'12px'}]}));
+      st.cur.forEach(function(p,i){
+        var mk=new google.maps.Marker({map:st.map,position:ll(p),draggable:true,icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#fff',fillOpacity:1,strokeColor:c,strokeWeight:3}});
+        mk.addListener('drag',function(e){st.cur[i]=[e.latLng.lat(),e.latLng.lng()];readout();});
+        mk.addListener('dragend',function(){drawCur();});
+        st.curObjs.push(mk);
+      });
+    }
+    function readout(){
+      var plan=mtFeet(st.cur),len=mtTrue(st.type,plan,st.pitch);
+      g('mzread').innerHTML=st.cur.length?'<b>'+mtLabel(st.type)+':</b> '+st.cur.length+' point'+(st.cur.length===1?'':'s')+(st.cur.length>1?' · <b>'+Math.round(len*10)/10+' ft</b>'+(Math.abs(len-plan)>.05?' <span>('+Math.round(plan*10)/10+' ft on the photo)</span>':''):' · tap the other end'):
+        'Pick a type, then tap each end of the line on the photo. Tap more points to follow a bend. Drag a point to fine-tune it.';
+      Array.prototype.forEach.call(g('mztypes').children,function(b){b.classList.toggle('on',b.getAttribute('data-zt')===st.type);});
+    }
+    function list(){
+      var t=mtTotals(st.lines),m=applyTraced(JSON.parse(JSON.stringify(base)),st.lines),cap=capBundles(m);
+      var h=st.lines.length?'<div class="mz-ls">'+st.lines.map(function(l,i){return '<div class="mz-li"><i style="background:'+mtColor(l.t)+'"></i><span>'+mtLabel(l.t)+'</span><b>'+Math.round(l.len*10)/10+' ft</b><button type="button" data-zd="'+i+'" aria-label="Delete line">'+ICON.x+'</button></div>';}).join('')+'</div>':'';
+      var tot=MT_TYPES.filter(function(k){return t[k[0]];}).map(function(k){return k[1]+'s '+Math.round(t[k[0]])+' ft';}).join(' · ');
+      if(tot)h+='<p class="mz-tot">'+tot+'</p>';
+      if(cap.lf)h+='<p class="mz-tot"><b>Hip &amp; ridge cap: '+cap.bundles+' bundle'+(cap.bundles===1?'':'s')+'</b> ('+cap.lf+' LF + 5%)'+(function(){var e=m.est||{},w=[];if(e.ridges&&m.ridges)w.push('ridges');if(e.hips&&m.hips)w.push('hips');return w.length?' · '+w.join(' &amp; ')+' still estimated':'';})()+'</p>';
+      g('mzlist').innerHTML=h;
+    }
+    function refresh(){readout();list();drawCur();drawLines();}
+    function finish(){
+      if(st.cur.length<2){toast('Tap both ends of the line first.',true);return false;}
+      var plan=mtFeet(st.cur);
+      st.lines.push({t:st.type,pts:st.cur.map(function(p){return [Math.round(p[0]*1e7)/1e7,Math.round(p[1]*1e7)/1e7];}),plan:Math.round(plan*10)/10,len:Math.round(mtTrue(st.type,plan,st.pitch)*10)/10,pitch:st.pitch});
+      st.cur=[];st.dirty=true;refresh();return true;
+    }
+    function close(){ov.remove();document.body.style.overflow='';}
+    function save(){
+      if(st.cur.length>1)finish();
+      var x2=q(),saved=x2.meas||{},m,args;
+      if(x2.status!=='new'&&x2.type!=='repair'&&saved.area){
+        m=applyTraced(JSON.parse(JSON.stringify(saved)),st.lines);
+        args={meas:m,lines:TAKEOFF.lines(m,x2.pick,priceMap(),x2.lines)};
+      }else{
+        m=applyTraced(measFor(Object.assign({},x2,{meas:{}})),st.lines);
+        if(!m.pitch)m.pitch=st.pitch;
+        args={meas:m};
+      }
+      var b=ov.querySelector('[data-z=save]');b.disabled=true;b.textContent='Saving…';
+      saveQ(args,args.lines?'Saved. Materials list updated.':'Measurements saved').then(close).catch(function(){b.disabled=false;b.textContent='Save';});
+    }
+    ov.addEventListener('click',function(e){
+      var tb=e.target.closest('[data-zt]');if(tb){if(st.cur.length>1&&tb.getAttribute('data-zt')!==st.type)finish();st.type=tb.getAttribute('data-zt');refresh();return;}
+      var d=e.target.closest('[data-zd]');if(d){st.lines.splice(+d.getAttribute('data-zd'),1);st.dirty=true;refresh();return;}
+      var z=e.target.closest('[data-z]');if(!z)return;var a=z.getAttribute('data-z');
+      if(a==='undo'){if(st.cur.length)st.cur.pop();else if(st.lines.length){st.cur=st.lines.pop().pts;st.dirty=true;}refresh();return;}
+      if(a==='finish'){finish();return;}
+      if(a==='save'){save();return;}
+      if(a==='close'){if(!st.dirty&&!st.cur.length){close();return;}
+        confirmBox('Close without saving?','The lines you measured will be lost.','Close').then(function(ok){if(ok)close();});return;}
+    });
+    g('mzpitch').onchange=function(){st.pitch=this.value;st.lines.forEach(function(l){l.pitch=st.pitch;l.len=Math.round(mtTrue(l.t,l.plan||mtFeet(l.pts),st.pitch)*10)/10;});st.dirty=true;refresh();};
+    readout();list();
+    loadMaps().then(function(){
+      if(x.lat&&x.lng)return {lat:+x.lat,lng:+x.lng};
+      if(!x.address)throw new Error('This quote has no address.');
+      return findPlace(x.address).then(function(p){return {lat:p.location.lat(),lng:p.location.lng()};});
+    }).then(function(c){
+      if(!document.getElementById('mz'))return;
+      var el=g('mzmap');el.innerHTML='';
+      var map=new google.maps.Map(el,{mapTypeId:'satellite',center:c,zoom:21,tilt:0,heading:0,disableDefaultUI:true,zoomControl:true,gestureHandling:'greedy',clickableIcons:false,draggableCursor:'crosshair'});
+      st.map=map;
+      (x.roofs||[]).forEach(function(r){
+        var o=r.o||r.outline,rs=[];
+        if(typeof o==='string')rs=[TAKEOFF.decodePoly(o)];else if(Array.isArray(o)&&o.length)rs=typeof o[0]==='string'?o.map(TAKEOFF.decodePoly):(Array.isArray(o[0])&&typeof o[0][0]==='number'?[o]:o);
+        rs.forEach(function(ring){if(ring&&ring.length>2)new google.maps.Polygon({map:map,paths:ring.map(ll),strokeColor:'#FFFFFF',strokeOpacity:.7,strokeWeight:1.5,fillOpacity:0,clickable:false});});
+      });
+      map.addListener('click',function(e){st.cur.push([e.latLng.lat(),e.latLng.lng()]);readout();drawCur();});
+      if(st.lines.length){var b=new google.maps.LatLngBounds();st.lines.forEach(function(l){l.pts.forEach(function(p){b.extend(ll(p));});});map.fitBounds(b,60);
+        google.maps.event.addListenerOnce(map,'idle',function(){if(map.getZoom()>21)map.setZoom(21);});}
+      refresh();
+    }).catch(function(er){var el=g('mzmap');if(el)el.innerHTML='<div class="mz-load">'+esc((er&&er.message)||'Couldn’t load the satellite photo.')+'</div>';});
+  }
+
+  /* ----- Connecticut contract: dates, cancel window, change orders, add-ons, reminders ----- */
+  function coSigned(x){return (x.changeOrders||[]).filter(function(c){return c.status==='signed';}).reduce(function(n,c){return n+(Number(c.total)||0);},0);}
+  function jobTotal(x){return Math.round(((Number(x.contractPrice)||0)+coSigned(x))*100)/100;}
+  function ymdOf(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+  function todayYmd(){return ymdOf(new Date());}
+  function addDaysYmd(ymd,n){var p=String(ymd).split('-');return ymdOf(new Date(+p[0],+p[1]-1,+p[2]+n));}
+  function prettyDay(ymd){if(!ymd)return '';var p=String(ymd).split('-');return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+  function inCancel(x){return !!(x.signedAt&&x.cancelBy&&!x.cancelledAt&&todayYmd()<=x.cancelBy);}
+  function contractGaps(){var s=M.settings||{},c=s.company||{},k=s.contract||{},m=[];if(!c.legal)m.push('legal name');if(!c.hic)m.push('HIC number');if(!c.mailing)m.push('mailing address');if(!k.signerName||!k.sigId)m.push('your signature');return m;}
+  function contractLines(x){
+    var h='';
+    if(x.startDate||x.endDate)h+=kv('Contract dates',esc(prettyDay(x.startDate))+' → '+esc(prettyDay(x.endDate)));
+    (x.chosen||[]).forEach(function(a){h+=kv('Added: '+esc(a.name),'<span class="money">'+money(a.total)+'</span>');});
+    if(x.cancelledAt)h+='<div class="note warn">Customer cancelled '+dateStr(x.cancelledAt)+'.</div>';
+    else if(x.cancelBy)h+=inCancel(x)?'<div class="note warn"><b>Cancellation period:</b> the customer can cancel until midnight '+esc(prettyDay(x.cancelBy))+'. Wait until after that to order materials.</div>':kv('Cancellation period','ended '+esc(prettyDay(x.cancelBy)));
+    return h;
+  }
+  function changeOrdersCard(x){
+    if(!x.signedAt||x.cancelledAt)return '';
+    var cos=(x.changeOrders||[]).filter(function(c){return c.status!=='void';}),add=coSigned(x);
+    var h='<div class="card"><h2>Change orders <small>'+(add?(add>0?'+':'')+money(add)+' signed':'extra work the customer signs')+'</small></h2>';
+    if(!cos.length)h+='<p class="hint">Found rotten decking or other extra work? Write it up here. The customer signs it on their phone and the job total updates.</p>';
+    cos.forEach(function(c){
+      var st={draft:'Draft',sent:'Waiting for signature',signed:'Signed '+dateStr(c.signedAt)+' by '+esc(c.signerName||'')}[c.status]||c.status;
+      h+='<div class="co"><div class="kv" style="border-top:0"><span><b style="color:var(--ink)">'+esc(c.id)+' · '+esc(c.title)+'</b><br>'+st+'</span><b class="money">'+money(c.total)+'</b></div><div class="acts">'+
+        (c.status==='signed'?(c.pdfId?'<a class="btn ghost" href="https://drive.google.com/file/d/'+esc(c.pdfId)+'/view" target="_blank" rel="noopener">Signed copy</a>':'')+'<span></span>':
+          '<button class="btn ghost" data-m="coedit" data-co="'+esc(c.id)+'">Edit</button><button class="btn" data-m="cosend" data-co="'+esc(c.id)+'">'+(c.status==='sent'?'Send again':'Send to sign')+'</button>')+'</div></div>';
+    });
+    if(add)h+=kv('Job total with change orders','<span class="money">'+money(jobTotal(x))+'</span>');
+    return h+'<button class="btn ghost block mt" data-m="conew">'+ICON.plus+'New change order</button></div>';
+  }
+  function coRow(it){return '<div class="row coi" style="margin-top:8px"><input class="in" data-cn placeholder="What" value="'+esc(it.name||'')+'"><input class="in money" data-cq inputmode="decimal" placeholder="Qty" value="'+(it.qty!=null?it.qty:'')+'" style="flex:0 0 64px"><input class="in" data-cu placeholder="Unit" value="'+esc(it.unit||'each')+'" style="flex:0 0 70px"><input class="in money" data-cp inputmode="decimal" placeholder="$ each" value="'+(it.price!=null?it.price:'')+'" style="flex:0 0 86px"></div>';}
+  function coSheet(coId){
+    var x=q(),c=coId?(x.changeOrders||[]).filter(function(z){return z.id===coId;})[0]:null,k=M.settings.contract||{};
+    var ov=sheet('<h3>'+(c?'Change order '+esc(c.id):'New change order')+closeBtn()+'</h3>'+
+      '<label class="f">Title</label><input class="in" id="cot" maxlength="100" value="'+esc(c?c.title:'')+'" placeholder="Rotted decking replaced">'+
+      '<label class="f">Lines <span class="hint" style="font-weight:500">· a negative price is a credit</span></label><div id="coitems">'+((c&&c.items.length?c.items:[{}]).map(coRow).join(''))+'</div>'+
+      '<div class="acts"><button type="button" class="btn ghost" id="coadd">'+ICON.plus+'Add line</button><button type="button" class="btn ghost" id="codeck">+ Decking sheet'+(k.deckPrice?' ('+money(k.deckPrice)+')':'')+'</button></div>'+
+      '<label class="f">Note for the customer <small>(optional)</small></label><textarea class="in" id="con" maxlength="600" placeholder="Found at tear-off over the back bedroom. Photos in your job folder.">'+esc(c?c.note||'':'')+'</textarea>'+
+      '<p class="hint" id="cotot"></p><button class="btn block mt" id="cosave">Save change order</button>'+(c?'<button class="btn danger block mt" id="covoid">Void it</button>':''));
+    function items(){var out=[];ov.querySelectorAll('.coi').forEach(function(r){var n=r.querySelector('[data-cn]').value.trim(),qq=Number(String(r.querySelector('[data-cq]').value).replace(/[^\d.-]/g,''))||0,p=Number(String(r.querySelector('[data-cp]').value).replace(/[^\d.-]/g,''))||0;if(n&&qq)out.push({name:n,qty:qq,unit:r.querySelector('[data-cu]').value.trim()||'each',price:p});});return out;}
+    function tot(){var t=items().reduce(function(n,it){return n+it.qty*it.price;},0);ov.querySelector('#cotot').textContent='Total: '+money(t)+' · new job total '+money(jobTotal(x)+t);}
+    ov.addEventListener('input',tot);tot();
+    ov.querySelector('#coadd').onclick=function(){ov.querySelector('#coitems').insertAdjacentHTML('beforeend',coRow({}));};
+    ov.querySelector('#codeck').onclick=function(){ov.querySelector('#coitems').insertAdjacentHTML('beforeend',coRow({name:'Roof decking replacement (4x8 sheet)',qty:1,unit:'sheet',price:k.deckPrice||110}));if(!ov.querySelector('#cot').value)ov.querySelector('#cot').value='Rotted decking replaced';tot();};
+    ov.querySelector('#cosave').onclick=function(){var b=this,its=items();if(!its.length){toast('Add at least one line with a quantity.',true);return;}b.disabled=true;
+      call('saveChangeOrder',{id:x.id,co:{id:c?c.id:'',title:ov.querySelector('#cot').value,note:ov.querySelector('#con').value,items:its}}).then(function(r){mergeQ(r);closeSheet();render();
+        var last=c?c.id:r.changeOrders[r.changeOrders.length-1].id;coSendSheet(last);}).catch(function(e){b.disabled=false;err(e);});};
+    if(c)ov.querySelector('#covoid').onclick=function(){confirmBox('Void this change order?','It stays in the record but the customer can’t sign it.','Void').then(function(ok){if(!ok)return;
+      call('voidChangeOrder',{id:x.id,coId:c.id}).then(function(r){mergeQ(r);closeSheet();render();toast('Voided');}).catch(err);});};
+  }
+  function coSendSheet(coId){
+    var x=q(),c=(x.changeOrders||[]).filter(function(z){return z.id===coId;})[0];if(!c)return;
+    var ov=sheet('<h3>Send '+esc(c.id)+' to sign'+closeBtn()+'</h3>'+kv(esc(c.title),'<span class="money">'+money(c.total)+'</span>')+
+      '<p class="hint">Connecticut needs extra work in writing, signed by the customer. They sign on their phone; you get a copy by email.</p>'+
+      '<label class="f">Customer email</label><input class="in" id="coem" type="email" value="'+esc(x.email||'')+'">'+
+      '<button class="btn block mt" id="conow">Sign on this device now</button><div class="acts"><button class="btn ghost" id="coemail">Email it</button><button class="btn ghost" id="colink">Text or copy link</button></div><div id="coout"></div>');
+    function send(how){return call('sendChangeOrder',{id:x.id,coId:c.id,send:how}).then(function(r){mergeQ(r);render();return r;});}
+    ov.querySelector('#conow').onclick=function(){var b=this,w=null;b.disabled=true;try{w=window.open('about:blank','_blank');}catch(e){}
+      send('present').then(function(r){if(w&&!w.closed)w.location.href=r.coUrl;else location.href=r.coUrl;closeSheet();}).catch(function(e){if(w)try{w.close();}catch(z){}b.disabled=false;err(e);});};
+    ov.querySelector('#coemail').onclick=function(){var b=this,em=ov.querySelector('#coem').value.trim();if(!validEmail(em)){toast('Add the customer’s email.',true);return;}b.disabled=true;
+      (em!==x.email?call('saveQuote',{id:x.id,email:em}).then(mergeQ):Promise.resolve()).then(function(){return send('email');}).then(function(){closeSheet();toast('Change order emailed to '+em);}).catch(function(e){b.disabled=false;err(e);});};
+    ov.querySelector('#colink').onclick=function(){var b=this;b.disabled=true;send('none').then(function(r){var msg='Hi'+(r.name?' '+r.name.split(' ')[0]:'')+', here is the change order we talked about ('+c.title+', '+money(c.total)+'). You can review and sign it here: '+r.coUrl;
+      ov.querySelector('#coout').innerHTML='<a class="btn block mt" href="'+esc(smsHref(r.phone,msg))+'" target="_top">Text it'+(r.phone?' to '+esc(r.phone):'')+'</a><textarea class="in mt" readonly style="min-height:64px;font-size:13px">'+esc(r.coUrl)+'</textarea>';}).catch(function(e){b.disabled=false;err(e);});};
+  }
+  function cancelContract(){
+    var x=q();
+    confirmBox('Customer cancelled?',(inCancel(x)?'They are within the cancellation period, so their deposit must be refunded within 10 business days. ':'')+'The job is archived. Card and bank payments made through Stripe are refunded automatically; cash and check refunds you do yourself.','Mark cancelled').then(function(ok){if(!ok)return;
+      call('cancelContract',{id:x.id}).then(function(r){mergeQ(r);M.view='list';render();
+        if(r.refundNotes&&r.refundNotes.length)sheet('<h3>Refunds to finish'+closeBtn()+'</h3>'+r.refundNotes.map(function(n){return '<p>'+esc(n)+'</p>';}).join('')+'<button class="btn block mt" data-close>OK</button>');else toast('Marked cancelled');}).catch(err);});
+  }
+  /* add-ons offered on a proposal: quantity from the roof measurements */
+  function addonQty(b,m){var e=Number(m.eaves)||0,r=Number(m.rakes)||0;
+    if(b==='eaves')return e;if(b==='rakes')return r;if(b==='eaves+rakes')return e+r;if(b==='ridges')return Number(m.ridges)||0;if(b==='area')return Number(m.area)||0;
+    if(b==='downspouts')return e?Math.max(2,Math.ceil(e/35)):0;if(b==='one')return 1;return 0;}
+  function addonsBlock(x){
+    var book=M.settings.addons||[];if(!book.length)return '';var m=measFor(x),offered={};(x.addons||[]).forEach(function(a){offered[a.key]=a;});
+    return '<label class="f">Optional add-ons <span class="hint" style="font-weight:500">· tick the ones to offer; the customer chooses before signing</span></label><div class="adds">'+book.map(function(b){
+      var o=offered[b.key],qty=o?o.qty:Math.round(addonQty(b.basis,m));
+      return '<div class="add"><label><input type="checkbox" data-ad="'+esc(b.key)+'"'+(o?' checked':'')+'><span>'+esc(b.name)+'<small>'+money(b.price)+' / '+esc(b.unit)+'</small></span></label><input class="in money" data-adq="'+esc(b.key)+'" inputmode="decimal" value="'+(qty||'')+'" aria-label="Quantity ('+esc(b.unit)+')"><i>'+esc(b.unit)+'</i></div>';}).join('')+'</div>';
+  }
+  function addonsIn(ov){var out=[];ov.querySelectorAll('[data-ad]').forEach(function(cb){if(!cb.checked)return;var k=cb.getAttribute('data-ad');var qty=Number(String(ov.querySelector('[data-adq="'+k+'"]').value).replace(/[^\d.]/g,''))||0;out.push({key:k,qty:qty});});return out;}
+  var FOLLOW_NAME={unopened:'not opened',opened:'opened, not signed',final:'last reminder',deposit:'deposit',unpaid:'balance'};
+  function remindLine(x){
+    var f=M.settings.follow||{};if(f.on===false)return '';var sent=x.followups||[];
+    return '<div class="toggle" style="margin-top:10px"><div class="tl"><b>Automatic reminders</b><span>'+(x.followOff?'Off for this customer':(sent.length?'Sent: '+sent.map(function(s){return (FOLLOW_NAME[s.k]||s.k)+' '+dateStr(s.t);}).join(', '):'Emails if they don’t open or sign, then for the deposit'))+'</span></div>'+
+      '<button type="button" class="sw'+(x.followOff?'':' on')+'" data-m="followtog" role="switch" aria-checked="'+(!x.followOff)+'" aria-label="Automatic reminders"></button></div>';
+  }
+  /* settings: contract, add-ons, reminders */
+  var ADDON_BASIS=[['eaves','Eaves length'],['rakes','Rakes length'],['eaves+rakes','Eaves + rakes'],['ridges','Ridge length'],['area','Roof area'],['downspouts','1 per 35 ft of eaves'],['one','One'],['manual','I type it']];
+  function adRow(a){return '<div class="row adr" style="margin-top:8px"><input class="in" data-an placeholder="Add-on" value="'+esc(a.name||'')+'"><input class="in money" data-ap inputmode="decimal" placeholder="$" value="'+(a.price!=null?a.price:'')+'" style="flex:0 0 76px"><input class="in" data-au placeholder="Unit" value="'+esc(a.unit||'each')+'" style="flex:0 0 64px"><select class="in" data-ab style="flex:0 0 120px">'+ADDON_BASIS.map(function(b){return '<option value="'+b[0]+'"'+(a.basis===b[0]?' selected':'')+'>'+b[1]+'</option>';}).join('')+'</select><input type="hidden" data-ak value="'+esc(a.key||'')+'"><button type="button" class="lnk" data-m="adrm" aria-label="Remove">✕</button></div>';}
+  function contractCards(){
+    var s=M.settings,c=s.company||{},k=s.contract||{},f=s.follow||{};
+    return '<div class="card"><h2>Contract <small>Connecticut home improvement</small></h2>'+
+      '<p class="hint">Proposals can’t be sent for signature until this is filled in. Research notes, not legal advice: have a Connecticut attorney review your contract once.</p>'+
+      '<label class="f">Mailing address for contracts</label><input class="in" name="co_mailing" value="'+esc(c.mailing||'')+'" placeholder="PO Box 123, Berlin, CT 06037">'+
+      '<p class="hint">Printed on signed contracts and the cancellation notice only, not on the website.</p>'+
+      '<div class="row"><div><label class="f">Signs contracts</label><input class="in" name="k_signer" value="'+esc(k.signerName||'')+'" placeholder="Your full name"></div><div><label class="f">Title</label><input class="in" name="k_title" value="'+esc(k.signerTitle||'Owner')+'"></div></div>'+
+      '<div class="row" style="margin-top:12px"><label class="f" style="margin:0">Your signature '+(k.sigId?'<span class="pill done">Saved</span>':'<span class="pill">Needed</span>')+'</label><button type="button" class="lnk" data-m="sigclr">Clear</button></div>'+
+      '<canvas id="csig" class="sigpad" aria-label="Draw your signature"></canvas><p class="hint">'+(k.sigId?'Draw here only to replace it.':'Draw it once; it goes on every contract you send.')+'</p>'+
+      '<div class="row"><div><label class="f">Decking price per sheet</label><input class="in money" name="k_deck" inputmode="decimal" value="'+(k.deckPrice!=null?k.deckPrice:110)+'"></div></div>'+
+      '<label class="f">Decking clause</label><textarea class="in" name="k_decking" style="min-height:64px">'+esc(k.decking||'')+'</textarea>'+
+      '<label class="f">Cleanup</label><textarea class="in" name="k_cleanup" style="min-height:56px">'+esc(k.cleanup||'')+'</textarea>'+
+      '<label class="f">Permit</label><textarea class="in" name="k_permit" style="min-height:56px">'+esc(k.permit||'')+'</textarea></div>'+
+      '<div class="card"><h2>Proposal add-ons <small>the customer ticks them before signing</small></h2><div id="adrows">'+(s.addons||[]).map(adRow).join('')+'</div>'+
+      '<button type="button" class="btn ghost block mt" data-m="adadd">'+ICON.plus+'Add an add-on</button><p class="hint">“Eaves length” and the others fill in the quantity from the roof measurements; you can change it on each proposal.</p></div>'+
+      '<div class="card"><h2>Reminders</h2>'+
+      '<div class="toggle" style="border-top:0"><div class="tl"><b>Automatic reminder emails</b><span>Not opened after a day, opened but not signed after 2 days, a last one around day 8, then the deposit and any unpaid balance. Stops when they sign or pay. Sent 9 a.m. to 8 p.m.</span></div><button type="button" class="sw'+(f.on!==false?' on':'')+'" role="switch" data-sw="followOn" aria-checked="'+(f.on!==false)+'" aria-label="Automatic reminders"></button></div>'+
+      '<div class="toggle"><div class="tl"><b>Hot lead alert</b><span>Email me when a customer opens their proposal twice in a day</span></div><button type="button" class="sw'+(f.hot!==false?' on':'')+'" role="switch" data-sw="followHot" aria-checked="'+(f.hot!==false)+'" aria-label="Hot lead alert"></button></div>'+
+      '<div class="toggle"><div class="tl"><b>Tag in GoHighLevel</b><span>Adds tf-reminder-… tags, so you can add texts there later</span></div><button type="button" class="sw'+(f.tags!==false?' on':'')+'" role="switch" data-sw="followTags" aria-checked="'+(f.tags!==false)+'" aria-label="GoHighLevel tags"></button></div></div>';
+  }
+  function wireContractSig(){
+    var cv=document.getElementById('csig');if(!cv)return;var cx=cv.getContext('2d'),down=false,last=null;
+    function size(){var r=cv.getBoundingClientRect();if(!r.width)return;var d=window.devicePixelRatio||1;cv.width=r.width*d;cv.height=r.height*d;cx.setTransform(d,0,0,d,0,0);cx.lineWidth=2.4;cx.lineCap='round';cx.lineJoin='round';cx.strokeStyle='#13202F';}
+    size();
+    function pt(e){var r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+    cv.addEventListener('pointerdown',function(e){down=true;last=pt(e);try{cv.setPointerCapture(e.pointerId);}catch(z){}e.preventDefault();});
+    cv.addEventListener('pointermove',function(e){if(!down)return;var p=pt(e);cx.beginPath();cx.moveTo(last.x,last.y);cx.lineTo(p.x,p.y);cx.stroke();last=p;cv.setAttribute('data-drawn','1');e.preventDefault();});
+    cv.addEventListener('pointerup',function(){down=false;});
+  }
+  function contractArgs(f,a){
+    var el=f.elements;if(!el.co_mailing)return a;
+    a.company=a.company||{};a.company.mailing=el.co_mailing.value;
+    a.contract={signerName:el.k_signer.value,signerTitle:el.k_title.value,deckPrice:el.k_deck.value,decking:el.k_decking.value,cleanup:el.k_cleanup.value,permit:el.k_permit.value};
+    var cv=document.getElementById('csig');if(cv&&cv.getAttribute('data-drawn')==='1')a.contractSig=cv.toDataURL('image/png');
+    var ads=[];f.querySelectorAll('.adr').forEach(function(r){var n=r.querySelector('[data-an]').value.trim();if(!n)return;ads.push({key:r.querySelector('[data-ak]').value,name:n,price:r.querySelector('[data-ap]').value,unit:r.querySelector('[data-au]').value,basis:r.querySelector('[data-ab]').value});});
+    a.addons=ads;
+    var sw=function(n){var b=f.querySelector('[data-sw="'+n+'"]');return b?b.classList.contains('on'):undefined;};
+    a.follow={on:sw('followOn'),hot:sw('followHot'),tags:sw('followTags')};
+    return a;
   }
 
   function kv(a,b){return '<div class="kv"><span>'+a+'</span><b>'+b+'</b></div>';}
@@ -1373,7 +1720,7 @@ var MAT=(function(){
     var spent=mine.reduce(function(n,o){return n+orderSpend(o);},0);
     var pct=x.contractPrice?Math.round(t.total/x.contractPrice*100):0;
     var h='<div class="card"><h2>Job <small>'+(x.type==='repair'?'Repair':'OC '+esc((PK[x.pick]||{}).label||'')+(x.color?' · '+esc(x.color):''))+'</small></h2>'+
-      '<div class="row"><div><span class="hint">Job price</span><div class="big-n money">'+(x.contractPrice?money(x.contractPrice,false):'—')+'</div></div>'+
+      '<div class="row"><div><span class="hint">Job price'+(coSigned(x)?' incl. change orders':'')+'</span><div class="big-n money">'+(x.contractPrice?money(jobTotal(x),false):'—')+'</div></div>'+
       '<div><span class="hint">Materials (est.)</span><div class="big-n money">'+money(t.total,false)+'</div></div></div>'+
       (x.contractPrice?'<div class="meter" aria-label="Materials are '+pct+'% of the job price"><div style="width:'+Math.min(100,pct)+'%"></div></div><p class="hint">Materials are about '+pct+'% of the job price'+(spent?' · ordered so far: '+money(spent,false):'')+'</p>':'')+
       '<div class="acts"><button class="btn ghost" data-m="editjob">Edit price</button>'+
@@ -1385,7 +1732,8 @@ var MAT=(function(){
       f('area','Roof area (sq ft)')+'<div><label>Pitch</label><input class="in" data-meas="pitch" value="'+esc(m.pitch||'')+'"></div>'+
       f('eaves','Eaves (ft)')+f('rakes','Rakes (ft)')+f('ridges','Ridges (ft)')+f('hips','Hips (ft)')+f('valleys','Valleys (ft)')+f('walls','Wall flashing (ft)')+
       f('pipes','Pipe boots')+f('decking','Decking sheets')+f('waste','Waste %')+f('iceCourses','Ice & water rows at eaves')+'</div>'+
-      '<button class="btn dark block mt" data-m="recalc">Update materials list</button></div>';
+      '<button class="btn dark block mt" data-m="recalc">Update materials list</button>'+
+      '<button class="btn ghost block mt" data-m="measuretool">'+((m.traced||[]).length?'Edit measured lines ('+m.traced.length+')':'Measure on satellite photo')+'</button></div>';
 
     h+='<div class="card"><h2>Materials <small>'+ls.length+' items</small></h2><div id="lines">';
     var lastCat='';
@@ -1397,6 +1745,7 @@ var MAT=(function(){
       '<div class="tot">'+kv('Subtotal','<span class="money">'+money(t.subtotal)+'</span>')+kv('Sales tax ('+(M.settings.taxRate||0)+'%)','<span class="money">'+money(t.tax)+'</span>')+
       '<div class="kv grand"><span>Total</span><b class="money">'+money(t.total)+'</b></div></div>'+
       (M.prices.some(function(p){return p.source==='starter';})?'<div class="note">Some prices are starter estimates. Update them under Spending › Prices, or connect ABC Supply for your account prices.</div>':'')+
+      (x.orderPrepared&&!M.orders.some(function(o){return o.quoteId===x.id;})?'<div class="note"><b>Ready to order.</b> The deposit cleared and the cancellation period is over. Suggested delivery '+esc(dateStr(x.orderPrepared.delivery+'T12:00:00'))+'. Check the list, then send it below.</div>':'')+
       '<button class="btn block mt" data-m="order" data-v="abc"'+(M.settings.abc&&M.settings.abc.connected?'':' disabled')+'>Order from ABC Supply</button>'+
       (M.settings.abc&&M.settings.abc.connected?'':'<p class="hint" style="text-align:center">Connect ABC Supply in Spending › Settings to order here.</p>')+
       '<button class="btn ghost block mt" data-m="order" data-v="email">Send order by email</button></div>';
@@ -1430,16 +1779,18 @@ var MAT=(function(){
     m.est=est;return m;
   }
 
+  /* base = the values this phone loaded for each field it changes; the server refuses the save if someone else changed them since */
+  function baseOf(x,args){var b={};if(!x)return b;Object.keys(args).forEach(function(k){if(k!=='id'&&k!=='base'&&k!=='send')b[k]=x[k]===undefined?null:x[k];});return b;}
   function saveQ(args,msg){
-    args.id=M.qid;
-    return call('saveQuote',args).then(function(r){mergeQ(r);render();if(msg)toast(msg);return r;}).catch(function(e){err(e);throw e;});
+    args.id=M.qid;if(!args.base)args.base=baseOf(q(),args);
+    return call('saveQuote',args).then(function(r){mergeQ(r);render();if(msg)toast(msg);return r;}).catch(function(e){if(isConflict(e))conflictBox(e,function(){load().then(render).then(function(){toast('Reloaded');}).catch(err);});else err(e);throw e;});
   }
 
   function approve(){
     var x=q();var pick=M.draft&&M.draft.id===x.id?M.draft.pick:(x.pick>=0?x.pick:1);
     var price=Number(String(document.getElementById('qp').value).replace(/[^\d.]/g,''))||0;
     var color=document.getElementById('qc').value.trim();
-    var m=TAKEOFF.estimate(x.roofs||[]);
+    var m=measFor(x);
     m.waste=M.settings.waste!=null?M.settings.waste:m.waste;m.iceCourses=M.settings.iceCourses!=null?M.settings.iceCourses:m.iceCourses;
     var ls=TAKEOFF.lines(m,pick,priceMap(),[]);
     var b=document.querySelector('[data-m=approve]');if(b){b.disabled=true;b.textContent='Approving…';}
@@ -1541,7 +1892,7 @@ var MAT=(function(){
       (method==='abc'&&x.color&&!missing.length?'<div class="note">Check that the shingle and ridge cap item numbers are for <b>'+esc(x.color)+'</b>. You can set them per job by tapping the item.</div>':'')+
       (missing.length?'<div class="note">These items aren’t linked to an ABC item number yet: '+esc(missing.map(function(l){return l.name;}).join(', '))+'. Link them in Spending › Prices first.</div>':'')+
       '<label class="f">Delivery</label><div class="seg" id="odl">'+DELIVERY.map(function(d,i){return '<button type="button" class="'+(i===0?'on':'')+'" data-d="'+d[0]+'">'+d[1]+'</button>';}).join('')+'</div>'+
-      '<div class="row"><div><label class="f">Date</label><input class="in" type="date" id="odd" value="'+addDays(2)+'"></div><div><label class="f">PO</label><input class="in" id="opo" maxlength="20" value="'+esc(x.id)+'"></div></div>'+
+      '<div class="row"><div><label class="f">Date</label><input class="in" type="date" id="odd" value="'+esc((x.orderPrepared&&x.orderPrepared.delivery)||addDays(2))+'"></div><div><label class="f">PO</label><input class="in" id="opo" maxlength="20" value="'+esc(x.id)+'"></div></div>'+
       '<label class="f">Street</label><input class="in" id="oa1" value="'+esc(ad.line1)+'">'+
       '<div class="row"><div style="flex:2"><label class="f">Town</label><input class="in" id="oac" value="'+esc(ad.city)+'"></div><div><label class="f">State</label><input class="in" id="oas" maxlength="2" value="'+esc(ad.state)+'"></div><div><label class="f">ZIP</label><input class="in" id="oaz" inputmode="numeric" maxlength="10" value="'+esc(ad.postal)+'"></div></div>'+
       '<label class="f">Notes for the driver <small>(optional)</small></label><input class="in" id="on" maxlength="255" placeholder="e.g. Driveway on left, no roof load on garage">'+
@@ -1668,8 +2019,9 @@ var MAT=(function(){
       (a.branchName?'<p class="hint">Branch: '+esc(a.branchName)+'</p>':'')+
       '<div class="acts"><button type="button" class="btn ghost" data-m="abctest">Test login</button><button type="button" class="btn ghost" data-m="branches">Find CT branches</button></div><div id="brs"></div>'+
       (a.connected?'<div class="acts"><button type="button" class="btn ghost" data-m="hook"'+(a.webhookId?' disabled':'')+'>'+(a.webhookId?'Order updates on':'Turn on order updates')+'</button><button type="button" class="btn danger" data-m="disc">Disconnect</button></div>':'')+
-      '</div>'+(isOwner()?'':'-->')+settingsExtraCards()+'<button class="btn block" type="submit">Save settings</button></form></div>';
+      '</div>'+(isOwner()?'':'-->')+settingsExtraCards()+(isOwner()?contractCards():'')+'<button class="btn block" type="submit">Save settings</button></form></div>';
     app.innerHTML=h;
+    wireContractSig();
     var env=a.env||'sandbox';
     document.getElementById('sf').addEventListener('click',function(e){var b=e.target.closest('[data-sw]');if(!b)return;b.classList.toggle('on');b.setAttribute('aria-checked',b.classList.contains('on'));});
     if(isOwner())loadPeople();
@@ -1685,6 +2037,7 @@ var MAT=(function(){
     var args={contactName:el.contactName.value,contactPhone:el.contactPhone.value,taxRate:el.taxRate.value,waste:el.waste.value,iceCourses:el.iceCourses.value,suppliers:sups};
     if(el.clientId)args.abc={env:env,clientId:el.clientId.value,shipTo:el.shipTo.value,branch:el.branch.value,branchName:el.branchName.value,secret:el.secret.value};
     if(el.co_name)Object.assign(args,extraSettingsArgs(f));
+    contractArgs(f,args);
     return call('saveSettings',args).then(function(r){M.settings=r;render();toast('Settings saved');return r;}).catch(function(e){err(e);throw e;});
   }
 
@@ -2677,7 +3030,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     var c=x.costs||{};var mine=M.orders.filter(function(o){return o.quoteId===x.id;});
     var mat=mine.length?mine.reduce(function(n,o){return n+orderSpend(o);},0):TAKEOFF.totals(fresh(x),M.settings.taxRate).total;
     var labor=(Number(c.crewDays)||0)*(Number(c.crewRate)||0);var other=(Number(c.dumpster)||0)+(Number(c.permit)||0)+(Number(c.other)||0);
-    var rev=Number(x.contractPrice)||0;var profit=rev-mat-labor-other;
+    var rev=jobTotal(x);var profit=rev-mat-labor-other;
     return {rev:rev,mat:mat,matOrdered:mine.length>0,labor:labor,other:other,profit:profit,margin:rev?Math.round(profit/rev*100):0};
   }
 
@@ -2707,8 +3060,8 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     var items=x.items||[];var sub=items.reduce(function(n,it){return n+it.qty*it.price;},0);
     return '<div class="card"><h2>Repairs <small>'+items.length+' item'+(items.length===1?'':'s')+'</small></h2>'+
       items.map(function(it){return kv(esc(it.name)+'<br><small class="hint">'+it.qty+' '+esc(units(it.unit,it.qty))+' × '+money(it.price)+'</small>','<span class="money">'+money(it.qty*it.price)+'</span>');}).join('')+
-      (sub<x.contractPrice?kv('Minimum service charge',''):'')+
-      '<div class="tot"><div class="kv grand"><span>Total</span><b class="money">'+money(x.contractPrice)+'</b></div></div>'+
+      (sub<(x.basePrice||x.contractPrice)?kv('Minimum service charge',''):'')+
+      '<div class="tot"><div class="kv grand"><span>'+((x.chosen||[]).length?'Repairs total':'Total')+'</span><b class="money">'+money(x.basePrice||x.contractPrice)+'</b></div></div>'+
       (x.status==='new'&&!x.signedAt?'<button class="btn ghost block mt" data-m="edititems">Edit repairs</button>':'')+'</div>';
   }
   function approveRepairCard(x){
@@ -2745,17 +3098,17 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   function payUrl(x){return (M.settings.proposalBase||'https://team-forte.com/quote')+'#p='+encodeURIComponent(x.id)+'&pay=1';}
   function paymentsCard(x){
     if(!(x.contractPrice>0)||!(x.signedAt||x.status!=='new'))return '';
-    var paid=Math.round(paidOf(x)*100)/100,bal=Math.max(0,Math.round(((x.contractPrice||0)-paid)*100)/100),s=M.settings;
+    var paid=Math.round(paidOf(x)*100)/100,bal=Math.max(0,Math.round((jobTotal(x)-paid)*100)/100),s=M.settings;
     var list=(x.payments||[]).filter(function(p){return p.status==='paid'||p.processing;});
     return '<div class="card"><h2>Payments '+(bal<=0?'<span class="pill done">Paid in full</span>':(paid>0?'<span class="pill">'+money(paid)+' paid</span>':''))+'</h2>'+
-      kv('Job price',money(x.contractPrice))+list.map(function(p){return '<div class="kv"><span>'+(p.status==='paid'?'✓ ':'… ')+esc(p.label||'Payment')+' · '+dateStr(p.paidAt||p.created)+(p.status!=='paid'?' (bank payment clearing)':'')+'</span><b>'+money(p.amount)+(p.kind==='manual'?' <button class="lnk" data-m="delpay" data-pid="'+esc(p.id)+'" aria-label="Remove">✕</button>':'')+'</b></div>';}).join('')+
+      kv('Job price',money(x.contractPrice))+(coSigned(x)?kv('Change orders',money(coSigned(x))):'')+list.map(function(p){return '<div class="kv"><span>'+(p.status==='paid'?'✓ ':'… ')+esc(p.label||'Payment')+' · '+dateStr(p.paidAt||p.created)+(p.status!=='paid'?' (bank payment clearing)':'')+'</span><b>'+money(p.amount)+(p.kind==='manual'?' <button class="lnk" data-m="delpay" data-pid="'+esc(p.id)+'" aria-label="Remove">✕</button>':'')+'</b></div>';}).join('')+
       kv('Balance','<span class="money">'+money(bal)+'</span>')+
       (x.payReq&&x.payReq.amount>0?'<p class="hint">Requested '+money(x.payReq.amount)+' ('+esc(x.payReq.label||'')+') '+dateStr(x.payReq.at)+'</p>':'')+
       (!s.hasStripe?'<p class="hint">Turn on card and bank payments: Spending › Settings › Online payments (Stripe).</p>':'')+
       '<div class="acts">'+(bal>0?'<button class="btn" data-m="reqpay">Request payment</button>':'')+'<button class="btn ghost" data-m="recpay">Record cash/check</button></div></div>';
   }
   function reqPaySheet(){
-    var x=q();var paid=paidOf(x),bal=Math.max(0,Math.round(((x.contractPrice||0)-paid)*100)/100),dep=Math.max(0,Math.round(((x.contractPrice||0)*(M.settings.depositPct||0)/100-paid)*100)/100);
+    var x=q();var paid=paidOf(x),bal=Math.max(0,Math.round((jobTotal(x)-paid)*100)/100),dep=Math.max(0,Math.round(((x.contractPrice||0)*(M.settings.depositPct||0)/100-paid)*100)/100);
     var def=dep>0?dep:bal,lab=dep>0?'Deposit':'Balance';
     var ov=sheet('<h3>Request payment'+closeBtn()+'</h3>'+kv('Balance',money(bal))+
       '<div class="row"><div><label class="f">Amount</label><input class="in money" id="rpa" inputmode="decimal" value="'+def+'"></div><div><label class="f">For</label><input class="in" id="rpl" value="'+lab+'" placeholder="Balance"></div></div>'+
@@ -2774,7 +3127,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       ov.querySelector('#rpout').innerHTML='<a class="btn block mt" href="'+esc(smsHref(r.phone,msg))+'" target="_top">Text it'+(r.phone?' to '+esc(r.phone):'')+'</a><textarea class="in mt" readonly style="min-height:64px;font-size:13px">'+esc(u)+'</textarea>';render();}).catch(function(e){b.disabled=false;err(e);});};
   }
   function recPaySheet(){
-    var x=q();var bal=Math.max(0,Math.round(((x.contractPrice||0)-paidOf(x))*100)/100);
+    var x=q();var bal=Math.max(0,Math.round((jobTotal(x)-paidOf(x))*100)/100);
     var ov=sheet('<h3>Record a payment'+closeBtn()+'</h3><p class="sub">For cash, checks, Zelle or a financing payout. Card and bank payments through Stripe are recorded automatically.</p>'+
       '<div class="row"><div><label class="f">Amount</label><input class="in money" id="mpa" inputmode="decimal" value="'+(bal||'')+'"></div><div><label class="f">How</label><select class="in" id="mpm">'+['Check','Cash','Zelle','Financing','Other'].map(function(m){return '<option>'+m+'</option>';}).join('')+'</select></div></div>'+
       '<label class="f">Note <small>(check #, optional)</small></label><input class="in" id="mpn" placeholder="#1042">'+
@@ -2787,19 +3140,22 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     var s=M.settings;
     if(x.signedAt){
       var dep=Math.round((x.contractPrice||0)*(s.depositPct||0))/100;
-      return '<div class="card"><h2>Signed <span class="pill done">✓ '+dateStr(x.signedAt)+'</span></h2>'+kv('Signed by',esc(x.signerName))+kv('Price','<span class="money">'+money(x.contractPrice)+'</span>')+
+      return '<div class="card"><h2>Signed <span class="pill done">✓ '+dateStr(x.signedAt)+'</span></h2>'+kv('Signed by',esc(x.signerName))+kv('Price','<span class="money">'+money(x.contractPrice)+'</span>')+contractLines(x)+
         (dep>0?'<label class="f">Deposit '+money(dep)+'</label><div class="seg" id="depseg">'+[['requested','Waiting'],['paid','Paid']].map(function(d){return '<button type="button" class="'+((x.depositStatus||'requested')===d[0]?'on':'')+'" data-dep="'+d[0]+'">'+d[1]+'</button>';}).join('')+'</div>':'')+
         '<div class="acts">'+(x.signedPdfId?'<a class="btn ghost" href="https://drive.google.com/file/d/'+esc(x.signedPdfId)+'/view" target="_blank" rel="noopener">Signed copy</a>':'<span></span>')+
-        '<a class="btn ghost" href="'+esc(proposalUrl(x))+'" target="_blank" rel="noopener">Proposal page</a></div></div>';
+        '<a class="btn ghost" href="'+esc(proposalUrl(x))+'&v=0" target="_blank" rel="noopener">Proposal page</a></div>'+
+        '</div>';
     }
     if(x.status==='done'||x.status==='archived')return '';
     return '<div class="card"><h2>Roof plan & signature</h2><p class="sub" style="margin:0">A presentation with their roof, your inspection photos, the options and prices. Show it at the table or send it, and they can sign on the spot. When they sign, the job is approved for you'+(s.depositPct?' and they can pay the '+s.depositPct+'% deposit':'')+'.</p>'+
       (x.proposalSentAt?'<p class="hint">Sent '+dateStr(x.proposalSentAt)+(function(o){return o.n?' · opened '+o.n+'×, last '+dateStr(o.last)+' '+new Date(o.last).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):' · not opened yet';})(opens(x))+'</p>':'')+
+      (contractGaps().length?'<div class="note">Before proposals can be signed, finish the contract setup ('+esc(contractGaps().join(', '))+') in Spending › Settings › Contract.</div>':'')+
       '<button class="btn block mt" data-m="propose">'+(x.proposalSentAt?'Send again or present':'Present or send for signature')+'</button>'+
-      (x.proposalSentAt?'<a class="btn ghost block mt" href="'+esc(proposalUrl(x))+'" target="_blank" rel="noopener">See what the customer sees</a>':'')+'</div>';
+      (x.proposalSentAt?'<a class="btn ghost block mt" href="'+esc(proposalUrl(x))+'&v=0" target="_blank" rel="noopener">See what the customer sees</a>'+remindLine(x):'')+'</div>';
   }
   function proposeSheet(){
     var x=q();var rep=x.type==='repair';var pick=x.pick>=0?x.pick:1;
+    var sd0=addDaysYmd(todayYmd(),14),ed0=addDaysYmd(x.startDate||sd0,rep?0:2);
     function ofv(i){if(x.offers&&x.offers[i]>0)return x.offers[i];if(i===x.pick&&x.contractPrice>0)return x.contractPrice;return mid(x,i)||'';}
     var ov=sheet('<h3>Roof plan & signature'+closeBtn()+'</h3>'+
       (rep?kv('Repair total','<span class="money">'+money(x.contractPrice)+'</span>'):
@@ -2807,13 +3163,17 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         '<div class="row">'+PK.map(function(p,i){return '<div><label class="f" style="margin-top:0;font-size:12px">'+p.label+'</label><input class="in money" data-of="'+i+'" inputmode="decimal" value="'+ofv(i)+'"><span class="hint" style="font-size:11px">'+(range(x,i)||' ')+'</span></div>';}).join('')+'</div>'+
         '<label class="f">Recommend</label><div class="pkg" id="ppk">'+PK.map(function(p,i){return '<button type="button" class="'+(i===pick?'on':'')+'" data-pk="'+i+'"><b>'+p.label+'</b><span>'+(i===pick?'Recommended':' ')+'</span></button>';}).join('')+'</div>'+
         '<label class="f">Color <span class="hint" style="font-weight:500">· optional, they can pick it in the plan</span></label><input class="in" id="pcl" value="'+esc(x.color||'')+'" placeholder="Estate Gray">')+
+      '<div class="row"><div><label class="f">Start date</label><input class="in" type="date" id="psd" value="'+esc(x.startDate||sd0)+'"></div><div><label class="f">Completion date</label><input class="in" type="date" id="ped" value="'+esc(x.endDate||ed0)+'"></div></div>'+
+      '<p class="hint">Connecticut contracts need both dates. Your best estimate; the contract says weather permitting.</p>'+
+      addonsBlock(x)+
+      (contractGaps().length?'<div class="note">Finish the contract setup first ('+esc(contractGaps().join(', '))+'): Spending › Settings › Contract.</div>':'')+
       '<label class="f">Customer email</label><input class="in" id="pem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
       '<button class="btn block mt" id="ppres">Present now on this device</button>'+
       '<div class="acts"><button class="btn ghost" id="pemail">Email it</button><button class="btn ghost" id="plink">Text or copy link</button></div><div id="pout"></div>');
     if(!rep)ov.querySelector('#ppk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#ppk button').forEach(function(z){var on=z===b;z.classList.toggle('on',on);z.querySelector('span').textContent=on?'Recommended':' ';});};
     function offersIn(){return [0,1,2].map(function(i){return Number(String(ov.querySelector('[data-of="'+i+'"]').value).replace(/[^\d.]/g,''))||0;});}
-    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim()};if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
-    function okPrices(a){if(rep)return true;if(!(a.contractPrice>0)){toast('Enter a price for the recommended option ('+PK[pick].label+').',true);return false;}return true;}
+    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim(),startDate:ov.querySelector('#psd').value,endDate:ov.querySelector('#ped').value,addons:addonsIn(ov)};if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
+    function okPrices(a){if(!a.startDate||!a.endDate){toast('Add the start and completion dates.',true);return false;}if(a.endDate<a.startDate){toast('The completion date is before the start date.',true);return false;}if(rep)return true;if(!(a.contractPrice>0)){toast('Enter a price for the recommended option ('+PK[pick].label+').',true);return false;}return true;}
     ov.querySelector('#ppres').onclick=function(){var b=this;var a=args('present');if(!okPrices(a))return;b.disabled=true;var w=null;try{w=window.open('about:blank','_blank');}catch(e){}
       call('sendProposal',a).then(function(r){mergeQ(r);var u=r.presentUrl||presentUrl(r);if(w&&!w.closed)w.location.href=u;else location.href=u;closeSheet();render();}).catch(function(e){if(w)try{w.close();}catch(z){}b.disabled=false;err(e);});};
     ov.querySelector('#pemail').onclick=function(){var b=this;var a=args('email');if(!okPrices(a))return;if(!validEmail(a.email)){toast('Add the customer’s email.',true);return;}b.disabled=true;
@@ -2835,7 +3195,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     return '<div class="card"><h2>Profit <small>'+(p.matOrdered?'materials from orders':'materials estimated')+'</small></h2>'+
       kv('Job price','<span class="money">'+money(p.rev,false)+'</span>')+kv('Materials','<span class="money">−'+money(p.mat,false)+'</span>')+
       kv('Labor','<span class="money">−'+money(p.labor,false)+'</span>')+kv('Dumpster, permit &amp; other','<span class="money">−'+money(p.other,false)+'</span>')+
-      '<div class="tot"><div class="kv grand"><span>Profit</span><b class="money" style="color:'+(p.profit<0?'#B3261E':'var(--green)')+'">'+money(p.profit,false)+' · '+p.margin+'%</b></div></div>'+
+      '<div class="tot"><div class="kv grand"><span>Profit</span><b class="money" style="color:'+(p.profit<0?'#B3261E':'var(--green)')+'">'+money(p.profit,false)+((p.mat||p.matOrdered)?' · '+p.margin+'%':'')+'</b></div></div>'+(p.mat||p.matOrdered?'':'<p class="hint">Add materials to see your real margin.</p>')+
       '<button class="btn ghost block mt" data-m="editcosts">Edit job costs</button></div>';
   }
   function costsSheet(){
@@ -3020,6 +3380,15 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='edititems'){editItemsSheet();return;}
     if(a==='approverep'){t.disabled=true;saveQ({status:'approved'},'Approved').then(function(){M.qfilter='approved';call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);});}).catch(function(){t.disabled=false;});return;}
     if(a==='propose'){proposeSheet();return;}
+    if(a==='conew'){coSheet('');return;}
+    if(a==='coedit'){coSheet(t.getAttribute('data-co'));return;}
+    if(a==='cosend'){coSendSheet(t.getAttribute('data-co'));return;}
+    if(a==='jtab'){M.jobTab=t.getAttribute('data-v');render();return;}
+    if(a==='cxl'){cancelContract();return;}
+    if(a==='followtog'){var xf=q();saveQ({followOff:!xf.followOff},xf.followOff?'Reminders on':'Reminders off for this customer').catch(function(){});return;}
+    if(a==='adadd'){document.getElementById('adrows').insertAdjacentHTML('beforeend',adRow({unit:'each',basis:'manual'}));return;}
+    if(a==='adrm'){var ar=t.closest('.adr');if(ar)ar.remove();return;}
+    if(a==='sigclr'){var cv=document.getElementById('csig');if(cv){cv.getContext('2d').clearRect(0,0,cv.width,cv.height);cv.removeAttribute('data-drawn');}return;}
     if(a==='reqpay'){reqPaySheet();return;}
     if(a==='recpay'){recPaySheet();return;}
     if(a==='delpay'){if(!confirm('Remove this payment record?'))return;call('deletePayment',{id:q().id,paymentId:t.getAttribute('data-pid')}).then(function(r){mergeQ(r);render();toast('Removed');}).catch(err);return;}
@@ -3070,6 +3439,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='archive'){confirmBox('Archive this quote?','It will be hidden from your Quotes list. Orders already placed are kept.','Archive').then(function(ok){if(!ok)return;
       call('deleteQuote',{id:M.qid}).then(function(){M.quotes=M.quotes.filter(function(x){return x.id!==M.qid;});M.view='list';render();toast('Archived');}).catch(err);});return;}
     if(a==='recalc'){recalc();return;}
+    if(a==='measuretool'){measureTool();return;}
     if(a==='line'){lineSheet(+t.getAttribute('data-i'));return;}
     if(a==='addline'){addLineSheet();return;}
     if(a==='editjob'){editJobSheet();return;}
@@ -3078,7 +3448,9 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       confirmBox('Mark this job done?',mails?'We\u2019ll email '+(xs.name||'the customer')+' a review request.':'You can reopen it later.','Mark done').then(function(ok){if(ok)go();});return;}
     if(a==='photos'){var x=q();S.tab='photos';store('tfp_tab','photos');S.jobId=x.photoJobId;S.view='job';
       if(!S.jobs.some(function(j){return j.id===x.photoJobId;})){S.jobWait=true;call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);S.jobWait=false;render();},function(e){S.jobWait=false;render();toast(e.message,true);});}render();window.scrollTo(0,0);return;}
-    if(a==='order'){orderSheet(t.getAttribute('data-v'));return;}
+    if(a==='order'){var xo=q(),ov0=t.getAttribute('data-v');
+      if(inCancel(xo)){confirmBox('Cancellation period still open','The customer can cancel until midnight '+prettyDay(xo.cancelBy)+'. If you order now and they cancel, you may be stuck with the materials.','Order anyway').then(function(ok){if(ok)orderSheet(ov0);});return;}
+      orderSheet(ov0);return;}
     if(a==='openo'){orderDetail(t.getAttribute('data-id'));return;}
     if(a==='mtab'){M.money=t.getAttribute('data-v');render();return;}
     if(a==='price'){priceSheet(t.getAttribute('data-k'));return;}

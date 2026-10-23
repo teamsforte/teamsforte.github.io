@@ -325,6 +325,8 @@
     '@media(max-width:860px){#tfp .split,#tfp .split.rev,#tfp .cover .s{grid-template-columns:1fr}#tfp .media{min-height:260px}#tfp .cover .media{min-height:280px;order:-1}#tfp .find{grid-template-columns:1fr}#tfp .mag{grid-template-columns:1fr;grid-template-rows:none;height:auto}#tfp .mag .card{height:220px}#tfp .mag .card:first-child{grid-row:auto;height:260px}#tfp .cmp th,#tfp .cmp td{padding:10px 8px;font-size:13px}}' +
     /* payments */
     '#tfp .paybar{max-width:980px;margin:16px auto 0;padding:0 16px}#tfp .paybar>div{border-radius:14px;padding:16px 18px;font-size:15px}#tfp .paybar .good{background:#E5F6EC;border:1px solid #BFE6CF;color:#145C34}#tfp .paybar .wait{background:#FFF7E6;border:1px solid #FDE3A7;color:#7A4B00}' +
+    '#tfp .adl{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:15px;cursor:pointer}#tfp .adl input{width:20px;height:20px;accent-color:#FF5440;flex:none}#tfp .adl span{flex:1}#tfp .adl small{display:block;color:var(--muted);font-size:13px}#tfp .adl b{white-space:nowrap}' +
+    '#tfp .cancelbox{border:2px solid var(--navy);border-radius:10px;padding:10px 12px;font-weight:800;font-size:14px;margin:10px 0 4px;color:var(--navy)}#tfp details.terms summary{cursor:pointer;font-weight:700;color:var(--navy)}#tfp .terms p{margin:6px 0}#tfp .terms dl{margin:8px 0 0}#tfp .terms dt{font-weight:700;color:var(--ink);margin-top:8px}#tfp .terms dd{margin:2px 0 0}' +
     '#tfp .inv{max-width:620px;margin:0 auto;padding:36px 16px 60px}#tfp .inv .sum .r.due{font-size:18px}#tfp .paid-ln{color:var(--green);font-weight:700}#tfp .secure{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}' +
     /* present mode: one slide at a time */
     '#tfp.pres{height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}#tfp.pres .deck{flex:1;position:relative;overflow:hidden}' +
@@ -338,7 +340,7 @@
     '@media(max-width:600px){#tfp h1{font-size:30px}#tfp .hero h1{font-size:34px}#tfp h2{font-size:24px}#tfp .grid2,#tfp .list{grid-template-columns:1fr}#tfp .s{padding:34px 16px}#tfp .stat b{font-size:28px}#tfp .ph img{height:210px}#tfp .bar img{height:28px}#tfp .call span{display:none}}';
 
   /* ------------------------------------------------------------------ mount */
-  var P = params(), ID = String(P.p || P.proposal || '').trim(), PRESENT = P.present === '1', INVOICE = P.pay === '1', PAID = /^cs_[A-Za-z0-9_]+$/.test(P.paid || '') ? P.paid : '';
+  var P = params(), ID = String(P.p || P.proposal || '').trim(), PRESENT = P.present === '1', INVOICE = P.pay === '1', CO = String(P.co || '').trim(), PAID = /^cs_[A-Za-z0-9_]+$/.test(P.paid || '') ? P.paid : '';
   var CALM = false; try { CALM = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var host = document.getElementById('tfp-host') || document.getElementById('tfq-host');
   var cur = document.currentScript;
@@ -371,7 +373,8 @@
     D = d;
     S.pick = D.offers ? (D.pick >= 0 ? D.pick : 1) : D.pick;
     S.color = D.color || '';
-    if (INVOICE && D.signed) buildInvoice(); else build();
+    S.add = {};
+    if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else build();
     if (PAID) checkPaid();
   }).catch(function () { showMsg('We couldn’t load your proposal', 'Please check your connection and refresh the page, or give us a call.'); });
 
@@ -418,6 +421,7 @@
     var p = PKGS[D.pick];
     var h = '<div class="inv"><p class="k">Invoice · ' + esc(D.id) + '</p><h1 style="font-size:32px">' + (due > 0 ? 'Amount due: ' + money(due, true) : 'Paid in full') + '</h1><p class="lead">' + esc(D.address) + '</p>' +
       '<div class="sum"><div class="r"><span>' + (D.type === 'repair' ? 'Roof repair' : esc(p ? p.name : 'New roof') + (D.color ? ', ' + esc(D.color) : '')) + '</span><span>' + money(D.price, true) + '</span></div>' +
+      (D.changeOrders || []).filter(function (c) { return c.status === 'signed'; }).map(function (c) { return '<div class="r"><span>Change order ' + esc(c.id) + ': ' + esc(c.title) + '</span><span>' + money(c.total, true) + '</span></div>'; }).join('') +
       (D.payments || []).map(function (x) { return '<div class="r"><span class="paid-ln">Paid ' + esc(x.date) + (x.label ? ' · ' + esc(x.label) : '') + '</span><span class="paid-ln">−' + money(x.amount, true) + '</span></div>'; }).join('') +
       '<div class="r"><span>Balance</span><span class="tot">' + money(D.balance, true) + '</span></div></div>' +
       (due > 0 ? (D.stripe ? '<div class="sum"><div class="r due"><span><b>' + esc(label) + '</b></span><span class="tot">' + money(due, true) + '</span></div></div>' + payBtn('request', due, 'Pay ' + money(due, true) + ' now') :
@@ -592,7 +596,7 @@
     secs.push(['cover', '<section class="cover slide" data-t="Welcome"><div class="s"><div>' +
       '<p class="k">' + (D.type === 'repair' ? 'Your repair plan' : 'Your roof plan') + '</p><h1>' + (first ? 'Prepared for ' + first : 'Your Team Forte proposal') + '</h1>' +
       '<p class="lead">' + esc(D.address) + '</p>' +
-      '<div class="chips"><span class="chip">' + esc(D.date) + '</span><span class="chip">Proposal ' + esc(D.id) + '</span><span class="chip">Licensed & insured' + (D.company.hic ? ' · CT ' + esc(D.company.hic) : '') + '</span></div>' +
+      '<div class="chips"><span class="chip">' + esc(D.date) + '</span><span class="chip">Proposal ' + esc(D.id) + '</span><span class="chip">Registered & insured' + (D.company.hic ? ' · CT ' + esc(D.company.hic) : '') + '</span></div>' +
       (PRESENT ? '' : '<p style="margin-top:26px"><a class="btn" href="#tfp-sign" data-go="sign">' + (D.signed ? 'See your signed proposal' : 'Skip to my price') + '</a></p>') + '</div>' +
       '<div class="media" id="' + (house ? 'tfp-sv' : 'tfp-hero') + '">' + (hero ? img(hero, 1600, '') : '') + '</div></div></section>']);
     /* 2. roof today: satellite + stats */
@@ -695,7 +699,7 @@
     if (D.type === 'repair') {
       h = '<p class="k">Your investment</p><h2>Your repair</h2><div class="sum">' + D.items.map(function (it) {
         return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>';
-      }).join('') + '<div class="r"><span><b>Total</b></span><span class="tot">' + money(D.price, true) + '</span></div></div>' +
+      }).join('') + '<div class="r"><span><b>Total</b></span><span class="tot">' + money(D.signed && D.basePrice ? D.basePrice : D.price, true) + '</span></div></div>' +
         (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit (' + depositText(D.price) + ') to schedule · balance when the job is done</div>' : '');
     } else if (D.offers) {
       var rec = D.pick >= 0 ? D.pick : 1;
@@ -711,7 +715,7 @@
     } else {
       var p = PKGS[D.pick] || PKGS[1];
       h = '<p class="k">Your investment</p><h2>Your new roof</h2><div class="opts" style="grid-template-columns:minmax(0,460px)"><div class="opt on"><span class="rib rec">Your roof</span><span class="lv">' + esc(p.label) + '</span><h3>' + esc(p.name) + '</h3>' +
-        '<div class="pr">' + money(D.price) + '</div><div class="m">' + esc(p.desc) + '</div><ul>' + p.specs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div></div>' +
+        '<div class="pr">' + money(D.signed && D.basePrice ? D.basePrice : D.price) + '</div><div class="m">' + esc(p.desc) + '</div><ul>' + p.specs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div></div>' +
         (D.depositPct > 0 ? '<div class="dep">' + D.depositPct + '% deposit holds your install date. Balance when the job is done.</div>' : '');
     }
     box.innerHTML = h + financeBox();
@@ -730,32 +734,110 @@
     (function next() { if (k >= imgs.length) return; var el = imgs[k++]; el.src = swatch(el.getAttribute('data-swatch'), 180, 100); setTimeout(next, 0); })();
   }
 
-  function renderSign() {
-    var box = root.querySelector('#tfp-signbox'), pr = chosenPrice(), p = PKGS[S.pick];
-    var sum = '<div class="sum">' + (D.type === 'repair' ? '<div class="r"><span>Repair</span><span>' + D.items.length + ' item' + (D.items.length > 1 ? 's' : '') + '</span></div>' :
+  function pickedAdds() { return D.signed ? (D.chosen || []) : (D.addons || []).filter(function (a) { return S.add[a.key]; }); }
+  function grandTotal() { var base = D.signed ? (D.basePrice || D.price) : chosenPrice(); return D.signed ? D.price : base + pickedAdds().reduce(function (n, a) { return n + (Number(a.total) || 0); }, 0); }
+  function sumHtml() {
+    var p = PKGS[S.pick], base = D.signed ? (D.basePrice || D.price) : chosenPrice(), adds = pickedAdds(), tot = grandTotal();
+    return '<div class="sum" id="tfp-sum">' + (D.type === 'repair' ? '<div class="r"><span>Repair</span><span>' + D.items.length + ' item' + (D.items.length > 1 ? 's' : '') + '</span></div>' :
       '<div class="r"><span>Roof</span><span><b>' + esc(p ? p.name : '') + '</b></span></div><div class="r"><span>Color</span><span>' + (S.color ? esc(S.color) : '<span class="m">Choose later</span>') + '</span></div>') +
-      '<div class="r"><span>Price</span><span class="tot">' + money(pr, true) + '</span></div>' +
-      (D.depositPct > 0 ? '<div class="r"><span>Deposit to schedule (' + D.depositPct + '%)</span><span>' + depositText(pr) + '</span></div>' : '') + '</div>';
+      (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? 'Repair' : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>+ ' + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
+      '<div class="r"><span>' + (adds.length ? 'Total' : 'Price') + '</span><span class="tot">' + money(tot, true) + '</span></div>' +
+      (D.depositPct > 0 ? '<div class="r"><span>Deposit to schedule (' + D.depositPct + '%)</span><span>' + depositText(tot) + '</span></div>' : '') + '</div>';
+  }
+  function addsHtml() {
+    if (D.signed || !(D.addons || []).length) return '';
+    return '<p class="k" style="margin-top:6px">Add to your project <span class="m" style="text-transform:none;letter-spacing:0;font-weight:500">· optional</span></p>' + D.addons.map(function (a) {
+      return '<label class="adl"><input type="checkbox" data-add="' + esc(a.key) + '"' + (S.add[a.key] ? ' checked' : '') + '><span>' + esc(a.name) + '<small>' + esc(String(a.qty)) + ' ' + esc(a.unit) + (a.qty > 1 ? ' × ' + money(a.price, true) : '') + '</small></span><b>+' + money(a.total) + '</b></label>';
+    }).join('');
+  }
+  /* the contract lines that change with the customer's choices on this page */
+  function liveMaterials() {
+    var c = D.contract || {}, p = PKGS[S.pick];
+    if (D.type === 'repair' || !p) return c.materials || '';
+    return 'Owens Corning ' + p.label + ' shingles' + (S.color ? ' in ' + S.color : ' (color chosen with you before materials are ordered)') + ', with the Owens Corning underlayment, starter, ice & water barrier, hip & ridge and ventilation listed in the scope.';
+  }
+  function livePayment() {
+    var t = grandTotal(), dep = D.depositPct > 0 ? Math.round(t * D.depositPct) / 100 : 0;
+    if (!(dep > 0)) return 'Full price of ' + money(t, true) + ' due when the job is done.';
+    return 'Deposit of ' + money(dep, true) + ' (' + D.depositPct + '%) at signing. It is refunded in full if you cancel within the cancellation period, and is non-refundable after that. Balance of ' + money(t - dep, true) + ' due when the job is done.';
+  }
+  function contractHtml() {
+    var c = D.contract; if (!c) return '';
+    var dl = [['Contractor', c.contractor + ' · CT HIC ' + c.hic + '<br>' + c.mailing + ' · ' + c.phone], ['Start date', c.start], ['Completion date', c.end + ' (weather permitting)'], ['Materials', liveMaterials()], ['Payment', livePayment()]];
+    if (c.decking) dl.push(['Roof decking', c.decking]);
+    dl.push(['Cleanup', c.cleanup], ['Permit', c.permit], ['Changes', c.changes + ' ' + c.whole]);
+    return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
+      '<details class="terms"><summary>Notice of cancellation</summary><p>You may cancel this transaction, without any penalty or obligation, within three business days from the date you sign. If you cancel, any payments you made will be returned within ten business days after we receive your cancellation notice.</p>' +
+      '<p>To cancel, mail or deliver a signed and dated cancellation notice, or any other written notice, to ' + esc(c.contractor) + ', ' + esc(c.mailing) + (c.email ? ', or email ' + esc(c.email) : '') + ', no later than midnight of the third business day after you sign. Your signed copy includes two cancellation forms and the exact date.</p></details>';
+  }
+  function renderSign() {
+    var box = root.querySelector('#tfp-signbox'), pr = grandTotal(), p = PKGS[S.pick];
+    var sum = sumHtml();
     if (D.signed) {
       var payPart = '';
       if (D.stripe && D.depositDue > 0) payPart = '<div style="margin-top:14px">' + payBtn('deposit', D.depositDue, 'Pay the ' + money(D.depositDue, true) + ' deposit now') + '</div>';
       else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Balance of ' + money(D.balance, true) + ' is due when the job is done.' : ' Paid in full.') + '</p>';
       else if (D.depositLink) payPart = '<br><a class="btn" href="' + esc(D.depositLink) + '" target="_top">Pay the ' + depositText(pr) + ' deposit</a>';
       box.innerHTML = '<p class="k">Signed</p><h2>Thank you, ' + esc(D.signed.name) + '!</h2>' + sum +
-        '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Signed on ' + esc(D.signed.date) + '.</b> We’ll call you to schedule.' + payPart + '</div>';
+        '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Signed on ' + esc(D.signed.date) + '.</b> We’ll call you to schedule.' + payPart + '</div>' +
+        (D.cancelBy ? '<p class="m" style="margin-top:12px">You can cancel until midnight of ' + esc(D.cancelBy) + '. The cancellation form is in your signed copy.</p>' : '');
       if (S.built) markRv(box, true);
       return;
     }
-    box.innerHTML = '<p class="k">Ready when you are</p><h2>Accept & sign</h2>' + lockLine() + sum +
-      (D.terms ? '<div class="terms"><b>Terms.</b> ' + esc(D.terms) + '</div>' : '') +
+    box.innerHTML = '<p class="k">Ready when you are</p><h2>Accept & sign</h2>' + lockLine() + addsHtml() + sum +
+      (D.terms ? '<div class="terms"><b>Terms.</b> ' + esc(D.terms) + '</div>' : '') + contractHtml() +
       '<label class="f" for="tfp-nm">Your full name</label><input class="inp" id="tfp-nm" autocomplete="name" value="' + esc(D.name || '') + '">' +
       '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
-      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and the terms above, and I’m authorized to approve work at this address.</span></label>' +
+      (D.contract ? '<div class="cancelbox">' + esc(D.contract.cancelLine) + '</div>' : '') +
+      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.</span></label>' +
       (FIN && FIN.on && D.type !== 'repair' ? '<p class="m" style="margin:0 0 10px">Planning to use financing? You can still sign now to hold your spot, and we’ll help you with the application.</p>' : '') +
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
     sigPad();
+    box.querySelectorAll('[data-add]').forEach(function (cb) { cb.onchange = function () { S.add[cb.getAttribute('data-add')] = cb.checked; var s0 = box.querySelector('#tfp-sum'); if (s0) s0.outerHTML = sumHtml(); var cp = box.querySelector('#tfp-cpay'); if (cp) cp.textContent = livePayment(); }; });
     if (S.built) markRv(box, true);
+  }
+
+  function footHtml() {
+    return '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') + '</div></div>';
+  }
+  /* A change order to sign: #p=TF-XXXXX&co=CO1 */
+  function buildCo() {
+    var co = (D.changeOrders || []).filter(function (c) { return c.id === CO; })[0];
+    if (!co) { showMsg('This change order isn’t available', 'It may have been updated or replaced. Please check the newest link we sent you, or give us a call.'); return; }
+    var signed = co.status === 'signed', newTotal = D.jobTotal + (signed ? 0 : co.total);
+    var h = '<div class="inv"><p class="k">Change order ' + esc(co.id) + ' · Proposal ' + esc(D.id) + '</p><h1 style="font-size:30px">' + esc(co.title) + '</h1><p class="lead">' + esc(D.address) + '</p>' +
+      '<div class="sum">' + co.items.map(function (it) { return '<div class="r"><span>' + esc(it.name) + '<br><span class="m">' + esc(String(it.qty)) + ' ' + esc(it.unit) + ' × ' + money(it.price, true) + '</span></span><span>' + money(it.qty * it.price, true) + '</span></div>'; }).join('') +
+      '<div class="r"><span><b>Change order total</b></span><span class="tot">' + money(co.total, true) + '</span></div></div>' +
+      (co.note ? '<div class="terms">' + esc(co.note) + '</div>' : '') +
+      '<div class="sum"><div class="r"><span>Your contract price</span><span>' + money(D.price, true) + '</span></div><div class="r"><span>New job total' + (signed ? '' : ' when you approve') + '</span><span><b>' + money(newTotal, true) + '</b></span></div></div>' +
+      '<div class="terms">This change order amends the contract you signed' + (D.signed ? ' on ' + esc(D.signed.date) : '') + '. All other terms stay the same. Team Forte signs it too, and you get a copy by email.</div>';
+    if (signed) h += '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Signed by ' + esc(co.signed.name) + ' on ' + esc(co.signed.date) + '.</b> Thank you!</div>';
+    else h += '<label class="f" for="tfp-nm">Your full name</label><input class="inp" id="tfp-nm" autocomplete="name" value="' + esc(D.name || '') + '">' +
+      '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
+      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I approve this change to my contract.</span></label>' +
+      '<button class="btn block" id="tfp-go" type="button">Approve & sign</button><div class="err" id="tfp-er"></div>';
+    h += '<p class="m" style="margin-top:18px;text-align:center">Questions? <a href="' + esc(smsHref('Hi Team Forte, about change order ' + co.id + ' on ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p></div>' + footHtml();
+    root.className = ''; root.innerHTML = bar() + h;
+    if (!signed) { sigPad(); root.querySelector('#tfp-go').onclick = function () { submitCo(co); }; }
+  }
+  function submitCo(co) {
+    var b = root.querySelector('#tfp-go'), er = root.querySelector('#tfp-er'), nm = root.querySelector('#tfp-nm').value.trim();
+    er.textContent = '';
+    if (nm.length < 2) { er.textContent = 'Type your full name.'; return; }
+    if (!S.drawn) { er.textContent = 'Please sign in the box.'; return; }
+    if (!root.querySelector('#tfp-ag').checked) { er.textContent = 'Check the box to approve.'; return; }
+    b.disabled = true; b.textContent = 'Saving…';
+    var body = JSON.stringify({ id: D.id, co: co.id, name: nm, agree: true, signature: root.querySelector('#tfp-cv').toDataURL('image/png'), total: co.total, ua: navigator.userAgent });
+    fetch(EXEC + '?r=sign', { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
+      .then(function (r) { return r.text(); }).then(function (t) {
+        var r; try { r = JSON.parse(t); } catch (e) { throw new Error('bad'); }
+        if (!r.ok) { er.textContent = r.error || 'Couldn’t save. Please try again.'; b.disabled = false; b.textContent = 'Approve & sign'; return; }
+        co.status = 'signed'; co.signed = { name: nm, date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) };
+        D.jobTotal = Number(r.jobTotal) || D.jobTotal + co.total;
+        if (!CALM) confetti();
+        buildCo();
+      }).catch(function () { er.textContent = 'Couldn’t save. Check your connection and try again.'; b.disabled = false; b.textContent = 'Approve & sign'; });
   }
 
   function sigPad() {
@@ -778,7 +860,8 @@
     if (!S.drawn) { er.textContent = 'Please sign in the box.'; return; }
     if (!root.querySelector('#tfp-ag').checked) { er.textContent = 'Check the box to accept.'; return; }
     b.disabled = true; b.textContent = 'Saving…';
-    var body = JSON.stringify({ id: D.id, name: nm, agree: true, signature: root.querySelector('#tfp-cv').toDataURL('image/png'), pick: D.offers ? S.pick : undefined, color: S.color || undefined, price: chosenPrice(), ua: navigator.userAgent });
+    var adds = pickedAdds(), total = grandTotal();
+    var body = JSON.stringify({ id: D.id, name: nm, agree: true, signature: root.querySelector('#tfp-cv').toDataURL('image/png'), pick: D.offers ? S.pick : undefined, color: S.color || undefined, price: chosenPrice(), addons: adds.map(function (a) { return a.key; }), total: total, ua: navigator.userAgent });
     fetch(EXEC + '?r=sign', { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
       .then(function (r) { return r.text(); }).then(function (t) {
         var r; try { r = JSON.parse(t); } catch (e) { throw new Error('bad'); }
@@ -786,7 +869,7 @@
         D.signed = { name: nm, date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) };
         D.depositLink = r.depositLink || ''; D.stripe = !!r.stripe; D.depositDue = Number(r.depositDue) || 0; D.paid = 0; D.balance = Number(r.balance) || 0;
         if (!CALM) confetti();
-        if (D.offers) D.price = chosenPrice();
+        D.basePrice = chosenPrice(); D.chosen = adds; D.price = Number(r.total) || total; D.cancelBy = r.cancelBy || '';
         renderPrice(); if (D.type !== 'repair') renderColor(); renderSign();
         var ok = root.querySelector('#tfp-signbox .ok');
         if (ok) ok.insertAdjacentHTML('afterbegin', '<b>Your proposal is signed.</b> A copy is on its way' + (r.emailed ? ' to your email' : '') + '. ');
