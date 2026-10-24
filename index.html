@@ -178,6 +178,8 @@ body.has-tabs .toast{bottom:calc(80px + env(safe-area-inset-bottom))}
 .kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
 .kv:first-of-type{border-top:0}
 .kv span{color:var(--muted)}
+.evst{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 4px}.evst th{font-weight:600;color:var(--muted);text-align:right;padding:6px 4px;font-size:12px}.evst th:first-child{text-align:left}.evst td{padding:7px 4px;text-align:right;border-top:1px solid var(--line);vertical-align:top}.evst td:first-child{text-align:left}.evst td small{display:block;color:var(--muted);font-size:11px;font-weight:500}.evst tr.t td{font-weight:800}
+.rqph{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0}.rqph a{width:72px;height:72px;border-radius:10px;overflow:hidden;background:var(--slate);display:block}.rqph img{width:100%;height:100%;object-fit:cover}
 .kv b{text-align:right}
 .big-n{font-size:28px;font-weight:800;line-height:1.1}
 .pkg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -587,7 +589,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='26';
+var APP_VERSION='27';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -1442,6 +1444,7 @@ var MAT=(function(){
           (x.signedAt?'<span class="pill done">✓ Signed</span>':x.proposalSentAt?'<span class="pill">Sent for signature</span>':'')+
           (pk?'<span class="pill">OC '+esc(pk.label)+(x.color?' · '+esc(x.color):'')+'</span>':'')+
           (x.lead&&x.lead.inspectionDay?'<span class="pill" style="background:#FFE8E3;color:#B4321F">Inspection requested</span>':'')+
+          (x.lead&&x.lead.last==='request form'&&x.status==='new'?'<span class="pill" style="background:#FFE8E3;color:#B4321F">Visit requested'+((x.lead.photos||[]).length?' · '+x.lead.photos.length+' photo'+(x.lead.photos.length===1?'':'s'):'')+'</span>':'')+
           '<span class="pill">'+(x.source==='app'?'App estimate · ':x.source==='website'?'Website · ':'')+esc(x.id)+' · '+dateStr(x.created)+'</span></div></button>';
       }).join('');
     }
@@ -1468,24 +1471,24 @@ var MAT=(function(){
       (x.lead?(x.lead.inspectionDay?kv('Inspection request','<b>'+esc(x.lead.inspectionDay+(x.lead.inspectionWindow?', '+x.lead.inspectionWindow:''))+'</b>'):'')+
         (x.lead.package?kv('Picked',esc(x.lead.package+(x.lead.color?' · '+x.lead.color:''))):'')+
         (x.lead.timeline?kv('Timeline',esc(x.lead.timeline)):'')+(x.lead.layers?kv('Shingle layers',esc(x.lead.layers)):'')+
-        (x.lead.notes?kv('Notes',esc(x.lead.notes)):'')+(x.lead.smsUpdates?kv('Texts OK',esc(x.lead.smsUpdates)):''):'')+
+        (x.lead.notes?kv(x.lead.last==='request form'?'What they need':'Notes',esc(x.lead.notes)):'')+((x.lead.photos||[]).length?'<div class="rqph">'+x.lead.photos.map(function(id){return '<a href="https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view" target="_blank" rel="noopener"><img alt="Customer photo" loading="lazy" src="'+img(id,300)+'"></a>';}).join('')+'</div>':'')+(x.lead.smsUpdates?kv('Texts OK',esc(x.lead.smsUpdates)):''):'')+
       kv('Quote',esc(x.id)+' · '+dateStr(x.created))+
       (x.roofs||[]).map(function(r){return kv(esc(r.n||'Roof'),Math.round(r.s).toLocaleString()+' sq ft · '+esc(r.p||'pitch ?'));}).join('')+
       (x.layers>1?kv('Layers to tear off',String(x.layers)):'')+
       (x.link&&!rep?'<div class="acts"><button class="btn" data-m="share">Send quote</button><a class="btn ghost" href="'+esc(x.link)+'" target="_blank" rel="noopener">View quote page</a></div>':'')+
       ghlLine(x)+'</div>';
     if(x.status==='new'){
-      h+=measCard(x);
+      if(!hiOf(x))h+=measCard(x);
       if(rep)h+=repairCard(x);
       h+=proposalCard(x)+changeOrdersCard(x)+paymentsCard(x);
       h+=rep?approveRepairCard(x):approveCard(x);
       h+=inspectionCard(x);
     }else{
-      var jobTabs=[['money','Money'],['roof','Roof & materials'],['photos','Photos']];
+      var jobTabs=[['money','Money'],['roof',hiOf(x)?'Scope & materials':'Roof & materials'],['photos','Photos']];
       var curTab=jobTabs.some(function(t){return t[0]===M.jobTab;})?M.jobTab:'money';
       h+='<div class="seg" style="margin:12px 0" role="tablist">'+jobTabs.map(function(t){return '<button type="button" class="'+(t[0]===curTab?'on':'')+'" data-m="jtab" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';
       if(curTab==='money')h+=proposalCard(x)+changeOrdersCard(x)+paymentsCard(x)+scheduleCard(x)+profitCard(x);
-      else if(curTab==='roof')h+=(rep?measCard(x)+repairCard(x):'')+jobCards(x);
+      else if(curTab==='roof')h+=(rep?(hiOf(x)?'':measCard(x))+repairCard(x):'')+jobCards(x);
       else h+=inspectionCard(x)+(x.status==='done'?wrapCard(x):'');
       if(isOwner()&&x.signedAt&&!x.cancelledAt)h+='<details class="card more"><summary>Other actions</summary><p class="hint">Only if the customer has cancelled in writing. This archives the job.</p><button class="btn danger block mt" data-m="cxl">Customer cancelled</button></details>';
     }
@@ -3354,12 +3357,36 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   function inspOf(x){return (M.inspections||[]).filter(function(i){return i.quoteId===x.id;}).sort(function(a,b){return a.order-b.order;});}
   function validEmail(e){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(e||''));}
   function smsHref(phone,body){return 'sms:'+String(phone||'').replace(/[^\d+]/g,'')+'?&body='+encodeURIComponent(body);}
-  function jobProfit(x){
-    var c=x.costs||{};var mine=M.orders.filter(function(o){return o.quoteId===x.id;});
-    var mat=mine.length?mine.reduce(function(n,o){return n+orderSpend(o);},0):TAKEOFF.totals(fresh(x),M.settings.taxRate).total;
-    var labor=(Number(c.crewDays)||0)*(Number(c.crewRate)||0);var other=(Number(c.dumpster)||0)+(Number(c.permit)||0)+(Number(c.other)||0);
-    var rev=jobTotal(x);var profit=rev-mat-labor-other;
-    return {rev:rev,mat:mat,matOrdered:mine.length>0,labor:labor,other:other,profit:profit,margin:rev?Math.round(profit/rev*100):0};
+  /* estimate (price-book cost split, or the roof takeoff) vs actual (supplier orders + receipts, crew days, subs, dumpster/permit/other) */
+  function jobCosts(x){
+    var c=x.costs||{},s=M.settings||{},est;
+    if(x.type==='repair')est=costTotals(x.items||[]);
+    else{var sq=(x.roofs||[]).reduce(function(n,r){return n+(Number(r.s)||0);},0)/100;
+      est={mat:TAKEOFF.totals(fresh(x),s.taxRate).total,lab:Math.max(1,Math.round(sq/15*2)/2)*(Number(s.crewDayRate)||0),sub:0,oth:(Number(s.dumpster)||0)+(Number(s.permit)||0)};}
+    est.cost=est.mat+est.lab+est.sub+est.oth;
+    var mine=M.orders.filter(function(o){return o.quoteId===x.id;}),ord=mine.reduce(function(n,o){return n+orderSpend(o);},0);
+    var oth=(Number(c.dumpster)||0)+(Number(c.permit)||0)+(/^Price book:/.test(c.otherNote||'')?0:(Number(c.other)||0));
+    var act={mat:ord+(Number(c.matExtra)||0),lab:(Number(c.crewDays)||0)*(Number(c.crewRate)||0),sub:Number(c.subs)||0,oth:oth};
+    var has={mat:mine.length>0||Number(c.matExtra)>0,lab:Number(c.crewDays)>0,sub:Number(c.subs)>0,oth:oth>0};
+    act.cost=act.mat+act.lab+act.sub+act.oth;
+    var use={};['mat','lab','sub','oth'].forEach(function(k){use[k]=has[k]?act[k]:est[k];});use.cost=use.mat+use.lab+use.sub+use.oth;
+    return {est:est,act:act,has:has,use:use,rev:jobTotal(x),orders:mine.length};
+  }
+  function jobProfit(x){var j=jobCosts(x),rev=j.rev,profit=rev-j.use.cost;
+    return {rev:rev,mat:j.use.mat,matOrdered:j.orders>0,labor:j.use.lab,sub:j.use.sub,other:j.use.oth,profit:profit,margin:rev?Math.round(profit/rev*100):0,j:j};}
+  /* finished jobs per category: how far the actual costs were from the estimate */
+  function categoryReport(jobs){
+    var g={};jobs.filter(function(x){return x.status==='done';}).forEach(function(x){var j=jobCosts(x);if(!(j.has.mat||j.has.lab||j.has.sub||j.has.oth))return;
+      var t=x.type==='repair'?tradeOf(x):'Replacement',r=g[t]=g[t]||{n:0,rev:0,est:{mat:0,lab:0,sub:0,oth:0,cost:0},use:{mat:0,lab:0,sub:0,oth:0,cost:0}};
+      r.n++;r.rev+=j.rev;['mat','lab','sub','oth','cost'].forEach(function(k){r.est[k]+=j.est[k];r.use[k]+=j.use[k];});});
+    var keys=Object.keys(g),word={mat:'Materials',lab:'Labor',sub:'Subs',oth:'Other costs'};
+    var h='<div class="card"><h2>Estimate vs actual <small>finished jobs</small></h2>';
+    if(!keys.length)return h+'<p class="hint">When a job is done, enter what it really cost (job page › Money › Enter actual costs). Each category then shows how far off the price book was.</p></div>';
+    return h+keys.map(function(t){var r=g[t],d=r.use.cost-r.est.cost,pc=r.est.cost?Math.round(d/r.est.cost*100):0;
+      var worst=['mat','lab','sub','oth'].map(function(k){return {k:k,d:r.use[k]-r.est[k],pc:r.est[k]?Math.round((r.use[k]-r.est[k])/r.est[k]*100):0};}).sort(function(a,b){return (b.d-a.d)||(b.pc-a.pc);})[0];
+      var em=r.rev?Math.round((r.rev-r.est.cost)/r.rev*100):0,am=r.rev?Math.round((r.rev-r.use.cost)/r.rev*100):0;
+      return '<div class="ln" style="cursor:default"><div class="l1"><b>'+esc(t==='Replacement'?'Roof replacement':TRADE_LABEL[t])+' · '+r.n+' job'+(r.n===1?'':'s')+'</b><span>Margin '+em+'% planned, '+am+'% actual'+(worst.d>0&&(worst.pc>=10||!r.est[worst.k])?'. '+word[worst.k]+(r.est[worst.k]?' ran '+worst.pc+'% over':' were not in the estimate')+': '+(r.est[worst.k]?'raise':'add')+' '+(worst.k==='lab'?'labor':worst.k==='mat'?'materials':worst.k==='sub'?'subcontractor costs':'other costs')+' in the price book':'')+'</span></div>'+
+        '<div class="l2 money" style="color:'+(d>0?'#B3261E':'var(--green)')+'">'+(d>0?'+':'−')+money(Math.abs(d),false)+'<span>'+(d>0?'over':'under')+' the estimate ('+(pc>0?'+':'')+pc+'%)</span></div></div>';}).join('')+'</div>';
   }
 
   /* ----- repair item rows (new estimate + edit sheet) ----- */
@@ -3526,21 +3553,30 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   }
   function profitCard(x){
     if(!x.contractPrice)return '';
-    var p=jobProfit(x);
-    return '<div class="card"><h2>Profit <small>'+(p.matOrdered?'materials from orders':'materials estimated')+'</small></h2>'+
-      kv('Job price','<span class="money">'+money(p.rev,false)+'</span>')+kv('Materials','<span class="money">−'+money(p.mat,false)+'</span>')+
-      kv('Labor','<span class="money">−'+money(p.labor,false)+'</span>')+kv('Dumpster, permit &amp; other','<span class="money">−'+money(p.other,false)+'</span>')+
-      '<div class="tot"><div class="kv grand"><span>Profit</span><b class="money" style="color:'+(p.profit<0?'#B3261E':'var(--green)')+'">'+money(p.profit,false)+((p.mat||p.matOrdered)?' · '+p.margin+'%':'')+'</b></div></div>'+(p.mat||p.matOrdered?'':'<p class="hint">Add materials to see your real margin.</p>')+
-      '<button class="btn ghost block mt" data-m="editcosts">Edit job costs</button></div>';
+    var p=jobProfit(x),j=p.j,c=x.costs||{},done=x.status==='done';
+    var rows=[['mat','Materials',j.orders?'supplier orders'+(Number(c.matExtra)>0?' + receipts':''):'receipts'],['lab','Labor',(Number(c.crewDays)||0)+' crew days'],['sub','Subcontractors',''],['oth','Dumpster, permit & other','']];
+    function cell(v){return '<span class="money">'+money(v,false)+'</span>';}
+    function diff(e,a){var d=a-e;if(Math.abs(d)<1)return '<span class="hint">same</span>';var pc=e>0?Math.round(d/e*100):0;return '<b style="color:'+(d>0?'#B3261E':'var(--green)')+'">'+(d>0?'+':'−')+money(Math.abs(d),false)+(e>0?'<small>'+(d>0?'+':'')+pc+'%</small>':'')+'</b>';}
+    var tbl='<table class="evst"><tr><th></th><th>Estimate</th><th>Actual</th><th>Diff.</th></tr>'+rows.map(function(r){var k=r[0];if(!(j.est[k]||j.has[k]))return '';
+        return '<tr><td>'+esc(r[1])+(r[2]&&j.has[k]?'<small>'+esc(r[2])+'</small>':'')+'</td><td>'+cell(j.est[k])+'</td><td>'+(j.has[k]?cell(j.act[k]):'<small>not entered</small>')+'</td><td>'+(j.has[k]?diff(j.est[k],j.act[k]):'')+'</td></tr>';}).join('')+
+      '<tr class="t"><td>Total cost</td><td>'+cell(j.est.cost)+'</td><td>'+cell(j.use.cost)+'</td><td>'+diff(j.est.cost,j.use.cost)+'</td></tr></table>';
+    var ep=p.rev-j.est.cost;
+    return '<div class="card"><h2>Profit <small>estimate vs actual</small></h2>'+kv('Job price','<span class="money">'+money(p.rev,false)+'</span>')+tbl+
+      '<div class="tot">'+kv('Expected profit','<span class="money">'+money(ep,false)+(p.rev?' · '+Math.round(ep/p.rev*100)+'%':'')+'</span>')+
+      '<div class="kv grand"><span>'+(done?'Actual profit':'Profit so far')+'</span><b class="money" style="color:'+(p.profit<0?'#B3261E':'var(--green)')+'">'+money(p.profit,false)+' · '+p.margin+'%</b></div></div>'+
+      '<p class="hint">Costs you haven’t entered count at the estimate. After the job, enter what you really spent to see where the price book is off.</p>'+
+      '<button class="btn ghost block mt" data-m="editcosts">Enter actual costs</button></div>';
   }
   function costsSheet(){
-    var x=q();var c=x.costs||{crewDays:0,crewRate:M.settings.crewDayRate,dumpster:0,permit:0,other:0,otherNote:''};
-    var ov=sheet('<h3>Job costs'+closeBtn()+'</h3><div class="row"><div><label class="f">Crew days</label><input class="in money" id="kd" inputmode="decimal" value="'+c.crewDays+'"></div><div><label class="f">Cost per crew day</label><input class="in money" id="kr" inputmode="decimal" value="'+c.crewRate+'"></div></div>'+
+    var x=q();var c=Object.assign({crewDays:0,crewRate:M.settings.crewDayRate,dumpster:0,permit:0,other:0,otherNote:'',matExtra:0,subs:0},x.costs||{});
+    if(/^Price book:/.test(c.otherNote||'')){c.other=0;c.otherNote='';}
+    var ov=sheet('<h3>Actual job costs'+closeBtn()+'</h3><p class="hint">What the job really cost. Supplier orders in the app count on their own.</p>'+
+      '<div class="row"><div><label class="f">Materials not on orders</label><input class="in money" id="kmx" inputmode="decimal" value="'+(c.matExtra||0)+'" placeholder="receipts"></div><div><label class="f">Subcontractors</label><input class="in money" id="ksb" inputmode="decimal" value="'+(c.subs||0)+'"></div></div>'+'<div class="row"><div><label class="f">Crew days</label><input class="in money" id="kd" inputmode="decimal" value="'+c.crewDays+'"></div><div><label class="f">Cost per crew day</label><input class="in money" id="kr" inputmode="decimal" value="'+c.crewRate+'"></div></div>'+
       '<div class="row"><div><label class="f">Dumpster</label><input class="in money" id="kdu" inputmode="decimal" value="'+c.dumpster+'"></div><div><label class="f">Permit</label><input class="in money" id="kp" inputmode="decimal" value="'+c.permit+'"></div></div>'+
       '<div class="row"><div><label class="f">Other</label><input class="in money" id="ko" inputmode="decimal" value="'+c.other+'"></div><div><label class="f">What for</label><input class="in" id="kon" value="'+esc(c.otherNote||'')+'"></div></div>'+
       '<button class="btn block mt" id="ksv">Save</button>');
     ov.querySelector('#ksv').onclick=function(){var g=function(id){return Number(ov.querySelector(id).value)||0;};
-      closeSheet();saveQ({costs:{crewDays:g('#kd'),crewRate:g('#kr'),dumpster:g('#kdu'),permit:g('#kp'),other:g('#ko'),otherNote:ov.querySelector('#kon').value}},'Costs saved');};
+      closeSheet();saveQ({costs:{matExtra:g('#kmx'),subs:g('#ksb'),crewDays:g('#kd'),crewRate:g('#kr'),dumpster:g('#kdu'),permit:g('#kp'),other:g('#ko'),otherNote:ov.querySelector('#kon').value}},'Costs saved');};
   }
 
   /* ----- inspection photos ----- */
@@ -3643,7 +3679,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     var rows=jobs.map(function(x){var p=jobProfit(x);if(String(x.approvedAt||x.created).slice(0,7)===ym){mon.rev+=p.rev;mon.profit+=p.profit;}
       return '<button class="ln" data-m="openjobq" data-id="'+esc(x.id)+'"><div class="l1"><b>'+esc(x.name||x.id)+' · '+esc(townOf(x.address)||'')+'</b><span>'+(x.type==='repair'?esc(TRADE_LABEL[tradeOf(x)]):'Replacement')+' · '+ST_LABEL[x.status]+' · '+money(p.rev,false)+'</span></div>'+
         '<div class="l2 money" style="color:'+(p.profit<0?'#B3261E':'var(--green)')+'">'+money(p.profit,false)+'<span>'+p.margin+'% margin</span></div></button>';}).join('');
-    return '<div class="stats"><div class="stat"><b class="money">'+k(mon.rev)+'</b><span>Sold this month</span></div><div class="stat"><b class="money">'+k(mon.profit)+'</b><span>Profit (est.)</span></div><div class="stat"><b>'+(mon.rev?Math.round(mon.profit/mon.rev*100):0)+'%</b><span>Margin</span></div></div><div class="card">'+rows+'</div>';
+    return '<div class="stats"><div class="stat"><b class="money">'+k(mon.rev)+'</b><span>Sold this month</span></div><div class="stat"><b class="money">'+k(mon.profit)+'</b><span>Profit (est.)</span></div><div class="stat"><b>'+(mon.rev?Math.round(mon.profit/mon.rev*100):0)+'%</b><span>Margin</span></div></div>'+categoryReport(jobs)+'<div class="card">'+rows+'</div>';
   }
 
   /* ----- settings: extra cards ----- */
