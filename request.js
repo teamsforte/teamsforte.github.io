@@ -28,7 +28,7 @@
     '.tfr .add{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px dashed #9AA5B1;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;color:#13202F;background:#F7F9FB}' +
     '.tfr .add input{display:none}.tfr .ck{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:13px;color:#5B6675;margin-top:12px}.tfr .ck input{width:18px;height:18px;flex:none;margin-top:1px;accent-color:#FF5440}' +
     '.tfr .go{display:block;width:100%;margin-top:16px;padding:15px;border:0;border-radius:10px;background:#FF5440;color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}.tfr .go:disabled{opacity:.6;cursor:wait}' +
-    '.tfr .err{color:#B3261E;font-size:14px;margin-top:10px;min-height:1px}.tfr .fine{font-size:12px;color:#5B6675;margin:10px 0 0;text-align:center}' +
+    '.tfr .err{color:#B3261E;font-size:14px;margin-top:10px;min-height:1px}.tfr .fine{font-size:12px;color:#5B6675;margin:10px 0 0;text-align:center;line-height:1.7}.tfr .fine a{color:#5B6675}' +
     '.tfr .hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}' +
     '.tfr .ok{text-align:center;padding:12px 0}.tfr .ok b{display:block;font-size:22px;color:#13202F;margin:8px 0}.tfr .ok .chk{width:54px;height:54px;border-radius:50%;background:#E5F6EC;color:#1F9D55;font-size:30px;line-height:54px;margin:0 auto}' +
     '.tfr .ok a{display:inline-block;margin-top:14px;padding:12px 18px;border-radius:10px;border:1px solid #DDE2E8;color:#13202F;font-weight:700;text-decoration:none}';
@@ -56,7 +56,7 @@
   function mount(el) {
     if (el.getAttribute('data-tf-ready')) return;
     el.setAttribute('data-tf-ready', '1');
-    var pre = el.getAttribute('data-trade') || '', title = el.getAttribute('data-title') || 'Request a free visit';
+    var pre = el.getAttribute('data-trade') || '', title = el.getAttribute('data-title') || 'Request a visit';
     var photos = [], t0 = Date.now();
     el.innerHTML = '<form class="tfr" novalidate><h3>' + esc(title) + '</h3><p class="sub">Tell us about the project. We\u2019ll get back to you to set up a time.</p>' +
       '<label for="tfr-c">What do you need?</label><select id="tfr-c" name="trade">' + CATS.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === pre ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('') + '</select>' +
@@ -65,10 +65,10 @@
       '<label for="tfr-a">Project address</label><input id="tfr-a" name="address" autocomplete="street-address" placeholder="Street, town">' +
       '<div class="row"><div><label for="tfr-n">Your name</label><input id="tfr-n" name="name" autocomplete="name"></div><div><label for="tfr-p">Phone</label><input id="tfr-p" name="phone" type="tel" autocomplete="tel"></div></div>' +
       '<div class="row"><div><label for="tfr-e">Email <span class="opt">\u00b7 optional</span></label><input id="tfr-e" name="email" type="email" autocomplete="email"></div><div><label for="tfr-t">When</label><select id="tfr-t" name="timing">' + TIMING.map(function (t) { return '<option>' + t + '</option>'; }).join('') + '</select></div></div>' +
-      '<label class="ck"><input type="checkbox" name="texts"><span>OK to text me about this request.</span></label>' +
+      '<label class="ck"><input type="checkbox" name="texts"><span>By checking this box, I consent to receive text messages from Team Forte about my request, scheduling and job updates. Message frequency varies. Message &amp; data rates may apply. Text HELP for help, reply STOP to opt out.</span></label>' +
       '<div class="hp" aria-hidden="true"><label>Leave empty<input name="website" tabindex="-1" autocomplete="off"></label></div>' +
       '<button class="go" type="submit">Send my request</button><div class="err" role="alert"></div>' +
-      '<p class="fine">Registered &amp; Insured \u00b7 CT HIC.0706595 \u00b7 Or call <a href="tel:+18608549335">' + PHONE + '</a></p></form>';
+      '<p class="fine"><a href="https://team-forte.com/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a> | <a href="https://team-forte.com/terms-of-service" target="_blank" rel="noopener">Terms of Service</a><br>Registered &amp; Insured \u00b7 CT HIC.0706595 \u00b7 Or call <a href="tel:+18608549335">' + PHONE + '</a></p></form>';
     var f = el.querySelector('form'), ph = el.querySelector('.ph'), er = el.querySelector('.err'), ta = el.querySelector('#tfr-d'), cat = el.querySelector('#tfr-c');
     function hint() { ta.placeholder = HINT[cat.value] || ''; }
     hint(); cat.onchange = hint;
