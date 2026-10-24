@@ -648,17 +648,18 @@
         (house ? '<div class="split"><div class="media" id="tfp-map"></div><div>' + statsHtml + '</div></div>' : statsHtml) + '</div></section>']);
     }
     /* 2b. rooms we measured (Home Improvement quick count) */
-    if (otherTrade() && (D.rooms || []).length) {
+    if (otherTrade() && ((D.rooms || []).length || (D.measured || []).length)) {
       var paint = otherTrade() === 'Painting', fl = 0, wl = 0;
-      var rr = D.rooms.map(function (r) {
+      var rr = (D.rooms || []).map(function (r) {
         var f = Math.round(r.l * r.w), w = r.h > 0 ? Math.max(0, Math.round(2 * (r.l + r.w) * r.h - (r.d || 0) * 21 - (r.win || 0) * 15)) : 0;
         fl += f; wl += w;
         return '<div><span><b>' + esc(r.n || 'Room') + '</b></span><span>' + r.l + ' × ' + r.w + ' ft · ' + (paint && w ? w.toLocaleString('en-US') + ' sq ft of walls' : f.toLocaleString('en-US') + ' sq ft') + '</span></div>';
       }).join('');
-      var tl = [[String(D.rooms.length), D.rooms.length === 1 ? 'room' : 'rooms'], paint && wl ? [wl.toLocaleString('en-US'), 'sq ft of walls'] : [fl.toLocaleString('en-US'), 'sq ft of floor']];
+      var tl = ((D.rooms || []).length ? [[String(D.rooms.length), D.rooms.length === 1 ? 'room' : 'rooms'], paint && wl ? [wl.toLocaleString('en-US'), 'sq ft of walls'] : [fl.toLocaleString('en-US'), 'sq ft of floor']] : [])
+        .concat((D.measured || []).map(function (m) { return [esc(m[0]), esc(m[1])]; })).slice(0, 6);
       secs.push(['rooms', '<section class="slide" data-t="What we measured"><div class="s"><p class="k">Your ' + esc(planWord()) + '</p><h2>What we measured</h2>' +
         '<div class="stats two">' + tl.map(function (t) { return '<div class="stat"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>'; }).join('') + '</div>' +
-        '<div class="rlist">' + rr + '</div></div></section>']);
+        (rr ? '<div class="rlist">' + rr + '</div>' : '') + '</div></section>']);
     }
     /* 3. what we found + what happens if you wait */
     if (D.insp.length) {

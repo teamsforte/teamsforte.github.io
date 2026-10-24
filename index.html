@@ -587,7 +587,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='25';
+var APP_VERSION='26';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -2300,6 +2300,7 @@ var MAT=(function(){
     h+='<div class="card"><h2>Address</h2><textarea class="in" id="ea" rows="2" placeholder="45 Woodin St, Hamden, CT" style="min-height:64px">'+esc(e.address)+'</textarea></div>';
     h+='<div class="card"><h2>'+esc(TRADE_LABEL[e.trade])+' <small>prices from ⚙ Quote prices</small></h2><div id="ers"></div>'+addRepairSelect('es',e.trade)+'<div class="tot mt" id="ert"></div></div>';
     if(roomsFor(e.trade))h+='<div class="card" id="erooms">'+roomsCardBody(e.rooms,'erm')+'</div>';
+    if(countKind(e.trade))h+='<div class="card" id="ecount">'+countCardBody(e.rooms,e.trade,'ecn')+'</div>';
     h+='<div class="card"><h2>Customer <small>optional</small></h2>'+
       '<label class="f">Name</label><input class="in" data-ef="name" value="'+esc(e.name)+'" autocomplete="off">'+
       '<div class="row"><div><label class="f">Phone</label><input class="in" data-ef="phone" inputmode="tel" value="'+esc(e.phone)+'"></div><div><label class="f">Email</label><input class="in" data-ef="email" type="email" value="'+esc(e.email)+'"></div></div></div>'+
@@ -2315,6 +2316,8 @@ var MAT=(function(){
     document.getElementById('etype').onclick=function(ev){var b=ev.target.closest('[data-et]');if(!b)return;setEstType(e,b.getAttribute('data-et'));render();};
     var erb=document.getElementById('erooms');if(erb)erb.onclick=function(ev){if(!ev.target.closest('[data-m=erm]'))return;
       roomsSheet(e.rooms,e.items,e.trade,function(rooms,items){e.rooms=rooms;e.items.length=0;items.forEach(function(it){e.items.push(it);});render();});};
+    var ecb=document.getElementById('ecount');if(ecb)ecb.onclick=function(ev){if(!ev.target.closest('[data-m=ecn]'))return;
+      countSheet(e.rooms,e.items,e.trade,{lat:e.lat,lng:e.lng,address:e.address},function(rooms,items){e.rooms=rooms;e.items.length=0;items.forEach(function(it){e.items.push(it);});render();});};
     var etr=document.getElementById('etrade');if(etr)etr.onchange=function(){var t=etr.value;if(t===e.trade)return;
       if(e.items.some(function(it){return !it.custom;})&&!confirm('Switch to '+TRADE_LABEL[t]+'? The items you added stay; new items come from the '+TRADE_LABEL[t]+' list.')){etr.value=e.trade;return;}e.trade=t;e.hiTrade=t;render();};
   }
@@ -3177,12 +3180,158 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     ov.querySelector('#rmadd').onclick=function(){var last=list[list.length-1]||{h:8};list.push({n:'Room '+(list.length+1),l:'',w:'',h:last.h||8,d:1,win:1,c:true});drawList();drawOut();};
     ov.querySelector('#rmsv').onclick=function(){
       var clean=list.filter(function(r){return num(r.l)>0&&num(r.w)>0;});if(!clean.length){toast('Type the length and width of at least one room.',true);return;}
-      var outs=roomOuts(roomCalc(clean)),before=(rooms&&rooms.use)||[],next=items.map(function(it){return Object.assign({},it);});
-      outs.forEach(function(o){var at=-1;next.forEach(function(it,j){if(it.key===o.key)at=j;});
-        if(use.indexOf(o.k)>=0&&o.qty>0){var b=(book(o.t).items||[]).filter(function(it){return it.key===o.key;})[0];if(!b)return;
-          if(at>=0)next[at].qty=o.qty;else next.push({key:b.key,name:b.name,unit:b.unit,qty:o.qty,price:b.price,cost:Number(b.cost)||0});}
-        else if(at>=0&&before.indexOf(o.k)>=0)next.splice(at,1);});
-      closeSheet();done({list:clean,use:use},next);};
+      var outs=roomOuts(roomCalc(clean)),before=(rooms&&rooms.use)||[],next=fillOuts(items,outs,use,before);
+      closeSheet();done(Object.assign({},rooms||{},{list:clean,use:use}),next);};
+  }
+  /* ----- quick count per category: kitchen cabinet runs, bath tile + shower door, closets, fence + deck ----- */
+  var COUNT_KIND={Kitchens:'k',Bathrooms:'b',Carpentry:'cl',Outdoor:'o'};
+  var COUNT_TITLE={k:'Cabinet runs',b:'Tile & shower door',cl:'Closets',o:'Fence & deck'};
+  var DOOR_KEY={frameless:'b_frameless',semi:'b_semi',framed:'b_framed'};
+  function countKind(t){return COUNT_KIND[t]||'';}
+  function cnum(v){return Number(String(v==null?'':v).replace(/[^\d.]/g,''))||0;}
+  function countBlank(kind){
+    if(kind==='k')return {runs:[{n:'Main wall',lf:'',b:true,w:true}],il:'',iw:'',sh:1.5};
+    if(kind==='b')return {sw:5,sd:3,shh:8,walls:3,fl:'',fw:'',dw:'',dh:'',dt:'frameless',pn:0};
+    if(kind==='cl')return {list:[{n:'Closet 1',lf:''}]};
+    return {fence:[],deck:[],fx:'',ft:'wood',g:0,dx:'',dt:'pt',rl:'',st:0};}
+  /* everything the count works out: summary lines, price-book lines it can fill, and the totals shown on the proposal */
+  function countCalc(kind,d){var r={rows:[],outs:[],sum:[]};d=d||{};
+    if(kind==='k'){var base=0,wall=0;(d.runs||[]).forEach(function(x){var lf=cnum(x.lf);if(x.b!==false)base+=lf;if(x.w)wall+=lf;});
+      var cab=Math.round((base+wall)*10)/10,boxes=cab>0?Math.ceil(cab/2.5):0,isl=cnum(d.il)*cnum(d.iw),ctop=Math.ceil(base*25.5/12+isl),sh=d.sh===''||d.sh==null?1.5:cnum(d.sh),splash=Math.ceil(base*sh);
+      r.rows=[['Base cabinets',base+' LF'],['Wall cabinets',wall+' LF'],['Cabinet boxes (about 30 in)',String(boxes)],['Countertop'+(isl?' incl. island':''),ctop+' sq ft'],['Backsplash ('+sh+' ft high)',splash+' sq ft']];
+      r.outs=[{k:'cabsup',t:'Kitchens',key:'k_cabsup',label:'Cabinets, base + wall',qty:cab,u:'LF'},{k:'cab',t:'Kitchens',key:'k_cab',label:'Cabinet install',qty:boxes,u:'boxes'},
+        {k:'ctop',t:'Kitchens',key:'k_ctop',label:'Countertop',qty:ctop,u:'sq ft'},{k:'back',t:'Kitchens',key:'k_back',label:'Backsplash',qty:splash,u:'sq ft'}];
+      if(cab)r.sum.push([cab+' LF','of cabinets']);if(ctop)r.sum.push([ctop+' sq ft','of countertop']);if(splash)r.sum.push([splash+' sq ft','of backsplash']);}
+    else if(kind==='b'){var walls=Math.min(3,Math.max(1,cnum(d.walls)||3)),sw=cnum(d.sw),sd=cnum(d.sd),hh=cnum(d.shh);
+      var wt=Math.ceil((sw+(walls>=2?sd:0)+(walls>=3?sd:0))*hh*1.1),ft=Math.ceil(cnum(d.fl)*cnum(d.fw)*1.1),dw=cnum(d.dw),dh=cnum(d.dh),pn=Math.round(cnum(d.pn));
+      var dname={frameless:'Frameless',semi:'Semi-frameless',framed:'Framed'}[d.dt]||'';
+      r.rows=[['Shower wall tile (+10%)',wt+' sq ft'],['Floor tile (+10%)',ft+' sq ft'],['Shower door',dname?dname+(dw&&dh?' · opening '+dw+' × '+dh+' in':''):'none'],['Fixed glass panels',String(pn)]];
+      r.outs=[{k:'wtile',t:'Bathrooms',key:'b_wtile',label:'Wall tile',qty:wt,u:'sq ft'},{k:'ftile',t:'Bathrooms',key:'b_ftile',label:'Floor tile',qty:ft,u:'sq ft'}];
+      if(DOOR_KEY[d.dt])r.outs.push({k:'door',t:'Bathrooms',key:DOOR_KEY[d.dt],label:dname+' shower door',qty:1,u:'door'});
+      r.outs.push({k:'panel',t:'Bathrooms',key:'b_panel',label:'Fixed glass panel',qty:pn,u:'panels'});
+      if(wt)r.sum.push([wt+' sq ft','of shower wall tile']);if(ft)r.sum.push([ft+' sq ft','of floor tile']);if(dname&&dw&&dh)r.sum.push([dw+' × '+dh+' in',dname.toLowerCase()+' door opening']);}
+    else if(kind==='cl'){var lf=0,n=0;(d.list||[]).forEach(function(x){var v=cnum(x.lf);if(v>0){lf+=v;n++;}});lf=Math.round(lf*10)/10;
+      r.rows=[['Closets',String(n)],['Wall length to outfit',lf+' LF']];
+      r.outs=[{k:'closet',t:'Carpentry',key:'c_closet',label:'Closet system',qty:lf,u:'LF'}];
+      if(n)r.sum.push([String(n),n===1?'closet':'closets']);if(lf)r.sum.push([lf+' LF','of closet walls']);}
+    else if(kind==='o'){var fl=0,da=0,auto=0;(d.fence||[]).forEach(function(x){fl+=cnum(x.len);});(d.deck||[]).forEach(function(x){da+=cnum(x.area);auto+=Math.max(0,cnum(x.per)-cnum(x.edge));});
+      fl=Math.round(fl+cnum(d.fx));da=Math.round(da+cnum(d.dx));auto=Math.round(auto);var rail=cnum(d.rl)>0?Math.round(cnum(d.rl)):auto,g=Math.round(cnum(d.g)),stp=Math.round(cnum(d.st));
+      var fk=d.ft==='vinyl'?'o_vinyl':'o_wood',dk=d.dt==='comp'?'o_deckcomp':'o_deckpt';
+      r.rows=[['Fence',fl+' LF · '+g+' gate'+(g===1?'':'s')],['Deck',da+' sq ft'],['Railing'+(cnum(d.rl)>0?'':' (deck edges, not the house side)'),rail+' LF'],['Deck stairs',stp+' step'+(stp===1?'':'s')]];
+      r.outs=[{k:'fence',t:'Outdoor',key:fk,label:(d.ft==='vinyl'?'Vinyl':'Wood')+' fence',qty:fl,u:'LF'},{k:'gate',t:'Outdoor',key:'o_gate',label:'Gates',qty:g,u:'gates'},
+        {k:'deck',t:'Outdoor',key:dk,label:(d.dt==='comp'?'Composite':'Pressure-treated')+' deck',qty:da,u:'sq ft'},{k:'rail',t:'Outdoor',key:'o_rail',label:'Deck railing',qty:da?rail:0,u:'LF'},
+        {k:'stairs',t:'Outdoor',key:'o_stairs',label:'Deck stairs',qty:da?stp:0,u:'steps'},{k:'permit',t:'Outdoor',key:'o_permit',label:'Permit & drawings',qty:da?1:0,u:'job'}];
+      if(fl)r.sum.push([fl+' LF','of fence']);if(g)r.sum.push([String(g),g===1?'gate':'gates']);if(da)r.sum.push([da+' sq ft','of deck']);if(da&&rail)r.sum.push([rail+' LF','of railing']);}
+    r.outs.forEach(function(o){o.qty=Math.round((Number(o.qty)||0)*100)/100;});return r;}
+  /* put the counted quantities on the quote: update lines it filled before, add new ones (with the cost split), drop lines it filled that are now unticked */
+  function fillOuts(items,outs,use,before){var next=items.map(function(it){return Object.assign({},it);});
+    outs.forEach(function(o){var at=-1;next.forEach(function(it,j){if(it.key===o.key)at=j;});
+      if(use.indexOf(o.k)>=0&&o.qty>0){var b=bookItem(o.key,o.t);if(!b)return;if(at>=0)next[at].qty=o.qty;else{b.qty=o.qty;next.push(b);}}
+      else if(at>=0&&(before||[]).indexOf(o.k)>=0)next.splice(at,1);});
+    return next;}
+  function countCardBody(rooms,trade,act){var kind=countKind(trade);if(!kind)return '';var d=rooms&&rooms[kind],c=countCalc(kind,d);
+    return '<h2>'+COUNT_TITLE[kind]+' <small>quick count on site</small></h2>'+(d&&c.sum.length?c.rows.map(function(s){return kv(esc(s[0]),esc(s[1]));}).join(''):
+      '<p class="hint">'+{k:'Type each cabinet run and the app works out cabinet boxes, countertop and backsplash.',b:'Type the shower size and opening and the app works out wall and floor tile and the door.',cl:'Type the wall length of each closet to outfit.',o:'Draw the fence line or deck on the satellite photo, or type the lengths.'}[kind]+'</p>')+
+      (act?'<button class="btn ghost block mt" data-m="'+act+'">'+(d&&c.sum.length?'Edit count':ICON.plus+'Start count')+'</button>':'');}
+  function countSheet(rooms,items,trade,place,done){
+    var kind=countKind(trade);if(!kind)return;var d=JSON.parse(JSON.stringify((rooms&&rooms[kind])||countBlank(kind)));
+    var before=(rooms&&rooms[kind]&&rooms[kind].use)||[],use=before.length?before.slice():countCalc(kind,d).outs.map(function(o){return o.k;});
+    if(kind==='o'&&!before.length)use=use.filter(function(k){return k!=='permit';}).concat(['permit']);
+    var ov=sheet('<h3>'+COUNT_TITLE[kind]+closeBtn()+'</h3><div id="cfm"></div><div id="cout" class="mt"></div><button class="btn block mt" id="csv">Fill the quote</button>');
+    function fld(k,lab,v,mode){return '<div><label class="f" style="margin-top:6px">'+lab+'</label><input class="in money" inputmode="'+(mode||'decimal')+'" data-cf="'+k+'" value="'+(v===''||v==null?'':esc(String(v)))+'"></div>';}
+    function sel(k,lab,opts,v){return '<div><label class="f" style="margin-top:6px">'+lab+'</label><select class="in" data-cf="'+k+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>';}
+    function rowHead(list,i,name,ph){return '<div style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px"><div class="row" style="gap:6px;align-items:center"><input class="in" data-cl="'+list+'" data-ci="'+i+'" data-ck="n" value="'+esc(name||'')+'" placeholder="'+ph+'"><button type="button" class="x" data-crm="'+list+':'+i+'" aria-label="Remove" style="flex:0 0 auto">'+ICON.x+'</button></div>';}
+    function rfld(list,i,k,lab,v){return '<div><label class="f" style="margin-top:6px">'+lab+'</label><input class="in money" inputmode="decimal" data-cl="'+list+'" data-ci="'+i+'" data-ck="'+k+'" value="'+(v===''||v==null?'':v)+'"></div>';}
+    function rchk(list,i,k,lab,v){return '<label class="remember" style="margin:8px 12px 0 0;display:inline-flex"><input type="checkbox" data-cl="'+list+'" data-ci="'+i+'" data-ck="'+k+'"'+(v?' checked':'')+'> '+lab+'</label>';}
+    function drawForm(){var h='';
+      if(kind==='k'){h='<p class="hint">Feet, measured along the wall. Tick base and/or wall cabinets for each run. Countertop is 25½ in deep.</p>'+(d.runs||[]).map(function(r,i){return rowHead('runs',i,r.n,'Run name')+'<div class="row" style="gap:6px">'+rfld('runs',i,'lf','Length (ft)',r.lf)+'</div>'+rchk('runs',i,'b','Base cabinets',r.b!==false)+rchk('runs',i,'w','Wall cabinets',!!r.w)+'</div>';}).join('')+
+        '<button type="button" class="btn ghost block mt" data-cadd="runs">'+ICON.plus+'Add run</button><div class="row mt" style="gap:6px">'+fld('il','Island length',d.il)+fld('iw','Island width',d.iw)+fld('sh','Backsplash ht',d.sh)+'</div>';}
+      else if(kind==='b'){h='<p class="hint">Shower in feet: width (back wall), depth (side walls) and tile height. Door opening in inches; the glass is measured again after the tile is done.</p>'+
+        '<div class="row" style="gap:6px">'+fld('sw','Width',d.sw)+fld('sd','Depth',d.sd)+fld('shh','Tile height',d.shh)+'</div>'+
+        '<div class="row" style="gap:6px">'+sel('walls','Tiled walls',[['3','3 (alcove)'],['2','2 (corner)'],['1','1']],String(d.walls||3))+fld('fl','Floor length',d.fl)+fld('fw','Floor width',d.fw)+'</div>'+
+        '<div class="row" style="gap:6px">'+sel('dt','Shower door',[['frameless','Frameless'],['semi','Semi-frameless'],['framed','Framed'],['','No door']],d.dt||'')+fld('dw','Opening W (in)',d.dw)+fld('dh','Opening H (in)',d.dh)+'</div>'+
+        '<div class="row" style="gap:6px">'+fld('pn','Fixed panels',d.pn,'numeric')+'</div>';}
+      else if(kind==='cl'){h='<p class="hint">Add up the wall length you will outfit in each closet (feet).</p>'+(d.list||[]).map(function(r,i){return rowHead('list',i,r.n,'Closet name')+'<div class="row" style="gap:6px">'+rfld('list',i,'lf','Wall length (ft)',r.lf)+'</div></div>';}).join('')+
+        '<button type="button" class="btn ghost block mt" data-cadd="list">'+ICON.plus+'Add closet</button>';}
+      else{var fl=(d.fence||[]).length,dk=(d.deck||[]).length;
+        h='<button type="button" class="btn dark block" id="cyard">'+(fl||dk?'Edit the drawing':'Draw on the satellite photo')+'</button><p class="hint">'+(fl||dk?fl+' fence line'+(fl===1?'':'s')+' and '+dk+' deck outline'+(dk===1?'':'s')+' drawn. ':'')+'Or type the lengths below. Fence lines are not a survey: the customer confirms the property line.</p>'+
+          '<div class="row" style="gap:6px">'+sel('ft','Fence',[['wood','Wood'],['vinyl','Vinyl']],d.ft||'wood')+fld('fx','Extra fence (LF)',d.fx)+fld('g','Gates',d.g,'numeric')+'</div>'+
+          '<div class="row" style="gap:6px">'+sel('dt','Deck',[['pt','Pressure-treated'],['comp','Composite']],d.dt||'pt')+fld('dx','Extra deck (sq ft)',d.dx)+fld('st','Stair steps',d.st,'numeric')+'</div>'+
+          '<div class="row" style="gap:6px">'+fld('rl','Railing LF (empty = from drawing)',d.rl)+'</div>';}
+      ov.querySelector('#cfm').innerHTML=h;}
+    function drawOut(){var c=countCalc(kind,d);
+      ov.querySelector('#cout').innerHTML=c.rows.map(function(r){return kv(esc(r[0]),esc(r[1]));}).join('')+'<label class="f">Add to the quote</label><div class="adds">'+c.outs.map(function(o){var b=(book(o.t).items||[]).filter(function(it){return it.key===o.key;})[0];
+        return '<div class="add"><label><input type="checkbox" data-co="'+o.k+'"'+(use.indexOf(o.k)>=0?' checked':'')+(b?'':' disabled')+'><span>'+esc(o.label)+'<small>'+o.qty.toLocaleString()+' '+esc(o.u)+(b?' × '+money(b.price)+' = '+money(o.qty*b.price):' · not in the '+esc(TRADE_LABEL[o.t].toLowerCase())+' price book')+'</small></span></label></div>';}).join('')+'</div>';}
+    drawForm();drawOut();
+    var sh=ov.querySelector('.sheet');
+    sh.addEventListener('input',function(ev){var t=ev.target;
+      if(t.hasAttribute('data-cf')&&t.tagName!=='SELECT'){d[t.getAttribute('data-cf')]=cnum(t.value);drawOut();return;}
+      var l=t.getAttribute('data-cl');if(l&&t.type!=='checkbox'){var k=t.getAttribute('data-ck');d[l][+t.getAttribute('data-ci')][k]=k==='n'?t.value:cnum(t.value);drawOut();}});
+    sh.addEventListener('change',function(ev){var t=ev.target;
+      if(t.tagName==='SELECT'&&t.hasAttribute('data-cf')){var k=t.getAttribute('data-cf');d[k]=k==='walls'?Number(t.value):t.value;drawOut();return;}
+      var l=t.getAttribute('data-cl');if(l&&t.type==='checkbox'){d[l][+t.getAttribute('data-ci')][t.getAttribute('data-ck')]=t.checked;drawOut();return;}
+      var ok=t.getAttribute('data-co');if(ok){use=use.filter(function(k){return k!==ok;});if(t.checked)use.push(ok);}});
+    sh.addEventListener('click',function(ev){var rm=ev.target.closest('[data-crm]');if(rm){var p=rm.getAttribute('data-crm').split(':');d[p[0]].splice(+p[1],1);drawForm();drawOut();return;}
+      var ad=ev.target.closest('[data-cadd]');if(ad){var l=ad.getAttribute('data-cadd');d[l]=d[l]||[];d[l].push(l==='runs'?{n:'Run '+(d[l].length+1),lf:'',b:true,w:false}:{n:'Closet '+(d[l].length+1),lf:''});drawForm();drawOut();return;}
+      if(ev.target.closest('#cyard'))yardTool(d,place||{},function(){drawForm();drawOut();});});
+    ov.querySelector('#csv').onclick=function(){var c=countCalc(kind,d);
+      if(!c.outs.some(function(o){return o.qty>0;})){toast(kind==='o'?'Draw or type a fence or deck first.':'Type at least one measurement first.',true);return;}
+      d.use=use;d.sum=c.sum;var next=fillOuts(items,c.outs,use,before),r=Object.assign({list:[],use:[]},rooms||{});r[kind]=d;closeSheet();done(r,next);};
+  }
+  /* satellite photo: tap points for a fence line, or around a deck (closes on its own) */
+  function yardTool(d,place,done){
+    if(!canMeasureHere()){toast('Add the Google Maps key under Quote prices first.',true);return;}
+    var st={mode:'fence',cur:[],fence:JSON.parse(JSON.stringify(d.fence||[])),deck:JSON.parse(JSON.stringify(d.deck||[])),map:null,objs:[],curObjs:[]},R=20902231,rad=Math.PI/180;
+    function poly(pts){var lat0=pts[0][0]*rad,a=0,per=0,edge=0,xy=pts.map(function(p){return [(p[1]-pts[0][1])*rad*R*Math.cos(lat0),(p[0]-pts[0][0])*rad*R];});
+      for(var i=0;i<xy.length;i++){var j=(i+1)%xy.length;a+=xy[i][0]*xy[j][1]-xy[j][0]*xy[i][1];var e=mtFeet([pts[i],pts[j]]);per+=e;if(e>edge)edge=e;}
+      return {area:Math.round(Math.abs(a)/2),per:Math.round(per*10)/10,edge:Math.round(edge*10)/10};}
+    var ov=document.createElement('div');ov.className='mz';ov.id='mzy';ov.style.zIndex='60';
+    ov.innerHTML='<div class="mz-top"><button type="button" class="mz-btn" data-y="close" aria-label="Close">'+ICON.x+'</button><b>Fence & deck</b><button type="button" class="mz-btn mz-save" data-y="save">Done</button></div>'+
+      '<div class="mz-map" id="mzymap"><div class="mz-load">Loading satellite photo…</div></div>'+
+      '<div class="mz-panel"><div class="mz-types"><button type="button" data-ym="fence"><i style="background:#FFB020"></i>Fence line</button><button type="button" data-ym="deck"><i style="background:#3DD68C"></i>Deck outline</button></div>'+
+      '<div class="mz-read" id="mzyread"></div><div class="mz-acts"><button type="button" class="btn ghost" data-y="undo">Undo point</button><button type="button" class="btn" data-y="finish">Finish</button></div><div id="mzylist"></div></div>';
+    document.body.appendChild(ov);document.body.style.overflow='hidden';
+    function g(id){return ov.querySelector('#'+id);}
+    function ll(p){return {lat:p[0],lng:p[1]};}
+    function clear(a){a.forEach(function(o){o.setMap(null);});a.length=0;}
+    function color(m){return m==='deck'?'#3DD68C':'#FFB020';}
+    function draw(){if(!st.map)return;clear(st.objs);clear(st.curObjs);
+      st.fence.forEach(function(f){st.objs.push(new google.maps.Polyline({map:st.map,path:f.pts.map(ll),strokeColor:color('fence'),strokeWeight:4,clickable:false}));});
+      st.deck.forEach(function(f){st.objs.push(new google.maps.Polygon({map:st.map,paths:f.pts.map(ll),strokeColor:color('deck'),strokeWeight:3,fillColor:color('deck'),fillOpacity:.25,clickable:false}));});
+      if(st.cur.length>1)st.curObjs.push(new google.maps.Polyline({map:st.map,path:st.cur.map(ll).concat(st.mode==='deck'&&st.cur.length>2?[ll(st.cur[0])]:[]),strokeColor:color(st.mode),strokeWeight:3,clickable:false}));
+      st.cur.forEach(function(p,i){var mk=new google.maps.Marker({map:st.map,position:ll(p),draggable:true,icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#fff',fillOpacity:1,strokeColor:color(st.mode),strokeWeight:3}});
+        mk.addListener('dragend',function(e){st.cur[i]=[e.latLng.lat(),e.latLng.lng()];refresh();});st.curObjs.push(mk);});}
+    function refresh(){var n=st.cur.length,t='';
+      if(st.mode==='fence')t=n?'<b>Fence:</b> '+n+' point'+(n===1?'':'s')+(n>1?' · <b>'+Math.round(mtFeet(st.cur))+' ft</b>':' · tap the next corner'):'Tap along the fence line, one tap per corner or end.';
+      else t=n?'<b>Deck:</b> '+n+' corner'+(n===1?'':'s')+(n>2?' · <b>'+poly(st.cur).area+' sq ft</b>':' · tap the next corner'):'Tap each corner of the deck, going around it.';
+      g('mzyread').innerHTML=t;
+      Array.prototype.forEach.call(ov.querySelectorAll('[data-ym]'),function(b){b.classList.toggle('on',b.getAttribute('data-ym')===st.mode);});
+      var fl=st.fence.reduce(function(s,f){return s+f.len;},0),da=st.deck.reduce(function(s,f){return s+f.area;},0);
+      g('mzylist').innerHTML='<div class="mz-ls">'+st.fence.map(function(f,i){return '<div class="mz-li"><i style="background:'+color('fence')+'"></i><span>Fence line</span><b>'+Math.round(f.len)+' ft</b><button type="button" data-yd="fence:'+i+'" aria-label="Delete">'+ICON.x+'</button></div>';}).join('')+
+        st.deck.map(function(f,i){return '<div class="mz-li"><i style="background:'+color('deck')+'"></i><span>Deck</span><b>'+f.area+' sq ft</b><button type="button" data-yd="deck:'+i+'" aria-label="Delete">'+ICON.x+'</button></div>';}).join('')+'</div>'+
+        (fl||da?'<p class="mz-tot">'+(fl?'Fence '+Math.round(fl)+' ft':'')+(fl&&da?' · ':'')+(da?'Deck '+Math.round(da)+' sq ft':'')+'</p>':'');
+      draw();}
+    function finish(){var pts=st.cur.map(function(p){return [Math.round(p[0]*1e7)/1e7,Math.round(p[1]*1e7)/1e7];});
+      if(st.mode==='fence'){if(pts.length<2){toast('Tap both ends of the fence first.',true);return false;}st.fence.push({pts:pts,len:Math.round(mtFeet(pts)*10)/10});}
+      else{if(pts.length<3){toast('Tap at least 3 corners of the deck.',true);return false;}var p=poly(pts);st.deck.push({pts:pts,area:p.area,per:p.per,edge:p.edge});}
+      st.cur=[];refresh();return true;}
+    function close(){ov.remove();document.body.style.overflow='';}
+    ov.addEventListener('click',function(e){var m=e.target.closest('[data-ym]');if(m){if(st.cur.length&&!finish())return;st.mode=m.getAttribute('data-ym');refresh();return;}
+      var dl=e.target.closest('[data-yd]');if(dl){var p=dl.getAttribute('data-yd').split(':');st[p[0]].splice(+p[1],1);refresh();return;}
+      var z=e.target.closest('[data-y]');if(!z)return;var a=z.getAttribute('data-y');
+      if(a==='undo'){st.cur.pop();refresh();return;}
+      if(a==='finish'){finish();return;}
+      if(a==='save'){if(st.cur.length&&!finish())return;d.fence=st.fence;d.deck=st.deck;close();done();return;}
+      if(a==='close'){close();}});
+    refresh();
+    loadMaps().then(function(){if(place.lat&&place.lng)return {lat:+place.lat,lng:+place.lng};var all=st.fence.concat(st.deck);if(all.length)return ll(all[0].pts[0]);
+      if(!place.address)throw new Error('Add the address first.');return findPlace(place.address).then(function(p){return {lat:p.location.lat(),lng:p.location.lng()};});
+    }).then(function(c){if(!document.getElementById('mzy'))return;var el=g('mzymap');el.innerHTML='';
+      st.map=new google.maps.Map(el,{mapTypeId:'satellite',center:c,zoom:20,tilt:0,heading:0,disableDefaultUI:true,zoomControl:true,gestureHandling:'greedy',clickableIcons:false,draggableCursor:'crosshair'});
+      st.map.addListener('click',function(e){st.cur.push([e.latLng.lat(),e.latLng.lng()]);refresh();});
+      var all=st.fence.concat(st.deck);if(all.length){var b=new google.maps.LatLngBounds();all.forEach(function(f){f.pts.forEach(function(p){b.extend(ll(p));});});st.map.fitBounds(b,60);}
+      refresh();
+    }).catch(function(er){var el=g('mzymap');if(el)el.innerHTML='<div class="mz-load">'+esc((er&&er.message)||'Couldn’t load the satellite photo.')+'</div>';});
   }
   /* cost split per unit: materials, labor, subcontractor, other. An older one-number cost counts as other. */
   function split(it){var o={mat:Number(it.mat)||0,lab:Number(it.lab)||0,sub:Number(it.sub)||0,oth:Number(it.oth)||0};if(!(o.mat||o.lab||o.sub||o.oth)&&Number(it.cost)>0)o.oth=Number(it.cost);o.cost=o.mat+o.lab+o.sub+o.oth;return o;}
@@ -3242,7 +3391,8 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       (sub<tot?kv('Minimum charge',''):'')+
       '<div class="tot"><div class="kv grand"><span>'+((x.chosen||[]).length?'Items total':'Total')+'</span><b class="money">'+money(tot)+'</b></div>'+profitLine(items,tot,true)+'</div>'+
       (x.status==='new'&&!x.signedAt?'<button class="btn ghost block mt" data-m="edititems">Edit items</button>':'')+'</div>'+
-      (roomsFor(tradeOf(x))&&(x.rooms||(x.status==='new'&&!x.signedAt))?'<div class="card">'+roomsCardBody(x.rooms,x.status==='new'&&!x.signedAt?'qrooms':'')+'</div>':'');
+      (roomsFor(tradeOf(x))&&(x.rooms||(x.status==='new'&&!x.signedAt))?'<div class="card">'+roomsCardBody(x.rooms,x.status==='new'&&!x.signedAt?'qrooms':'')+'</div>':'')+
+      (countKind(tradeOf(x))&&((x.rooms&&x.rooms[countKind(tradeOf(x))])||(x.status==='new'&&!x.signedAt))?'<div class="card">'+countCardBody(x.rooms,tradeOf(x),x.status==='new'&&!x.signedAt?'qcount':'')+'</div>':'');
   }
   function approveRepairCard(x){
     return '<div class="card"><h2>Approve job</h2><p class="sub">Approving adds the job to Photos and starts its materials list and job costs. If the customer signs online, this happens on its own.</p>'+
@@ -3580,6 +3730,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='editcust'){editCustSheet();return;}
     if(a==='ghlsync'){call('ghlSyncNow',{id:M.qid}).then(function(r){mergeQ(r);render();toast('Synced to GoHighLevel');}).catch(function(e){load().then(render);err(e);});return;}
     if(a==='edititems'){editItemsSheet();return;}
+    if(a==='qcount'){var xc=q();countSheet(xc.rooms,xc.items||[],tradeOf(xc),{lat:xc.lat,lng:xc.lng,address:xc.address},function(rooms,items){saveQ({rooms:rooms,items:items,contractPrice:repairTotal(items,tradeOf(xc))},'Count saved');});return;}
     if(a==='qrooms'){var xr=q();roomsSheet(xr.rooms,xr.items||[],tradeOf(xr),function(rooms,items){saveQ({rooms:rooms,items:items,contractPrice:repairTotal(items,tradeOf(xr))},'Rooms saved');});return;}
     if(a==='approverep'){t.disabled=true;saveQ({status:'approved'},'Approved').then(function(){M.qfilter='approved';call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);});}).catch(function(){t.disabled=false;});return;}
     if(a==='propose'){proposeSheet();return;}
