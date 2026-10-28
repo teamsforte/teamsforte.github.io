@@ -331,7 +331,12 @@
     if (o.layout === 'showcase') o.theme = el.getAttribute('data-theme') === 'dark' ? 'show' : 'show tfg--lt';
     if (o.theme === 'show tfg--lt' && o.trust == null) o.trust = 'none';
     /* On team-forte.com, galleries outside the Gallery page link to it */
-    if (!o.more && /(^|\.)team-forte\.com$/i.test(location.hostname) && !/^\/gallery\/?$/i.test(location.pathname)) o.more = '/gallery';
+    /* On team-forte.com, galleries link to the full gallery: roofing work -> /gallery, home improvement work -> /home-improvement */
+    if (!o.more && /(^|\.)team-forte\.com$/i.test(location.hostname)) {
+      var roofish = o.service === 'all' || o.service === 'roofing';
+      var full = roofish ? '/gallery' : '/home-improvement#work';
+      if (location.pathname.replace(/\/+$/, '') !== full.split('#')[0]) o.more = full;
+    }
     var root = document.createElement('div');
     root.className = 'tfg tfg--' + o.theme;
     el.innerHTML = '';
@@ -349,7 +354,9 @@
       shownSig = sig;
       var r2 = document.createElement('div'); r2.className = root.className; el.replaceChild(r2, root); root = r2;
       var jobs = (d && d.jobs) || [];
-      if (o.service !== 'all') jobs = jobs.filter(function (j) { return String(j.service).toLowerCase() === o.service; });
+      /* data-service: all | roofing | home-improvement (every trade except roofing) | one trade */
+      if (o.service === 'home-improvement') jobs = jobs.filter(function (j) { return String(j.service).toLowerCase() !== 'roofing'; });
+      else if (o.service !== 'all') jobs = jobs.filter(function (j) { return String(j.service).toLowerCase() === o.service; });
       if (o.featured) {
         var f = jobs.filter(function (j) { return j.featured; });
         if (f.length) jobs = f;
@@ -404,7 +411,7 @@
         };
       } else var draw = function () {
         var list = st.tab === 'All' ? jobs : jobs.filter(function (j) { return j.service === st.tab; });
-        var showTabs = o.tabs && o.service === 'all' && !o.featured && services.length > 1;
+        var showTabs = o.tabs && (o.service === 'all' || o.service === 'home-improvement') && !o.featured && services.length > 1;
         var h = head(o);
         if (showTabs) {
           h += '<div class="tfg-tabs" role="tablist">' + ['All'].concat(services).map(function (s) {

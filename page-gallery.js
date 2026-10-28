@@ -26,6 +26,9 @@
     '.tfp-dd:hover .tfp-menu,.tfp-dd:focus-within .tfp-menu,.tfp-dd.open .tfp-menu{display:block}.tfp-nav .tfp-menu a{display:block;color:#13202F;font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;padding:10px 12px;border-radius:8px}.tfp-nav .tfp-menu a:hover{background:#FFF1EF;color:#E23E2B}' +
     '.tfp-menu a.all{border-bottom:1px solid #EEF0F3;border-radius:8px 8px 0 0;margin-bottom:4px}.tfp-hi{display:none!important}' +
     '.tfp-mbar{display:none}' +
+    '.tfp-hiband{max-width:1232px;margin:8px auto 28px;padding:18px 22px;border:1px solid rgba(255,255,255,.14);border-radius:14px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;color:#D5DCE4;font-size:15px}' +
+    '.tfp-hiband a{color:#fff;font-weight:800;background:#FF5440;padding:11px 16px;border-radius:9px}.tfp-hiband a:hover{background:#E23E2B}' +
+    '@media(max-width:1280px){.tfp-hiband{margin-left:24px;margin-right:24px}}@media(max-width:700px){.tfp-hiband{margin-left:16px;margin-right:16px}}' +
     '.tfp-call{background:#FF5440;color:#fff!important;font-size:14px;font-weight:800;padding:13px 20px;border-radius:8px;white-space:nowrap}.tfp-call:hover{background:#E23E2B}' +
     '.tfp-main{padding:28px 0 8px}.tfp-main .tfg--show{border-radius:0;max-width:none;padding-left:max(24px,calc((100vw - 1232px)/2));padding-right:max(24px,calc((100vw - 1232px)/2))}' +
     '.tfp-main .tfg-trust{margin-left:min(-24px,calc((1232px - 100vw)/2));margin-right:min(-24px,calc((1232px - 100vw)/2));padding-left:max(24px,calc((100vw - 1232px)/2));padding-right:max(24px,calc((100vw - 1232px)/2))}' +
@@ -49,8 +52,9 @@
     '<header class="tfp-top"><div class="tfp-bar"><a class="tfp-logo" href="/" aria-label="Team Forte home"><img src="' + LOGO + '" alt="Team Forte Roofing" width="186" height="48"></a>' +
       '<nav class="tfp-nav" aria-label="Main">' + NAV.map(function (n) { if (typeof n[1] !== 'string') return '<div class="tfp-dd"><button type="button" aria-haspopup="true">' + n[0] + '</button><div class="tfp-menu"><a class="all" href="/home-improvement">All home improvement services</a>' + n[1].map(function (c) { return '<a href="' + c[1] + '">' + c[0].replace('&', '&amp;') + '</a>'; }).join('') + '</div></div><a class="tfp-hi" href="/home-improvement">' + n[0] + '</a>'; return '<a href="' + n[1] + '"' + (n[1] === here ? ' class="on" aria-current="page"' : '') + '>' + n[0] + '</a>'; }).join('') + '</nav>' +
       '<a class="tfp-call" href="' + TEL + '">☎ ' + PHONE + '</a></div></header>' +
-    '<main class="tfp-main"><div class="tf-gallery" data-theme="dark" data-eyebrow="Our Work" data-h="1" data-title="Roofing Projects Across Connecticut" data-cta-href="/contact" data-cta-text="Request a Free Roof Inspection" ' +
-      'data-subtitle="Take a look at our recent roofing and home improvement projects across Connecticut. Quality work, clean finishes, and lasting results — that’s the Team Forte difference." data-limit="24"></div></main>' +
+    '<main class="tfp-main"><div class="tf-gallery" data-theme="dark" data-service="roofing" data-eyebrow="Our Work" data-h="1" data-title="Roofing Projects Across Connecticut" data-cta-href="/contact" data-cta-text="Request a Free Roof Inspection" ' +
+      'data-subtitle="Take a look at our recent roofing and home improvement projects across Connecticut. Quality work, clean finishes, and lasting results — that’s the Team Forte difference." data-limit="24"></div>' +
+      '<div class="tfp-hiband"><span>Kitchens, bathrooms, shower doors, carpentry and more</span><a href="/home-improvement#work">See home improvement projects \u2192</a></div></main>' +
     '<footer class="tfp-foot"><span>© ' + new Date().getFullYear() + ' Team Forte · GR Brothers LLC</span><span>Registered &amp; Insured · CT HIC.0706595 · Certificate of insurance on request</span><span>Based in Berlin, CT · Serving all of Connecticut</span>' +
       '<a href="' + TEL + '">' + PHONE + '</a><a href="mailto:info@team-forte.com">info@team-forte.com</a>' +
       '<a href="/contact">Contact</a><span class="sp"></span><a href="/privacy-policy">Privacy Policy</a><a href="/terms-of-service">Terms of Service</a></footer>' +
