@@ -27,7 +27,7 @@
     var lis = ul.querySelectorAll(':scope > li');
     if (!lis.length || ul.querySelector('.tfn-dd')) return;
     var after = null;
-    for (var i = 0; i < lis.length; i++) { var a = lis[i].querySelector('a'); if (a && /services/i.test(a.textContent)) { after = lis[i]; break; } }
+    for (var i = 0; i < lis.length; i++) { var a = lis[i].querySelector('a'); if (a && /^(roofing|services)$/i.test(a.textContent.trim())) { after = lis[i]; break; } }
     if (!after) after = lis[0];
     var tpl = after.querySelector('a');
     var li = document.createElement('li');
