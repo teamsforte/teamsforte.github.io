@@ -59,7 +59,7 @@
     var pre = el.getAttribute('data-trade') || '', title = el.getAttribute('data-title') || 'Request a visit';
     var photos = [], t0 = Date.now();
     el.innerHTML = '<form class="tfr" novalidate><h3>' + esc(title) + '</h3><p class="sub">Tell us about the project. We\u2019ll get back to you to set up a time.</p>' +
-      '<label for="tfr-c">What do you need?</label><select id="tfr-c" name="trade">' + CATS.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === pre ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('') + '</select>' +
+      '<label for="tfr-c">What do you need?</label><select id="tfr-c" name="trade" required>' + (pre ? '' : '<option value="" selected disabled>Choose a service\u2026</option>') + CATS.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === pre ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('') + '</select>' +
       '<label for="tfr-d">Tell us a bit more</label><textarea id="tfr-d" name="details" maxlength="1000"></textarea>' +
       '<label>Photos <span class="opt">\u00b7 optional, up to 4</span></label><div class="ph"></div><label class="add" style="margin-top:8px">+ Add photos<input type="file" accept="image/*" multiple></label>' +
       '<label for="tfr-a">Project address</label><input id="tfr-a" name="address" autocomplete="street-address" placeholder="Street, town">' +
@@ -82,11 +82,12 @@
       e.preventDefault(); er.textContent = '';
       var v = function (n) { var x = f.elements[n]; return x ? (x.type === 'checkbox' ? x.checked : String(x.value || '').trim()) : ''; };
       var d = { trade: v('trade'), details: v('details'), address: v('address'), name: v('name'), phone: v('phone'), email: v('email'), timing: v('timing'), texts: v('texts'), hp: v('website'), photos: photos, page: location.pathname, secs: Math.round((Date.now() - t0) / 1000) };
+      if (!d.trade) { er.textContent = 'Please choose what you need.'; return; }
       if (d.name.length < 2) { er.textContent = 'Please add your name.'; return; }
       if (d.phone.replace(/\D/g, '').length < 10 && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { er.textContent = 'Please add a phone number or email so we can reach you.'; return; }
       if (d.address.length < 5) { er.textContent = 'Please add the address of the project.'; return; }
       var b = f.querySelector('.go'); b.disabled = true; b.textContent = 'Sending\u2026';
-      fetch(EXEC + '?r=request', { method: 'POST', body: JSON.stringify(d) }).then(function (r) { return r.json(); }).then(function (r) {
+      fetch(EXEC + '?r=request', { method: 'POST', body: JSON.stringify(d), credentials: 'omit' }).then(function (r) { return r.json(); }).then(function (r) {
         if (!r || !r.ok) throw new Error((r && r.error) || 'Something went wrong.');
         try { if (window.fbq) window.fbq('track', 'Lead', { content_category: d.trade }); } catch (x) { /* optional */ }
         el.innerHTML = '<div class="tfr"><div class="ok"><div class="chk">\u2713</div><b>Thanks, ' + esc(d.name.split(' ')[0]) + '!</b>We got your request and will be in touch soon to set up a visit.' + (d.email ? ' A copy is on its way to your email.' : '') + '<br><a href="tel:+18608549335">Call ' + PHONE + '</a></div></div>';

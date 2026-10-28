@@ -1,13 +1,15 @@
 /* Team Forte main-site menu add-on (team-forte.com home page and other GoHighLevel pages with the built-in menu).
    GoHighLevel holds only: <script src="https://teamsforte.github.io/nav.js"></script>
-   Adds a "Home Improvement" dropdown after "Services" in the built-in Navigation Menu (desktop and the phone menu).
+   Adds a "Home Improvement" dropdown after "Roofing" in the built-in Navigation Menu. Desktop: dropdown (first item = the
+   /home-improvement overview). Phone menu: one "Home Improvement" link to the overview, so the menu stays short.
+   Also points any "Contact" menu item at /contact (the one contact page).
    Links match landing.js (one page per trade). Edit ITEMS here; no page-builder change needed. */
 (function () {
   'use strict';
   if (window.__tfNav) return; window.__tfNav = 1;
   var ITEMS = [['Flooring', '/flooring'], ['Kitchens & Cabinets', '/kitchens-cabinets'], ['Bath & Shower Doors', '/bathroom-shower-doors'], ['Painting', '/painting'],
     ['Carpentry & Closets', '/carpentry-closets'], ['Fences, Decks & Barns', '/fences-decks-barns'], ['Handyman', '/handyman']];
-  var LABEL = 'Home Improvement';
+  var LABEL = 'Home Improvement', OVERVIEW = '/home-improvement', CONTACT = '/contact';
   var CSS = '' +
     '.tfn-dd{position:relative}' +
     '.tfn-dd>a.tfn-btn:after{content:"";display:inline-block;margin-left:6px;border:4px solid transparent;border-top-color:currentColor;vertical-align:-1px}' +
@@ -15,9 +17,10 @@
     '.tfn-dd:hover>.tfn-menu,.tfn-dd:focus-within>.tfn-menu,.tfn-dd.open>.tfn-menu{display:block}' +
     '.tfn-menu a{display:block!important;color:#13202F!important;font:700 14px Montserrat,Arial,sans-serif!important;letter-spacing:0!important;text-transform:none!important;padding:10px 12px!important;border-radius:8px;white-space:nowrap;text-decoration:none!important;background:none}' +
     '.tfn-menu a:hover{background:#FFF1EF!important;color:#E23E2B!important}' +
+    '.tfn-menu a.tfn-all{border-bottom:1px solid #EEF0F3;border-radius:8px 8px 0 0!important;margin-bottom:4px}' +
     /* phone menu (GoHighLevel opens .nav-menu-body): show the trades as an indented list under the heading */
     '.nav-menu-body .tfn-menu,.tfn-flat .tfn-menu{display:block;position:static;min-width:0;background:none;box-shadow:none;border-radius:0;padding:0 0 6px 16px}' +
-    '.nav-menu-body .tfn-dd>a.tfn-btn:after,.tfn-flat>a.tfn-btn:after{display:none}' +
+    '.nav-menu-body .tfn-dd>a.tfn-btn:after,.tfn-flat>a.tfn-btn:after{display:none}.tfn-flat>.tfn-menu{display:none!important}' +
     '.nav-menu-body .tfn-menu a,.tfn-flat .tfn-menu a{color:inherit!important;font-weight:600!important;font-size:15px!important;padding:8px 10px!important;white-space:normal}' +
     '.nav-menu-body .tfn-menu a:hover,.tfn-flat .tfn-menu a:hover{background:none!important;color:#FF5440!important}';
 
@@ -33,23 +36,29 @@
     var li = document.createElement('li');
     li.className = (after.className || 'nav-menu-item') + ' tfn-dd';
     var btn = document.createElement('a');
-    btn.href = '#'; btn.className = ((tpl && tpl.className) || '') + ' tfn-btn';
+    btn.href = OVERVIEW; btn.className = ((tpl && tpl.className) || '') + ' tfn-btn';
     btn.setAttribute('role', 'button'); btn.setAttribute('aria-haspopup', 'true'); btn.setAttribute('aria-expanded', 'false');
     btn.textContent = LABEL;
     var here = location.pathname.replace(/\/+$/, '');
     var menu = document.createElement('div'); menu.className = 'tfn-menu';
-    menu.innerHTML = ITEMS.map(function (it) { return '<a href="' + it[1] + '"' + (it[1] === here ? ' aria-current="page"' : '') + '>' + esc(it[0]) + '</a>'; }).join('');
-    li.appendChild(btn); li.appendChild(menu);
-    if (ul.closest && ul.closest('.nav-menu-body')) li.classList.add('tfn-flat');
+    menu.innerHTML = '<a class="tfn-all" href="' + OVERVIEW + '">All home improvement services</a>' + ITEMS.map(function (it) { return '<a href="' + it[1] + '"' + (it[1] === here ? ' aria-current="page"' : '') + '>' + esc(it[0]) + '</a>'; }).join('');
+    var flat = !!(ul.closest && ul.closest('.nav-menu-body'));
+    li.appendChild(btn);
+    if (flat) { li.classList.add('tfn-flat'); btn.removeAttribute('role'); btn.removeAttribute('aria-haspopup'); btn.removeAttribute('aria-expanded'); }
+    else li.appendChild(menu);
     btn.addEventListener('click', function (e) {
+      if (li.classList.contains('tfn-flat')) return; /* phone menu: plain link to the overview page */
       e.preventDefault(); e.stopPropagation();
-      if (li.classList.contains('tfn-flat')) return;
       var on = !li.classList.contains('open'); li.classList.toggle('open', on); btn.setAttribute('aria-expanded', on ? 'true' : 'false');
     });
     after.parentNode.insertBefore(li, after.nextSibling);
   }
 
-  function scan() { var uls = document.querySelectorAll('ul.nav-menu'); for (var i = 0; i < uls.length; i++) build(uls[i]); }
+  function fixContact() {
+    var as = document.querySelectorAll('ul.nav-menu a');
+    for (var i = 0; i < as.length; i++) if (/^contact$/i.test(as[i].textContent.trim()) && as[i].getAttribute('href') !== CONTACT) as[i].setAttribute('href', CONTACT);
+  }
+  function scan() { var uls = document.querySelectorAll('ul.nav-menu'); for (var i = 0; i < uls.length; i++) build(uls[i]); fixContact(); }
 
   function start() {
     if (!document.getElementById('tfn-css')) { var st = document.createElement('style'); st.id = 'tfn-css'; st.textContent = CSS; document.head.appendChild(st); }

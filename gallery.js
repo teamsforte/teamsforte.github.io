@@ -162,6 +162,7 @@
     '.tfg-sct{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}' +
     '.tfg-sct b{font-size:15px;font-weight:800;line-height:1.25;transition:color .15s;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}' +
     '.tfg-sct small{font-size:13px;color:var(--tfg-muted);line-height:1.2}' +
+    '.tfg-sct .tfg-scope{font-size:12.5px;line-height:1.35;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}' +
     '.tfg-scn{flex:none;font-size:12px;font-weight:700;color:var(--tfg-muted);white-space:nowrap}' +
     '.tfg--show .tfg-more{margin-top:20px}' +
     '.tfg--show .tfg-btn--ghost{color:#fff;border-color:rgba(255,255,255,.3)}.tfg--show .tfg-btn--ghost:hover{color:#fff}' +
@@ -256,6 +257,13 @@
     var m = String(d || '').split('-');
     return m.length === 2 ? (MONTHS[(+m[1] || 1) - 1] + ' ' + m[0]) : '';
   }
+  /* First sentence of the job description, short, no emoji: the brief scope shown on cards */
+  function scope(j) {
+    var d = String(j.description || '').replace(/[\uD800-\uDFFF\u2600-\u27BF\uFE0F]/g, '').replace(/\s+/g, ' ').trim();
+    if (!d) return '';
+    d = d.split(/([.!?])\s/)[0].replace(/[.!?]+$/, '');
+    return d.length > 95 ? d.slice(0, 92).replace(/\s+\S*$/, '') + '\u2026' : d;
+  }
   function meta(j) { return [j.town, month(j.date)].filter(Boolean).join(' \u00b7 '); }
   function byStage(j, s) { return j.photos.filter(function (p) { return p.stage === s; }); }
   function pairOf(j) {
@@ -269,13 +277,21 @@
     if (document.getElementById('tfg-css')) return;
     var st = document.createElement('style');
     st.id = 'tfg-css';
-    st.textContent = CSS;
+    st.textContent = CSS.replace(/([^{}]*\.tfg-head h2[^{}]*)\{/g, function (m, sel) { return sel + ',' + sel.replace(/\.tfg-head h2/g, '.tfg-head h1') + '{'; });
     (document.head || document.documentElement).appendChild(st);
   }
 
   function loadData() {
     if (dataPromise) return dataPromise;
-    dataPromise = new Promise(function (resolve, reject) {
+    /* Visitors signed into several Google accounts get a /u/N/ redirect and a 503 on the JSONP call, so fetch without cookies first. */
+    var viaFetch = window.fetch ? fetch(EXEC + '?r=data', { credentials: 'omit' }).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function (d) { if (!d || !d.jobs) throw new Error('bad data'); return d; }) : Promise.reject(new Error('no fetch'));
+    dataPromise = viaFetch.catch(function () { return jsonp(); });
+    dataPromise.catch(function () { dataPromise = null; });
+    return dataPromise;
+  }
+  function jsonp() {
+    return new Promise(function (resolve, reject) {
       var cb = '__tfg' + Date.now().toString(36) + Math.floor(Math.random() * 1e6);
       var s = document.createElement('script');
       var timer = setTimeout(function () { done(); reject(new Error('timeout')); }, 25000);
@@ -286,8 +302,6 @@
       s.src = EXEC + '?r=data&callback=' + cb;
       (document.head || document.documentElement).appendChild(s);
     });
-    dataPromise.catch(function () { dataPromise = null; });
-    return dataPromise;
   }
 
   /* ---------------- section ---------------- */
@@ -301,6 +315,7 @@
       limit: parseInt(el.getAttribute('data-limit'), 10) || (el.getAttribute('data-featured') === 'true' ? 6 : 9),
       tabs: el.getAttribute('data-tabs') !== 'false',
       title: el.getAttribute('data-title') || '',
+      hTag: el.getAttribute('data-h') === '1' ? 'h1' : 'h2',
       subtitle: (el.getAttribute('data-subtitle') || '').replace(/Tap a job to see the before and after\.?/i, 'Slide any photo to see the before and after.'),
       more: el.getAttribute('data-more-href') || '',
       ctaText: el.getAttribute('data-cta-text') || 'Get a Free Inspection',
@@ -370,7 +385,7 @@
         var draw = function () {
           var list = pick(st.tab);
           var h = (cover ? '<div class="tfg-bg" style="background-image:url(&quot;' + src(cover, 1600) + '&quot;)"></div>' : '') +
-            '<div class="tfg-head"><span class="tfg-eye">' + esc(o.eyebrow) + '</span>' + (o.title ? '<h2>' + accentTitle(o) + '</h2>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
+            '<div class="tfg-head"><span class="tfg-eye">' + esc(o.eyebrow) + '</span>' + (o.title ? '<' + o.hTag + '>' + accentTitle(o) + '</' + o.hTag + '>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
           if (o.tabs && filters.length > 2) {
             h += '<div class="tfg-tabs" role="tablist">' + filters.map(function (f) {
               return '<button type="button" class="tfg-tab" role="tab" aria-selected="' + (st.tab === f.key) + '" data-tab="' + esc(f.key) + '">' + f.icon + esc(f.label) + '</button>';
@@ -487,13 +502,13 @@
 
   function head(o) {
     if (!o.title && !o.subtitle) return '';
-    return '<div class="tfg-head">' + (o.title ? '<h2>' + esc(o.title) + '</h2>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
+    return '<div class="tfg-head">' + (o.title ? '<' + (o.hTag || 'h2') + '>' + esc(o.title) + '</' + (o.hTag || 'h2') + '>' : '') + (o.subtitle ? '<p>' + esc(o.subtitle) + '</p>' : '') + '</div>';
   }
 
   function showCard(j) {
     var pair = pairOf(j), n = j.photos.length;
     var cap = '<button type="button" class="tfg-sc" data-job="' + esc(j.id) + '" aria-label="' + esc(j.title + (j.town ? ', ' + j.town : '') + '. View ' + n + ' photos') + '">' +
-      '<span class="tfg-sci">' + iconOf(j) + '</span><span class="tfg-sct"><b>' + esc(j.title) + '</b>' + (j.town ? '<small>' + esc(j.town) + '</small>' : '') + '</span>' +
+      '<span class="tfg-sci">' + iconOf(j) + '</span><span class="tfg-sct"><b>' + esc(j.title) + '</b>' + (j.town ? '<small>' + esc(j.town) + '</small>' : '') + (scope(j) ? '<small class="tfg-scope">' + esc(scope(j)) + '</small>' : '') + '</span>' +
       '<span class="tfg-scn">' + n + ' photo' + (n === 1 ? '' : 's') + ' \u2192</span></button>';
     if (pair) {
       return '<div class="tfg-card tfg-hasba tfg-wide">' +
@@ -532,7 +547,7 @@
     var n = j.photos.length;
     return '<button type="button" class="tfg-card" data-job="' + esc(j.id) + '" aria-label="' + esc(j.title + (j.town ? ' in ' + j.town : '') + ', view ' + n + ' photos') + '">' +
       '<div class="tfg-img">' + visual + '<span class="tfg-badge">' + esc(j.service) + '</span></div>' +
-      '<div class="tfg-body"><h3>' + esc(j.title) + '</h3>' + (meta(j) ? '<p class="tfg-meta">' + esc(meta(j)) + '</p>' : '') +
+      '<div class="tfg-body"><h3>' + esc(j.title) + '</h3>' + (meta(j) ? '<p class="tfg-meta">' + esc(meta(j)) + '</p>' : '') + (scope(j) ? '<p class="tfg-meta tfg-scope">' + esc(scope(j)) + '</p>' : '') +
       '<span class="tfg-view">' + (pair ? 'See before &amp; after' : 'View ' + n + ' photo' + (n === 1 ? '' : 's')) + ' \u2192</span></div></button>';
   }
 
@@ -547,7 +562,7 @@
         '<span class="tfg-ba-h"></span><span class="tfg-ba-k">' + arrows + '</span></div>' +
         '<span class="tfg-badge">' + esc(j.service) + '</span>' +
         '<button type="button" class="tfg-fsb" data-fsj="' + esc(j.id) + '" aria-label="' + esc('Full screen: ' + j.title) + '">' + ICON.full + '</button></div>' +
-      '<div class="tfg-body"><h3>' + esc(j.title) + '</h3>' + (meta(j) ? '<p class="tfg-meta">' + esc(meta(j)) + '</p>' : '') +
+      '<div class="tfg-body"><h3>' + esc(j.title) + '</h3>' + (meta(j) ? '<p class="tfg-meta">' + esc(meta(j)) + '</p>' : '') + (scope(j) ? '<p class="tfg-meta tfg-scope">' + esc(scope(j)) + '</p>' : '') +
       '<button type="button" class="tfg-view" data-job="' + esc(j.id) + '">View all ' + n + ' photo' + (n === 1 ? '' : 's') + ' →</button></div></div>';
   }
   function baSet(ba, p) {
