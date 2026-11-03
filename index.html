@@ -589,7 +589,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='27';
+var APP_VERSION='28';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -3512,6 +3512,18 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       '<button class="btn block mt" data-m="propose">'+(x.proposalSentAt?'Send again or present':'Present or send for signature')+'</button>'+
       (x.proposalSentAt?'<a class="btn ghost block mt" href="'+esc(proposalUrl(x))+'&v=0" target="_blank" rel="noopener">See what the customer sees</a>'+remindLine(x):'')+'</div>';
   }
+  /* per-job contract terms: payment plan, deposit %, written scope, not included, warranty */
+  function termsBlock(x){
+    var t=x.jobTerms||{},dp=(M.settings||{}).depositPct||0,ls=function(a){return esc((a||[]).join('\n'));};
+    return '<details class="mt"'+(x.jobTerms?' open':'')+'><summary class="f" style="cursor:pointer">Contract terms for this job <span class="hint" style="font-weight:500">· optional</span></summary>'+
+      '<div class="row"><div><label class="f">Payments</label><select class="in" id="ptp"><option value="">'+dp+'% / 30% / rest (standard)</option><option value="final"'+(t.plan==='final'?' selected':'')+'>Deposit + balance the day the job is completed</option></select></div>'+
+      '<div><label class="f">Deposit %</label><input class="in" id="ptd" inputmode="numeric" value="'+(t.depPct!=null?t.depPct:'')+'" placeholder="'+dp+'"></div></div>'+
+      '<label class="f">Work included <small>(one per line)</small></label><textarea class="in" id="pts" style="min-height:90px">'+ls(t.scope)+'</textarea>'+
+      '<label class="f">Not included <small>(one per line)</small></label><textarea class="in" id="ptx" style="min-height:70px">'+ls(t.excluded)+'</textarea>'+
+      '<label class="f">Warranty</label><textarea class="in" id="ptw" style="min-height:70px">'+esc(t.warranty||'')+'</textarea>'+
+      '<p class="hint">These go into the contract (Exhibit A and a Warranty section) and the customer’s proposal page, word for word.</p></details>';
+  }
+  function termsIn(ov){var v=function(id){return ov.querySelector(id).value;};return {plan:v('#ptp'),depPct:v('#ptd').trim()===''?null:Number(v('#ptd')),scope:v('#pts'),excluded:v('#ptx'),warranty:v('#ptw')};}
   function proposeSheet(){
     var x=q();var rep=x.type==='repair';var pick=x.pick>=0?x.pick:1;
     var sd0=addDaysYmd(todayYmd(),14),ed0=addDaysYmd(x.startDate||sd0,rep?0:2);
@@ -3524,6 +3536,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         '<label class="f">Color <span class="hint" style="font-weight:500">· optional, they can pick it in the plan</span></label><input class="in" id="pcl" value="'+esc(x.color||'')+'" placeholder="Estate Gray">')+
       '<div class="row"><div><label class="f">Start date</label><input class="in" type="date" id="psd" value="'+esc(x.startDate||sd0)+'"></div><div><label class="f">Completion date</label><input class="in" type="date" id="ped" value="'+esc(x.endDate||ed0)+'"></div></div>'+
       '<p class="hint">Connecticut contracts need both dates. Your best estimate; the contract says weather permitting.</p>'+
+      termsBlock(x)+
       addonsBlock(x)+levelsBlock(x)+
       (contractGaps().length?'<div class="note">Finish the contract setup first ('+esc(contractGaps().join(', '))+'): Spending › Settings › Contract.</div>':'')+
       '<label class="f">Customer email</label><input class="in" id="pem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
@@ -3531,7 +3544,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       '<div class="acts"><button class="btn ghost" id="pemail">Email it</button><button class="btn ghost" id="plink">Text or copy link</button></div><div id="pout"></div>');
     if(!rep)ov.querySelector('#ppk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#ppk button').forEach(function(z){var on=z===b;z.classList.toggle('on',on);z.querySelector('span').textContent=on?'Recommended':' ';});};
     function offersIn(){return [0,1,2].map(function(i){return Number(String(ov.querySelector('[data-of="'+i+'"]').value).replace(/[^\d.]/g,''))||0;});}
-    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim(),startDate:ov.querySelector('#psd').value,endDate:ov.querySelector('#ped').value,addons:addonsIn(ov)};var lv=levelsIn(ov,x);if(lv!==undefined)a.levels=lv;if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
+    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim(),startDate:ov.querySelector('#psd').value,endDate:ov.querySelector('#ped').value,addons:addonsIn(ov),jobTerms:termsIn(ov)};var lv=levelsIn(ov,x);if(lv!==undefined)a.levels=lv;if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
     function okPrices(a){if(!a.startDate||!a.endDate){toast('Add the start and completion dates.',true);return false;}if(a.endDate<a.startDate){toast('The completion date is before the start date.',true);return false;}if(rep)return true;if(!(a.contractPrice>0)){toast('Enter a price for the recommended option ('+PK[pick].label+').',true);return false;}return true;}
     ov.querySelector('#ppres').onclick=function(){var b=this;var a=args('present');if(!okPrices(a))return;b.disabled=true;var w=null;try{w=window.open('about:blank','_blank');}catch(e){}
       try{if(w)w.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#13202F;color:#C4CCD6;font:600 15px Montserrat,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center"><div><div style="font-size:22px;font-weight:800;letter-spacing:.08em;color:#fff">TEAM <span style="color:#FF5440">FORTE</span></div><p>Getting the '+planOf(x)+' ready…</p></div></body>');}catch(e){}

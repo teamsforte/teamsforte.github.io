@@ -255,7 +255,7 @@
     '#tfp .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch}#tfp .opt{position:relative;background:#fff;border:2px solid var(--line);border-radius:16px;padding:20px 16px 16px;display:flex;flex-direction:column;text-align:left}' +
     '#tfp .opt.on{border-color:var(--red);box-shadow:0 10px 30px rgba(255,84,64,.18)}#tfp .opt .rib{position:absolute;top:-12px;left:16px;background:var(--navy);color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 10px}' +
     '#tfp .opt .rib.rec{background:var(--red)}#tfp .opt .lv{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}#tfp .opt h3{font-size:18px;margin:2px 0 8px}' +
-    '#tfp .opt .pr{font-size:32px;font-weight:800;color:var(--navy);margin:2px 0 6px}#tfp .opt ul{margin:8px 0 14px;padding-left:18px;font-size:13px;color:var(--muted)}#tfp .opt ul li{margin:3px 0}' +
+    '#tfp .opt .pr{font-size:32px;font-weight:800;color:var(--navy);margin:2px 0 6px}#tfp .opt ul{margin:8px 0 14px;padding-left:18px;font-size:13px;color:var(--muted)}#tfp .opt ul li{margin:3px 0}#tfp .jl{margin:6px 0 0;padding-left:20px;font-size:15px}#tfp .jl li{margin:4px 0}' +
     '#tfp .opt .pick{margin-top:auto;border:0;border-radius:10px;padding:12px;font-weight:800;font-size:15px;background:var(--bg);color:var(--navy)}#tfp .opt.on .pick{background:var(--red);color:#fff}' +
     '#tfp .fin{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 18px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:14px;padding:16px 18px;margin-top:18px}' +
     '#tfp .fin-mo{font-size:22px;color:var(--navy)}#tfp .fin-mo b{font-size:30px;font-weight:800}#tfp .fin .btn{padding:13px 18px;font-size:15px}' +
@@ -620,8 +620,13 @@
     return h + '</div>';
   }
   function depositText(p) { return D.depositPct > 0 ? money(Math.round(p * D.depositPct) / 100, true) : ''; }
-  function split(t) { var mp = D.matPct || 30, dp = D.depositPct || 0, dep = Math.round(t * dp) / 100, mat = Math.round(t * mp) / 100; return { dep: dep, mat: mat, bal: Math.max(0, Math.round((t - dep - mat) * 100) / 100), dp: dp, mp: mp, bp: Math.max(0, 100 - dp - mp) }; }
-  function planLine() { var x = split(0); return x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, ' + x.mp + '% progress payment when materials are delivered, and the final ' + x.bp + '% when the job is done.'; }
+  function split(t) { var mp = D.matPct != null ? D.matPct : 30, dp = D.depositPct || 0, dep = Math.round(t * dp) / 100, mat = Math.round(t * mp) / 100; return { dep: dep, mat: mat, bal: Math.max(0, Math.round((t - dep - mat) * 100) / 100), dp: dp, mp: mp, bp: Math.max(0, 100 - dp - mp) }; }
+  function planLine() { var x = split(0); return x.mp > 0 ? x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, ' + x.mp + '% progress payment when materials are delivered, and the final ' + x.bp + '% when the job is done.' : x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, and the final ' + x.bp + '% is due on the day the job is completed.'; }
+  /* the job's own written scope and exclusions (set in the app) */
+  function jobScope() {
+    var li = function (a) { return '<ul class="jl">' + a.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; };
+    return ((D.scope || []).length ? '<p class="k" style="margin-top:14px">Work included</p>' + li(D.scope) : '') + ((D.excluded || []).length ? '<p class="k" style="margin-top:14px">Not included</p>' + li(D.excluded) : '');
+  }
 
   function build() {
     var secs = [], first = esc(D.first || '');
@@ -750,7 +755,7 @@
         return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty + (/ft|LF|hour/i.test(it.unit || '') ? ' ' + esc(it.unit) + (/hour$/i.test(it.unit) ? 's' : '') : '') : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>';
       }).join('') + '<div class="r"><span><b>Total</b></span><span class="tot">' + money(D.signed && D.basePrice ? D.basePrice : D.price, true) + '</span></div></div>' +
         (levels().length && !D.signed ? '<p class="k" style="margin-top:18px">Upgrade options</p><div class="sum">' + levels().map(function (a) { return '<div class="r"><span>' + esc(a.name) + (a.desc ? '<br><small class="m">' + esc(a.desc) + '</small>' : '') + '</span><span>+' + money(a.total, true) + '</span></div>'; }).join('') + '</div><p class="m">Pick one when you sign, or keep the job as quoted.</p>' : '') +
-        (D.depositPct > 0 ? '<div class="dep">' + planLine() + '</div>' : '');
+        (D.depositPct > 0 ? '<div class="dep">' + planLine() + '</div>' : '') + jobScope();
     } else if (D.offers) {
       var rec = D.pick >= 0 ? D.pick : 1;
       h = '<p class="k">Your investment</p><h2>Three ways to do this roof</h2>' + lockLine() + '<p class="lead">Same crew, same full system and cleanup. The difference is the shingle. Tap the one you want.</p><div class="opts">' +
@@ -793,8 +798,8 @@
       (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? (otherTrade() ? 'Job' : 'Repair') : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>' + (a.grp === 'lvl' ? 'Option chosen: ' : '+ ') + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
       '<div class="r"><span>' + (adds.length ? 'Total' : 'Price') + '</span><span class="tot">' + money(tot, true) + '</span></div>' +
       (D.depositPct > 0 ? (function (x) { return '<div class="r"><span>Deposit at signing (' + x.dp + '%)</span><span>' + money(x.dep, true) + '</span></div>' +
-        '<div class="r"><span>Progress payment, materials delivered (' + x.mp + '%)</span><span>' + money(x.mat, true) + '</span></div>' +
-        '<div class="r"><span>Final payment, job done (' + x.bp + '%)</span><span>' + money(x.bal, true) + '</span></div>'; })(split(tot)) : '') + '</div>';
+        (x.mp > 0 ? '<div class="r"><span>Progress payment, materials delivered (' + x.mp + '%)</span><span>' + money(x.mat, true) + '</span></div>' : '') +
+        '<div class="r"><span>Final payment, ' + (x.mp > 0 ? 'job done' : 'the day the job is completed') + ' (' + x.bp + '%)</span><span>' + money(x.bal, true) + '</span></div>'; })(split(tot)) : '') + '</div>';
   }
   function levels() { return (D.addons || []).filter(function (a) { return a.grp === 'lvl'; }); }
   function addsHtml() {
@@ -816,14 +821,14 @@
   function livePayment() {
     var x = split(grandTotal()), parts = [];
     if (x.dep > 0) parts.push('Deposit of ' + money(x.dep, true) + ' (' + x.dp + '%) at signing. It is refunded in full if you cancel within the cancellation period, and is non-refundable after that.');
-    parts.push('Progress payment of ' + money(x.mat, true) + ' (' + x.mp + '%) when the materials are delivered.');
-    parts.push('Balance of ' + money(x.bal, true) + ' (' + x.bp + '%) due when the job is done.');
+    if (x.mat > 0) parts.push('Progress payment of ' + money(x.mat, true) + ' (' + x.mp + '%) when the materials are delivered.');
+    parts.push('Balance of ' + money(x.bal, true) + ' (' + x.bp + '%) due ' + (x.mat > 0 ? 'when the job is done.' : 'on the day the job is completed.'));
     return parts.join(' ');
   }
   function liveCardAuth() {
     var x = split(grandTotal());
     if (!(x.dep > 0) || !D.contract) return '';
-    return 'If you pay the deposit online by card or bank account, that card or bank account is saved securely with our payment processor, Stripe. By signing, you authorize Team Forte to charge it for the progress payment of ' + money(x.mat, true) + ' when the materials are delivered and the final payment of ' + money(x.bal, true) + ' when the work is complete. You will get an email receipt for each charge. If a charge does not go through, we will email you an invoice with a link to pay instead. If you pay the deposit by cash or check, nothing is saved and we will send you an invoice for each later payment.';
+    return 'If you pay the deposit online by card or bank account, that card or bank account is saved securely with our payment processor, Stripe. By signing, you authorize Team Forte to charge it for ' + (x.mat > 0 ? 'the progress payment of ' + money(x.mat, true) + ' when the materials are delivered and ' : '') + 'the final payment of ' + money(x.bal, true) + ' when the work is complete. You will get an email receipt for each charge. If a charge does not go through, we will email you an invoice with a link to pay instead. If you pay the deposit by cash or check, nothing is saved and we will send you an invoice for each later payment.';
   }
   function contractUrl() {
     var u = EXEC + '?r=contract&id=' + encodeURIComponent(D.id);
@@ -838,6 +843,7 @@
     if (c.decking) dl.push(['Roof decking', c.decking]);
     if (c.late) dl.push(['Late payments', c.late]);
     if (c.siteMaterials) dl.push(['Materials on site', c.siteMaterials]);
+    if (c.warranty) dl.push(['Warranty', c.warranty]);
     (c.extra || []).forEach(function (x) { dl.push([x.h, x.t]); });
     dl.push(['Cleanup', c.cleanup], ['Permit', c.permit], ['Changes', c.changes + ' ' + c.whole]);
     return '<details class="terms"><summary>Contract details</summary><dl>' + dl.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd' + (r[0] === 'Payment' ? ' id="tfp-cpay"' : r[0] === 'Materials' ? ' id="tfp-cmat"' : r[0] === 'Saved card or bank account' ? ' id="tfp-ccard"' : '') + '>' + (r[0] === 'Contractor' ? r[1].split('<br>').map(esc).join('<br>') : esc(r[1])) + '</dd>'; }).join('') + '</dl></details>' +
@@ -850,7 +856,7 @@
     if (D.signed) {
       var payPart = '';
       if (D.stripe && D.depositDue > 0) payPart = '<div style="margin-top:14px">' + payBtn('deposit', D.depositDue, 'Pay the ' + money(D.depositDue, true) + ' deposit now') + '</div>';
-      else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Remaining: ' + money(D.balance, true) + ' (progress payment when materials are delivered, final payment when the job is done). We’ll send each one when it’s due.' : ' Paid in full.') + '</p>';
+      else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Remaining: ' + money(D.balance, true) + (split(0).mp > 0 ? ' (progress payment when materials are delivered, final payment when the job is done). We’ll send each one when it’s due.' : ', due on the day the job is completed. We’ll send it then.') : ' Paid in full.') + '</p>';
       else if (D.depositLink) payPart = '<br><a class="btn" href="' + esc(D.depositLink) + '" target="_top">Pay the ' + depositText(pr) + ' deposit</a>';
       box.innerHTML = '<p class="k">Signed</p><h2>Thank you, ' + esc(D.signed.name) + '!</h2>' + sum +
         '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Signed on ' + esc(D.signed.date) + '.</b> We’ll call you to schedule.' + payPart + '</div>' +
@@ -864,7 +870,7 @@
       '<label class="f" for="tfp-nm">Your full name</label><input class="inp" id="tfp-nm" autocomplete="name" value="' + esc(D.name || '') + '">' +
       '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
       (D.contract ? '<div class="cancelbox">' + esc(D.contract.cancelLine) + '</div>' : '') +
-      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.' + (liveCardAuth() ? ' If I pay the deposit online, I agree that my card or bank account is saved and charged for the progress and final payments, as described in the contract.' : '') + '</span></label>' +
+      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.' + (liveCardAuth() ? ' If I pay the deposit online, I agree that my card or bank account is saved and charged for the ' + (split(0).mp > 0 ? 'progress and final payments' : 'final payment') + ', as described in the contract.' : '') + '</span></label>' +
       (FIN && FIN.on && D.type !== 'repair' ? '<p class="m" style="margin:0 0 10px">Planning to use financing? You can still sign now to hold your spot, and we’ll help you with the application.</p>' : '') +
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
