@@ -345,7 +345,7 @@
     '@media(max-width:600px){#tfp h1{font-size:30px}#tfp .hero h1{font-size:34px}#tfp h2{font-size:24px}#tfp .grid2,#tfp .list{grid-template-columns:1fr}#tfp .s{padding:34px 16px}#tfp .stat b{font-size:28px}#tfp .ph img{height:210px}#tfp .bar img{height:28px}#tfp .call span{display:none}}';
 
   /* ------------------------------------------------------------------ mount */
-  var P = params(), ID = String(P.p || P.proposal || '').trim(), PRESENT = P.present === '1', INVOICE = P.pay === '1', CO = String(P.co || '').trim(), PAID = /^cs_[A-Za-z0-9_]+$/.test(P.paid || '') ? P.paid : '';
+  var P = params(), ID = String(P.p || P.proposal || '').trim(), PRESENT = P.present === '1', INVOICE = P.pay === '1', SIGNONLY = P.sign === '1', CO = String(P.co || '').trim(), PAID = /^cs_[A-Za-z0-9_]+$/.test(P.paid || '') ? P.paid : '';
   var CALM = false; try { CALM = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var host = document.getElementById('tfp-host') || document.getElementById('tfq-host');
   var cur = document.currentScript;
@@ -383,7 +383,7 @@
     S.pick = D.offers ? (D.pick >= 0 ? D.pick : 1) : D.pick;
     S.color = D.color || '';
     S.add = {};
-    if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else build();
+    if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else if (SIGNONLY) buildSignOnly(); else build();
     if (started && y) window.scrollTo(0, y);
     if (PAID && !started) checkPaid();
     started = true;
@@ -882,6 +882,19 @@
   function footHtml() {
     return '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') + '</div></div>';
   }
+  /* Just the contract to sign, no presentation: #p=TF-XXXXX&sign=1 */
+  function buildSignOnly() {
+    var p = PKGS[S.pick];
+    var scope = D.type === 'repair' ? '<div class="sum">' + D.items.map(function (it) { return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>'; }).join('') + '</div>' + jobScope() :
+      '<p>' + esc(p ? p.name : 'New roof') + (D.color ? ', ' + esc(D.color) : '') + '</p>' + jobScope();
+    var h = '<div class="inv"><p class="k">Contract · ' + esc(D.id) + '</p><h1 style="font-size:30px">' + (D.signed ? 'Your signed contract' : 'Your contract to sign') + '</h1><p class="lead">' + esc(D.address) + '</p>' +
+      '<p class="k" style="margin-top:18px">Scope of work</p>' + scope +
+      '<div id="tfp-sign" style="margin-top:22px"><div id="tfp-signbox"></div></div>' +
+      '<p class="m" style="margin-top:18px;text-align:center"><a href="#p=' + encodeURIComponent(D.id) + '" data-full="1">See the full ' + esc(planWord()) + '</a></p></div>' + footHtml();
+    root.className = ''; root.innerHTML = bar() + h;
+    renderSign();
+    if (!S.wired) wire();
+  }
   /* A change order to sign: #p=TF-XXXXX&co=CO1 */
   function buildCo() {
     var co = (D.changeOrders || []).filter(function (c) { return c.id === CO; })[0];
@@ -951,7 +964,7 @@
         D.depositLink = r.depositLink || ''; D.stripe = !!r.stripe; D.depositDue = Number(r.depositDue) || 0; D.paid = 0; D.balance = Number(r.balance) || 0;
         if (!CALM) confetti();
         D.basePrice = chosenPrice(); D.chosen = adds; D.price = Number(r.total) || total; D.cancelBy = r.cancelBy || '';
-        renderPrice(); if (D.type !== 'repair') renderColor(); renderSign();
+        if (root.querySelector('#tfp-price')) renderPrice(); if (D.type !== 'repair' && root.querySelector('#tfp-color')) renderColor(); renderSign();
         var ok = root.querySelector('#tfp-signbox .ok');
         if (ok) ok.insertAdjacentHTML('afterbegin', '<b>Your proposal is signed.</b> A copy is on its way' + (r.emailed ? ' to your email' : '') + '. ');
         try { (PRESENT ? root.querySelector('#tfp-sign') : root.querySelector('#tfp-signbox')).scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
@@ -971,7 +984,7 @@
       var pb = e.target.closest('[data-pay]');
       if (pb) { e.preventDefault(); if (!pb.disabled) payNow(pb.getAttribute('data-pay'), pb); return; }
       var fl = e.target.closest('[data-full]');
-      if (fl) { e.preventDefault(); INVOICE = false; try { history.replaceState(null, '', location.pathname + '#p=' + encodeURIComponent(D.id)); } catch (x) {} S.built = false; build(); scrollTo(0, 0); return; }
+      if (fl) { e.preventDefault(); INVOICE = false; SIGNONLY = false; try { history.replaceState(null, '', location.pathname + '#p=' + encodeURIComponent(D.id)); } catch (x) {} S.built = false; build(); scrollTo(0, 0); return; }
       var pk = e.target.closest('[data-pk]');
       if (pk && !D.signed && D.offers && root.querySelector('#tfp-price').contains(pk)) {
         var i = +pk.getAttribute('data-pk'); if (i !== S.pick) { S.pick = i; renderPrice(); if (D.type !== 'repair') renderColor(); var nm = root.querySelector('#tfp-nm'), keep = nm ? nm.value : ''; renderSign(); if (nm) root.querySelector('#tfp-nm').value = keep; } return;
