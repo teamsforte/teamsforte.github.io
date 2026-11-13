@@ -589,7 +589,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='30';
+var APP_VERSION='31';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -4172,14 +4172,14 @@ document.addEventListener('click', function (e) {
     var routesList = [['', 'No route']].concat((cfg.routes || []).map(function (r) { return [r, r]; }));
     if (a.route && (cfg.routes || []).indexOf(a.route) < 0) routesList.push([a.route, a.route]);
     var tiers = (cfg.tiers || []).map(function (t) { return [t.id, t.label || t.id]; }).concat([['custom', 'Custom']]);
-    var signed = !!a.signedAt, k = a.k, link = k && typeof EXEC_URL === 'string' && EXEC_URL ? EXEC_URL + '?r=snowcontract&id=' + encodeURIComponent(a.id) + '&k=' + encodeURIComponent(k) : '';
+    var signed = !!a.signedAt;
     var pays = (a.payments || []).map(function (p) { return '<div class="sn-kv"><span>' + esc(p.label || p.kind) + ' · ' + esc(p.status) + '</span><b>' + H.cents(p.amount) + '</b></div>'; }).join('');
     var ph = '<p class="hint">' + (a.tierChange && !a.tierChange.accepted ? 'A size change is waiting for the customer’s OK.' : '') + '</p>';
     app.innerHTML = H.top(a.name || a.id, 'accounts-back', 'Accounts') + '<div class="wrap">' + H.errBox('snaerr') +
       '<div class="card"><h2>' + esc(a.name || a.id) + ' ' + pill(a) + '</h2>' +
       kv('Address', esc(a.address || '')) + kv('Phone', esc(a.phone || '')) + kv('Email', esc(a.email || '')) + kv('Plan', esc(plan(a))) +
       (a.signedAt ? kv('Signed', esc(String(a.signedAt).slice(0, 10))) : '') + (a.cancelBy ? kv('Cancel by', esc(a.cancelBy)) : '') + (a.serviceFrom ? kv('Service from', esc(a.serviceFrom)) : '') +
-      (link ? '<a class="btn ghost block mt" href="' + esc(link) + '" target="_blank" rel="noopener">View contract</a>' : '') + '</div>' +
+      '<button class="btn ghost block mt" data-snow="accounts-contract">View agreement</button></div>' +
       '<div class="card"><h2>Measurement</h2>' + kv('Size', esc(dl(a.sqft)) + ' sq ft') + kv('Tier', esc(a.tier || 'not set')) + kv('Size picked by', a.manual ? 'Customer (typed in)' : 'Drawn on the map') +
       (a.mapImgId ? '<img class="sn-map" id="snmap" alt="Driveway map" src="' + esc(img(a.mapImgId, 800)) + '">' : '') + '</div>' +
       '<div class="card"><h2>Route &amp; notes</h2><label class="f">Route</label>' + sel('snr', routesList, a.route) +
@@ -4239,6 +4239,14 @@ document.addEventListener('click', function (e) {
     };
   }
 
+  /* the agreement opens inside the app (the server sends the HTML; no browser sign-in needed) */
+  function viewAgreement(a) {
+    var ov = sheet('<h3>Agreement' + closeBtn() + '</h3><p class="sub" id="snagerr"></p>' +
+      '<iframe id="snagfr" title="Agreement" sandbox="" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>');
+    call('snowPreview', { id: a.id }).then(function (r) { ov.querySelector('#snagfr').srcdoc = (r && r.html) || '<p>No agreement.</p>'; },
+      function (x) { ov.querySelector('#snagerr').textContent = x.message || 'Couldn’t load the agreement.'; });
+  }
+
   A.accounts = {
     render: renderList,
     renderOne: renderOne,
@@ -4246,6 +4254,7 @@ document.addEventListener('click', function (e) {
       var a = SN.id && H.acct(SN.id);
       if (act === 'accounts-open') { SN.id = el.getAttribute('data-id'); SN.view = 'acct'; render(); window.scrollTo(0, 0); }
       else if (act === 'accounts-back') { SN.view = 'accounts'; render(); }
+      else if (act === 'accounts-contract') { if (a) viewAgreement(a); }
       else if (act === 'accounts-filter') {
         SN.filter = el.getAttribute('data-v');
         Array.prototype.forEach.call(document.querySelectorAll('#snchips .chip'), function (c) { c.classList.toggle('on', c === el); });
