@@ -589,7 +589,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='29';
+var APP_VERSION='30';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -3969,6 +3969,7 @@ window.SNOWAPP = (function () {
       }
       if (SN.view === 'settings' && H.isOwner() && API.settings) return API.settings.render();
       if (SN.view === 'accounts' && API.accounts) return API.accounts.render();
+      if (SN.view === 'add' && API.add) return API.add.render();
       if (SN.view === 'acct' && API.accounts && H.acct(SN.id)) return API.accounts.renderOne(SN.id);
       SN.view = 'home';
       home();
@@ -4155,7 +4156,7 @@ document.addEventListener('click', function (e) {
     }).join('');
   }
   function renderList() {
-    app.innerHTML = H.top('Accounts', 'home', 'Snow') + '<div class="wrap"><div class="chips" id="snchips">' +
+    app.innerHTML = H.top('Accounts', 'home', 'Snow') + '<div class="wrap">' + (H.isOwner() ? '<button class="btn block" data-snow="add-open">+ New account</button>' : '') + '<div class="chips" id="snchips">' +
       Object.keys(FILTERS).map(function (k) { return '<button class="chip' + (SN.filter === k ? ' on' : '') + '" data-snow="accounts-filter" data-v="' + k + '">' + k + '</button>'; }).join('') + '</div>' +
       '<input class="in mt" id="snq" type="search" placeholder="Search name, address or phone" aria-label="Search accounts" value="' + esc(SN.q) + '"><div id="snlist">' + rows() + '</div></div>';
     document.getElementById('snq').addEventListener('input', function (e) { SN.q = e.target.value; document.getElementById('snlist').innerHTML = rows(); });
@@ -4265,6 +4266,248 @@ document.addEventListener('click', function (e) {
         if (c.visit === '' || c.perInch === '') { H.showErr('snaerr', 'Enter a per-visit and a per-inch price.'); return; }
         saveFields({ custom: c }, a, 'Prices saved');
       } else if (act === 'accounts-cancel') { if (H.isOwner()) cancelSheet(a); }
+    }
+  };
+})();
+/* --- 25-add.js --- */
+/* snowapp/25-add.js: the owner adds a snow customer from the phone. Address search, then the driveway traced on the
+   satellite photo (the same tap-the-corners method as the website), a plan, and a save. Server: snowAdd (owner only). */
+(function () {
+  var A = SNOWAPP, H = A.H, SN = A.state;
+  var KEY = 'AIzaSyAuSuRZOOL2zEQHwk4OKxLPjD-Y45ilTS0';
+  var BIAS = { center: { lat: 41.60, lng: -72.70 }, radius: 50000 };
+  var TIERS = [['', 'Trace on the map'], ['small', 'Small (up to 500 sq ft)'], ['medium', 'Medium (501 to 1,000)'], ['large', 'Large (1,001 to 1,500)'], ['custom', 'Custom (over 1,500 or a lot)']];
+
+  var css = document.createElement('style');
+  css.textContent = '.tfa-ac{position:relative}.tfa-sug{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.12);margin-top:4px;overflow:hidden}.tfa-sug button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--line);padding:10px 12px;font-size:14px;color:inherit}';
+  document.head.appendChild(css);
+
+  var F = null;               /* form state: address, lat, lng, pick (autocomplete prediction) */
+  var gm = null, map = null, drawing = null, areas = [], mapsP = null, timer = 0, sugList = [], tok = null, busy = false;
+
+  function blank() { return { address: '', lat: null, lng: null, pick: null, mapOn: false }; }
+  function val(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+  function setErr(msg) { var e = document.getElementById('snadderr'); if (!e) return; e.textContent = msg || ''; e.hidden = !msg; }
+  function fmtSqft(n) { return Math.round(n).toLocaleString('en-US') + ' sq ft'; }
+  function tierFor(sq) { return sq <= 500 ? 'small' : sq <= 1000 ? 'medium' : sq <= 1500 ? 'large' : 'custom'; }
+  function tierLabel(id) { var t = TIERS.filter(function (x) { return x[0] === id; })[0]; return t ? t[1] : ''; }
+
+  /* Google Maps JavaScript, loaded once, only when this screen needs it */
+  function mapsReady() {
+    if (window.google && google.maps && google.maps.importLibrary) return Promise.resolve();
+    if (mapsP) return mapsP;
+    mapsP = new Promise(function (ok, bad) {
+      window.__tfaMapsReady = function () { ok(); };
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(KEY) + '&v=weekly&loading=async&libraries=places,geometry&callback=__tfaMapsReady';
+      s.async = true;
+      s.onerror = function () { mapsP = null; bad(new Error('maps-load')); };
+      document.head.appendChild(s);
+    });
+    return mapsP;
+  }
+
+  function render() {
+    if (!F) F = blank();
+    var plans = [['seasonal', 'Seasonal (first in every storm)'], ['visit', 'Per visit']];
+    var tierSel = '<select class="in" id="snatier">' + TIERS.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[1]) + '</option>'; }).join('') + '</select>';
+    var planSel = '<select class="in" id="snaplan">' + plans.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('') + '</select>';
+    A.state.view = 'add';
+    document.getElementById('app').innerHTML = H.top('New account', 'accounts', 'Accounts') + '<div class="wrap">' +
+      '<div class="card"><h2>Customer</h2>' +
+      '<label class="f" for="snaname">Name</label><input class="in" id="snaname" autocomplete="off" maxlength="60">' +
+      '<label class="f" for="snaphone">Phone</label><input class="in" id="snaphone" type="tel" inputmode="tel" maxlength="30">' +
+      '<label class="f" for="snaemail">Email (for the agreement and receipts)</label><input class="in" id="snaemail" type="email" inputmode="email" maxlength="120">' +
+      '</div>' +
+      '<div class="card"><h2>Driveway</h2>' +
+      '<label class="f" for="snaaddr">Street and town</label>' +
+      '<div class="tfa-ac"><input class="in" id="snaaddr" autocomplete="off" placeholder="12 Main St, Berlin" maxlength="160"><div id="snasug" class="tfa-sug" role="listbox"></div></div>' +
+      '<button class="btn block mt" data-snow="add-find" id="snafind">Find driveway</button>' +
+      '<div class="sn-err" id="snadderr" hidden></div>' +
+      '<div id="snamap-wrap" hidden>' +
+      '<div id="snamap" class="sn-map" style="height:340px"></div>' +
+      '<p class="hint" id="snahelp">Tap each corner of the driveway on the photo. Tap the first point again, or press Finish shape, to close it. Leave out the walkway and steps: they are included.</p>' +
+      '<div class="sn-btns"><button class="btn ghost" data-snow="add-undo">Undo</button><button class="btn ghost" data-snow="add-close" id="snaclose">Finish shape</button>' +
+      '<button class="btn ghost" data-snow="add-more" id="snamore" hidden>Another area</button><button class="btn ghost" data-snow="add-clear">Clear</button></div>' +
+      '<p class="hint">Size: <b id="snasqft">none yet</b></p></div>' +
+      '<label class="f" for="snatier">Size if you do not trace it</label>' + tierSel +
+      '</div>' +
+      '<div class="card"><h2>Plan</h2>' + planSel +
+      '<label class="f" for="snanotes">Notes</label><textarea class="in" id="snanotes" rows="2" maxlength="1000"></textarea>' +
+      '<p class="hint">The customer signs the agreement and saves a card from the link on the account page.</p></div>' +
+      '<div class="sn-err" id="snaerr" hidden></div>' +
+      '<button class="btn block" data-snow="add-save" id="snasave">Add account</button>' +
+      '</div>';
+    wireAddress();
+    refresh();
+  }
+
+  /* address suggestions, as on the website */
+  function wireAddress() {
+    var inp = document.getElementById('snaaddr'), sug = document.getElementById('snasug');
+    function show() {
+      sug.innerHTML = sugList.map(function (s, i) { return '<button type="button" data-i="' + i + '">' + esc(s.text) + '</button>'; }).join('');
+      sug.style.display = sugList.length ? 'block' : 'none';
+    }
+    function suggest(q) {
+      if (q.trim().length < 4) { sugList = []; show(); return; }
+      mapsReady().then(async function () {
+        var P = await google.maps.importLibrary('places');
+        tok = tok || new P.AutocompleteSessionToken();
+        var r = await P.AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: tok, includedRegionCodes: ['us'], locationBias: BIAS, includedPrimaryTypes: ['street_address', 'premise', 'subpremise'] });
+        sugList = (r.suggestions || []).filter(function (s) { return s.placePrediction; }).slice(0, 5).map(function (s) { return { text: s.placePrediction.text.toString(), pred: s.placePrediction }; });
+        show();
+      }).catch(function () { sugList = []; show(); });
+    }
+    inp.addEventListener('input', function () { F.pick = null; clearTimeout(timer); timer = setTimeout(function () { suggest(inp.value); }, 220); });
+    inp.addEventListener('blur', function () { setTimeout(function () { sugList = []; show(); }, 180); });
+    sug.addEventListener('mousedown', function (e) {
+      var t = e.target.closest('button[data-i]');
+      if (!t) return;
+      e.preventDefault();
+      var pick = sugList[+t.getAttribute('data-i')];
+      F.pick = pick.pred; inp.value = pick.text; sugList = []; show();
+    });
+  }
+
+  /* find the address, then show the satellite photo centred on it */
+  async function find() {
+    var q = val('snaaddr');
+    if (q.length < 6) { setErr('Type the full street address with the town.'); return; }
+    setErr('');
+    var btn = document.getElementById('snafind');
+    btn.disabled = true; btn.textContent = 'Finding the address…';
+    try {
+      await mapsReady();
+      var P = await google.maps.importLibrary('places'), place;
+      if (F.pick) { place = F.pick.toPlace(); await place.fetchFields({ fields: ['formattedAddress', 'location'] }); }
+      else {
+        var r = await P.Place.searchByText({ textQuery: q, fields: ['formattedAddress', 'location'], maxResultCount: 1, region: 'us', locationBias: BIAS });
+        place = r && r.places && r.places[0];
+      }
+      if (!place || !place.location) throw new Error('not-found');
+      var loc = place.location;
+      F.address = String(place.formattedAddress || q).replace(/, USA$/, '');
+      F.lat = typeof loc.lat === 'function' ? loc.lat() : Number(loc.lat);
+      F.lng = typeof loc.lng === 'function' ? loc.lng() : Number(loc.lng);
+      document.getElementById('snaaddr').value = F.address;
+      document.getElementById('snamap-wrap').hidden = false;
+      startMap();
+    } catch (e) {
+      setErr(e && e.message === 'maps-load' ? 'The map did not load. Check the connection, or pick a size below.' : 'Couldn’t find that address. Check the street and town, or pick a size below.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Find driveway';
+    }
+  }
+
+  function startMap() {
+    mapsReady().then(async function () {
+      var M = await google.maps.importLibrary('maps'); await google.maps.importLibrary('geometry');
+      gm = google.maps;
+      map = new M.Map(document.getElementById('snamap'), { center: { lat: F.lat, lng: F.lng }, zoom: 20, mapTypeId: 'satellite', tilt: 0, heading: 0, rotateControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false, clickableIcons: false, gestureHandling: 'greedy', draggableCursor: 'crosshair' });
+      clearAreas();
+      startShape();
+      map.addListener('click', function (e) { if (drawing) addPoint(e.latLng); });
+      refresh();
+    }).catch(function () { setErr('The map did not load. Check the connection, or pick a size below.'); });
+  }
+
+  function startShape() {
+    drawing = { pts: [], markers: [], line: new gm.Polyline({ map: map, path: [], strokeColor: '#FF5440', strokeWeight: 3, clickable: false }) };
+  }
+  function addPoint(ll) {
+    var first = drawing.pts[0];
+    if (first && drawing.pts.length >= 3 && gm.geometry.spherical.computeDistanceBetween(first, ll) < 1.2) { closeShape(); return; }
+    drawing.pts.push(ll); drawing.line.setPath(drawing.pts);
+    var mk = new gm.Marker({ map: map, position: ll, clickable: drawing.pts.length === 1, icon: { path: gm.SymbolPath.CIRCLE, scale: drawing.pts.length === 1 ? 7 : 5, fillColor: '#fff', fillOpacity: 1, strokeColor: '#FF5440', strokeWeight: 3 } });
+    if (drawing.pts.length === 1) mk.addListener('click', function () { closeShape(); });
+    drawing.markers.push(mk);
+    refresh();
+  }
+  function undo() {
+    if (drawing && drawing.pts.length) { drawing.pts.pop(); var m = drawing.markers.pop(); if (m) m.setMap(null); drawing.line.setPath(drawing.pts); }
+    else if (areas.length) { var a = areas.pop(); a.poly.setMap(null); startShape(); }
+    refresh();
+  }
+  function closeShape() {
+    if (!drawing || drawing.pts.length < 3) { setErr('Tap at least 3 corners of the driveway, then finish the shape.'); return; }
+    setErr('');
+    var path = drawing.pts.slice();
+    cleanupDrawing();
+    addPolygon(path);
+    startShape();
+    refresh();
+  }
+  function cleanupDrawing() {
+    if (drawing) { drawing.markers.forEach(function (m) { m.setMap(null); }); if (drawing.line) drawing.line.setMap(null); }
+    drawing = null;
+  }
+  function addPolygon(path) {
+    var poly = new gm.Polygon({ map: map, paths: path, editable: true, strokeColor: '#FF5440', strokeWeight: 3, fillColor: '#FF5440', fillOpacity: 0.28 });
+    var a = { poly: poly, path: path };
+    var upd = function () { a.path = poly.getPath().getArray(); refresh(); };
+    ['set_at', 'insert_at', 'remove_at'].forEach(function (ev) { poly.getPath().addListener(ev, upd); });
+    areas.push(a);
+  }
+  function clearAreas() {
+    areas.forEach(function (a) { a.poly.setMap(null); });
+    areas = [];
+    cleanupDrawing();
+  }
+  function clearAll() { clearAreas(); if (map) startShape(); refresh(); }
+  function totalSqft() {
+    var m2 = 0;
+    areas.forEach(function (a) { m2 += gm.geometry.spherical.computeArea(a.path); });
+    return m2 * 10.7639;
+  }
+  function refresh() {
+    var sq = gm && areas.length ? totalSqft() : 0, open = drawing && drawing.pts.length;
+    var t = document.getElementById('snasqft');
+    if (t) t.textContent = areas.length ? fmtSqft(sq) + ' (' + tierLabel(tierFor(sq)) + ')' + (areas.length > 1 ? ', ' + areas.length + ' areas' : '') : 'none yet';
+    var c = document.getElementById('snaclose'); if (c) c.hidden = !drawing;
+    var m = document.getElementById('snamore'); if (m) m.hidden = !!drawing || !areas.length;
+  }
+
+  /* save: the server checks the same things as the website and gives the account its size, tier and waitlist status */
+  function save() {
+    if (busy) return;
+    var name = val('snaname'), phone = val('snaphone'), email = val('snaemail'), notes = val('snanotes');
+    var plan = val('snaplan'), tier = val('snatier'), address = F.address || val('snaaddr');
+    var errEl = document.getElementById('snaerr');
+    function bad(m) { errEl.textContent = m; errEl.hidden = false; }
+    errEl.hidden = true;
+    if (name.length < 2) return bad('Enter the customer’s name.');
+    if (phone.replace(/\D/g, '').length < 10) return bad('Enter a phone number with the area code.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad('Enter an email for the agreement and receipts.');
+    if (address.length < 6 || F.lat == null || F.lng == null) return bad('Find the address first: type it and tap Find driveway.');
+    var polys = areas.map(function (a) { return a.path.map(function (p) { return [p.lat(), p.lng()]; }); });
+    if (!polys.length && !tier) return bad('Trace the driveway on the map, or pick a size.');
+    if (drawing && drawing.pts.length) return bad('Finish the shape you are drawing first.');
+    var args = { name: name, phone: phone, email: email, address: address, lat: F.lat, lng: F.lng, plan: plan, notes: notes, areas: polys, tier: polys.length ? '' : tier };
+    busy = true;
+    var btn = document.getElementById('snasave'); btn.disabled = true; btn.textContent = 'Adding…';
+    call('snowAdd', args).then(function (r) {
+      busy = false;
+      F = null; sugList = []; clearAreas(); map = null; gm = null;
+      SN.id = r.id; SN.view = 'acct'; SN.boot = null; SN.err = '';
+      toast('Account added. Send the agreement link from its page.');
+      A.render();
+    }, function (x) {
+      busy = false; btn.disabled = false; btn.textContent = 'Add account';
+      bad(x && x.message ? x.message : 'Couldn’t add the account. Try again.');
+    });
+  }
+
+  A.add = {
+    render: render,
+    handle: function (act, el) {
+      if (act === 'add-open') { F = blank(); clearAreas(); map = null; gm = null; SN.view = 'add'; A.render(); window.scrollTo(0, 0); }
+      else if (act === 'add-find') { find(); }
+      else if (act === 'add-undo') { undo(); }
+      else if (act === 'add-more') { startShape(); refresh(); }
+      else if (act === 'add-close') { closeShape(); }
+      else if (act === 'add-clear') { clearAll(); }
+      else if (act === 'add-save') { save(); }
     }
   };
 })();
