@@ -22,6 +22,9 @@
     signupCloses: 'December 1',
     capTotal: 25,          // accounts this season (headline). null hides it.
     spotsLeft: null,       // set a number to show "X spots left"; null hides it
+    exec: EXEC,            // Apps Script web app (config, sign-up, Stripe return)
+    online: false,         // true once the server answered r=snowcfg
+    seasonalOpen: true, canSign: false,
     triggerInches: 2,
     tiers: [
       { id: 'small', label: 'Small', max: 500, visit: 100, seasonal: 600 },
@@ -69,15 +72,21 @@
     ['Is sales tax included?', 'No. Connecticut sales tax of 6.35% is added to every charge.']
   ];
 
+  function capText() { return SNOW.capTotal ? 'Only ' + SNOW.capTotal + ' spots this season.' : 'A limited number of spots this season.'; }
+  function isFull() { return SNOW.spotsLeft != null && SNOW.spotsLeft <= 0; }
+  function urgentHtml() {
+    var n = SNOW.spotsLeft, spots = n == null ? '' : '<span class="tfs-spots">' + (n <= 0 ? 'Season full, waitlist open' : esc(n) + (n === 1 ? ' spot left' : ' spots left')) + '</span>';
+    return spots + 'Seasonal sign-up closes ' + esc(SNOW.signupCloses) + '.';
+  }
+  function taxPct() { return (SNOW.taxRate * 100).toFixed(2); }
+
   function pageHtml() {
-    var cap = SNOW.capTotal ? 'Only ' + SNOW.capTotal + ' spots this season.' : 'A limited number of spots this season.';
-    var spots = SNOW.spotsLeft != null ? '<span class="tfs-spots">' + esc(SNOW.spotsLeft) + ' spots left</span>' : '';
     return HEADER +
       '<section class="tfl-hero tfs-hero"><div class="tfl-w"><p class="tfl-k">Team Forte \u00b7 Snow removal</p>' +
         '<h1>Your driveway, walkway and steps cleared every storm</h1>' +
-        '<p class="lead">' + esc(cap) + ' Enter your address to see your price in under a minute.</p>' +
+        '<p class="lead" id="tfs-lead">' + esc(capText()) + ' Enter your address to see your price in under a minute.</p>' +
         '<div class="tfl-btns"><a class="tfl-btn" href="#quote">Get my price</a><a class="tfl-btn ghost" href="' + TEL + '">Call ' + PHONE + '</a></div>' +
-        '<p class="tfs-urgent">' + spots + 'Seasonal sign-up closes ' + esc(SNOW.signupCloses) + '.</p></div></section>' +
+        '<p class="tfs-urgent" id="tfs-urgent">' + urgentHtml() + '</p></div></section>' +
       '<section class="tfl-trust"><div class="tfl-w">' +
         '<div><span class="tfl-ic">' + ICON.first + '</span><span>Seasonal customers cleared first every storm</span></div>' +
         '<div><span class="tfl-ic">' + ICON.blower + '</span><span>Snow blowers and shovels, no plow truck on your pavement</span></div>' +
@@ -127,6 +136,8 @@
     else if (st.step === 'manual') box.innerHTML = manualHtml();
     else if (st.step === 'price') box.innerHTML = priceHtml();
     else if (st.step === 'done') box.innerHTML = doneHtml();
+    else if (st.step === 'sign') box.innerHTML = signHtml();
+    else if (st.step === 'paid') box.innerHTML = paidHtml();
     wire();
   }
 
@@ -165,16 +176,17 @@
       return '<div class="tfs-card">' + head + '<div class="tfs-note">Properties over 1,500 sq ft and parking lots get a custom price. Send your details and we will call you with one.</div>' + contactHtml('Request a custom price') + '</div>';
     }
     var save = t.visit * SNOW.storms - t.seasonal;
+    if (SNOW.seasonalOpen === false) st.plan = 'visit';
     var plans = '<div class="tfs-plans" role="radiogroup" aria-label="Plan">' +
-      '<label class="tfs-plan tfs-best' + (st.plan === 'seasonal' ? ' on' : '') + '"><input type="radio" name="tfs-plan" value="seasonal"' + (st.plan === 'seasonal' ? ' checked' : '') + '>' +
+      (SNOW.seasonalOpen === false ? '' : '<label class="tfs-plan tfs-best' + (st.plan === 'seasonal' ? ' on' : '') + '"><input type="radio" name="tfs-plan" value="seasonal"' + (st.plan === 'seasonal' ? ' checked' : '') + '>' +
         '<span class="tfs-tag">Cleared first every storm</span><span class="tfs-pname">Seasonal plan</span>' +
         '<span class="tfs-price">' + money(t.seasonal) + ' <small>for the season</small></span>' +
         '<span class="tfs-pline">Covers ' + SNOW.storms + ' storms up to ' + SNOW.overInches + ' inches. Save up to ' + money(save) + '.</span>' +
-        '<span class="tfs-pline">50% when you sign, 50% on January 15, 2027.</span></label>' +
+        '<span class="tfs-pline">50% when you sign, 50% on January 15, 2027.</span></label>') +
       '<label class="tfs-plan' + (st.plan === 'visit' ? ' on' : '') + '"><input type="radio" name="tfs-plan" value="visit"' + (st.plan === 'visit' ? ' checked' : '') + '>' +
         '<span class="tfs-pname">Per visit</span><span class="tfs-price">' + money(t.visit) + ' <small>per storm</small></span>' +
         '<span class="tfs-pline">For storms up to ' + SNOW.overInches + ' inches, charged after each storm.</span></label></div>' +
-      '<p class="tfs-rule">Storms over ' + SNOW.overInches + ' inches add ' + money(SNOW.perInch) + ' per inch. Prices before ' + (SNOW.taxRate * 100).toFixed(2) + '% Connecticut sales tax.</p>';
+      '<p class="tfs-rule">Storms over ' + SNOW.overInches + ' inches add ' + money(SNOW.perInch) + ' per inch. Prices before ' + taxPct() + '% Connecticut sales tax.</p>';
     var ice = iceMeltPrice(t);
     var addons = '<fieldset class="tfs-add"><legend>Add-ons, per storm</legend>' +
       '<div class="tfs-addrow"><label for="tfs-veh">Vehicle snow and ice clearing, ' + money(SNOW.addons.vehicle) + ' per vehicle</label>' +
@@ -187,6 +199,9 @@
       '<div class="tfs-addrow"><label class="tfs-ck"><input type="checkbox" id="tfs-ice"' + (st.ice ? ' checked' : '') + '> Ice melt on driveway and walkway, ' + money(ice) + ' per application</label>' +
         '<select id="tfs-icefreq"' + (st.ice ? '' : ' hidden') + '><option value="every"' + (st.iceFreq === 'every' ? ' selected' : '') + '>Every storm</option><option value="request"' + (st.iceFreq === 'request' ? ' selected' : '') + '>Only when I ask</option></select></div>' +
       '<div class="tfs-addrow"><label class="tfs-ck"><input type="checkbox" id="tfs-walk"' + (st.walk ? ' checked' : '') + '> Extra walkway or second entry, ' + money(SNOW.addons.walkway) + '</label></div></fieldset>';
+    if (isFull()) {
+      return '<div class="tfs-card">' + head + '<div class="tfs-note">This season\'s spots are taken. Join the waitlist and we will call you if a spot opens.</div>' + plans + addons + '<div class="tfs-sum" id="tfs-sum">' + summaryHtml() + '</div>' + contactHtml('Join the waitlist') + '</div>';
+    }
     return '<div class="tfs-card">' + head + plans + addons + '<div class="tfs-sum" id="tfs-sum">' + summaryHtml() + '</div>' + contactHtml('Reserve my spot') + '</div>';
   }
 
@@ -205,11 +220,12 @@
       : '<div><span>Per storm up to ' + SNOW.overInches + ' in</span><b>' + money(t.visit) + '</b></div>';
     var adds = a.per ? '<div><span>Add-ons every storm</span><b>+ ' + money(a.per) + '</b></div>' : '';
     var req = a.list.length && a.per === 0 ? '<div class="tfs-fine2"><span>Add-ons charged only when you ask</span></div>' : '';
-    return main + adds + req + '<p class="tfs-fine">Plus 6.35% CT sales tax. Storms over ' + SNOW.overInches + ' in add ' + money(SNOW.perInch) + ' per inch.</p>';
+    return main + adds + req + '<p class="tfs-fine">Plus ' + taxPct() + '% CT sales tax. Storms over ' + SNOW.overInches + ' in add ' + money(SNOW.perInch) + ' per inch.</p>';
   }
 
   function contactHtml(btn) {
-    return '<form class="tfs-form" id="tfs-form" novalidate><h3>Your details</h3>' +
+    var wl = btn === 'Join the waitlist' && isFull();
+    return '<form class="tfs-form" id="tfs-form" novalidate><h3>' + (wl ? 'Join the waitlist' : 'Your details') + '</h3>' +
       '<div class="tfs-2"><div><label for="tfs-name">Your name</label><input id="tfs-name" autocomplete="name"></div>' +
       '<div><label for="tfs-phone">Phone</label><input id="tfs-phone" type="tel" autocomplete="tel"></div></div>' +
       '<label for="tfs-email">Email</label><input id="tfs-email" type="email" autocomplete="email">' +
@@ -217,13 +233,174 @@
       '<label class="tfs-ck tfs-sms"><input type="checkbox" id="tfs-sms"><span>By checking this box, I consent to receive text messages from Team Forte about my snow service, storm updates and billing. Message frequency varies. Message &amp; data rates may apply. Text HELP for help, reply STOP to opt out.</span></label>' +
       '<div class="tfs-hp" aria-hidden="true"><label>Leave empty<input id="tfs-web" tabindex="-1" autocomplete="off"></label></div>' +
       '<button type="submit" class="tfs-go tfs-wide" id="tfs-send">' + esc(btn) + '</button><p id="tfs-ferr" class="tfs-err" role="alert"></p>' +
-      '<p class="tfs-fine">Next we send your agreement to sign and save a card. You have 3 business days to cancel, and service starts after that period.</p></form>';
+      '<p class="tfs-fine">' + (wl ? 'We will call you if a spot opens. You pay nothing to join the waitlist.' : SNOW.online && SNOW.canSign && !outOfArea() && st.tier ? 'Next you review and sign your agreement and add a card. You have 3 business days to cancel, and service starts after that period.' : 'Next we send your agreement to sign and save a card. You have 3 business days to cancel, and service starts after that period.') + '</p></form>';
   }
 
   function doneHtml() {
-    return '<div class="tfs-card tfs-done"><div class="tfs-chk">\u2713</div><h3>Thanks, ' + esc(st.first || 'neighbor') + '!</h3>' +
-      '<p>We got your request for ' + esc(st.address ? st.address.street || st.address.formatted : 'your property') + '. We will text or email your agreement to sign. Service starts after the 3-business-day cancellation period.</p>' +
+    var where = esc(st.address ? st.address.street || st.address.formatted : 'your property'), body;
+    if (st.doneKind === 'waitlist') body = 'You\'re on the waitlist for ' + where + '. We will call you if a spot opens. You do not owe anything.';
+    else if (st.doneKind === 'email') body = 'We got your request for ' + where + '. We\'ll email your agreement to sign. Service starts after the 3-business-day cancellation period.';
+    else body = 'We got your request for ' + where + '. We will text or email your agreement to sign. Service starts after the 3-business-day cancellation period.';
+    return '<div class="tfs-card tfs-done"><div class="tfs-chk">\u2713</div><h3>' + (st.doneKind === 'waitlist' ? 'You\'re on the waitlist' : 'Thanks, ' + esc(st.first || 'neighbor') + '!') + '</h3>' +
+      '<p>' + body + '</p>' +
       '<p>Questions? Call <a href="' + TEL + '">' + PHONE + '</a>.</p></div>';
+  }
+
+  /* ---------- server (Apps Script): config, sign-up, Stripe return ---------- */
+  function jsonp(params, ms) {
+    return new Promise(function (ok, bad) {
+      var cb = '__tfsJ' + Math.random().toString(36).slice(2), s = document.createElement('script'), done = false;
+      function fin(v, e) { if (done) return; done = true; clearTimeout(tm); try { delete window[cb]; } catch (x) { window[cb] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); if (e) bad(e); else ok(v); }
+      var tm = setTimeout(function () { fin(null, new Error('timeout')); }, ms);
+      window[cb] = function (v) { fin(v); };
+      s.onerror = function () { fin(null, new Error('load')); };
+      s.async = true;
+      s.src = SNOW.exec + '?' + Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&') + '&callback=' + cb;
+      document.head.appendChild(s);
+    });
+  }
+  function postSnow(body, ms) {
+    var ctl = window.AbortController ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, ms) : 0;
+    return fetch(SNOW.exec + '?r=snow', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { return r.json(); }).then(function (j) { clearTimeout(tm); return j; }, function (e) { clearTimeout(tm); throw e; });
+  }
+  function loadConfig() {
+    jsonp({ r: 'snowcfg' }, 4000).then(function (c) {
+      if (!c || c.ok === false) throw new Error('cfg');
+      var okTiers = Array.isArray(c.tiers) && c.tiers.length && c.tiers.every(function (t) { return t && t.id && t.max > 0 && t.visit > 0 && t.seasonal > 0; });
+      if (okTiers) SNOW.tiers = c.tiers.map(function (t) { return { id: t.id, label: t.label || t.id, max: +t.max, visit: +t.visit, seasonal: +t.seasonal }; });
+      ['perInch', 'overInches', 'storms', 'taxRate'].forEach(function (k) { if (typeof c[k] === 'number' && c[k] >= 0) SNOW[k] = c[k]; });
+      if (c.addons && typeof c.addons === 'object' && c.addons.iceMelt) SNOW.addons = c.addons;
+      if (c.cap != null) SNOW.capTotal = c.cap;
+      if (c.spotsLeft !== undefined) SNOW.spotsLeft = c.spotsLeft;
+      if (c.signupCloses) SNOW.signupCloses = String(c.signupCloses);
+      if (c.seasonalOpen !== undefined) SNOW.seasonalOpen = c.seasonalOpen !== false;
+      SNOW.canSign = !!c.canSign; SNOW.online = true;
+      var u = $('tfs-urgent'), l = $('tfs-lead'); if (u) u.innerHTML = urgentHtml(); if (l) l.textContent = capText() + ' Enter your address to see your price in under a minute.';
+      var nm = $('tfs-name');
+      if (st.step === 'address' || st.step === 'manual' || (st.step === 'price' && !(nm && (nm.value || $('tfs-email').value || $('tfs-phone').value)))) draw();
+    }).catch(function () { SNOW.online = false; });
+  }
+  function newCid() {
+    var c = '';
+    try { c = sessionStorage.getItem('tfs-cid') || ''; } catch (x) { c = ''; }
+    if (!c) {
+      try { c = crypto.randomUUID(); } catch (x) { c = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12); }
+      try { sessionStorage.setItem('tfs-cid', c); } catch (x) { /* optional */ }
+    }
+    return c;
+  }
+  function cents(c) { return '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function prettyDate(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
+    return m ? MONTHS[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1] : String(v || '');
+  }
+  function addonsObj() {
+    return { vehicles: st.vehicles, vehicleMode: st.vFreq, vehicleAccess: st.vAccess, keyAt: '', ice: st.ice, iceMode: st.iceFreq, walkway: st.walk };
+  }
+
+  /* ---------- review and sign ---------- */
+  function signHtml() {
+    var q = (st.srv && st.srv.quote) || {}, seasonal = st.plan === 'seasonal', rows;
+    if (seasonal) {
+      var tot = q.seasonalTotalCents != null ? q.seasonalTotalCents : (q.dueNowCents || 0) + (q.laterCents || 0);
+      rows = '<div><span>Seasonal plan, with tax</span><b>' + cents(tot) + '</b></div>' +
+        '<div class="tfs-fine2"><span>Due now (card)</span><span>' + cents(q.dueNowCents || 0) + '</span></div>' +
+        '<div class="tfs-fine2"><span>Due January 15, 2027</span><span>' + cents(q.laterCents || 0) + '</span></div>';
+    } else {
+      rows = '<div><span>Per storm up to ' + SNOW.overInches + ' in, with tax</span><b>' + (q.everyStormCents != null ? cents(q.everyStormCents) : '') + '</b></div>' +
+        '<div class="tfs-fine2"><span>Due now</span><span>' + cents(q.dueNowCents || 0) + '</span></div>' +
+        '<div class="tfs-fine2"><span>We save your card and charge it after each storm.</span></div>';
+    }
+    var link = SNOW.exec + '?r=snowcontract&id=' + encodeURIComponent(st.srv.id) + '&k=' + encodeURIComponent(st.srv.k) + '&plan=' + encodeURIComponent(st.plan) + '&adds=' + encodeURIComponent(JSON.stringify(addonsObj()));
+    return '<div class="tfs-card"><div class="tfs-maphead"><b>Review and sign</b><span>' + esc(st.address.formatted) + '</span></div>' +
+      '<div class="tfs-sum">' + rows + '<p class="tfs-fine">' + (seasonal ? 'Covers ' + SNOW.storms + ' storms up to ' + SNOW.overInches + ' inches. ' : '') + 'Storms over ' + SNOW.overInches + ' in add ' + money(SNOW.perInch) + ' per inch, plus tax.</p></div>' +
+      '<p class="tfs-fine"><a href="' + esc(link) + '" target="_blank" rel="noopener">Read the full agreement</a></p>' +
+      '<label class="tfs-ck tfs-agree"><input type="checkbox" id="tfs-agree"><span>I have read the agreement and the Notice of Cancellation</span></label>' +
+      '<label for="tfs-sname">Type your full name</label><input id="tfs-sname" autocomplete="name" value="' + esc(st.fullName || '') + '">' +
+      '<label for="tfs-sig">Sign with your finger or mouse</label><div class="tfs-sigwrap"><canvas id="tfs-sig" class="tfs-sig" height="150" aria-label="Signature"></canvas></div>' +
+      '<p class="tfs-fine"><button type="button" class="tfs-link" id="tfs-sigclear">Clear signature</button></p>' +
+      '<button type="button" class="tfs-go tfs-wide" id="tfs-signgo">' + (st.signed ? 'Add my card' : 'Sign and add my card') + '</button><p id="tfs-serr" class="tfs-err" role="alert"></p>' +
+      '<p class="tfs-fine">You have 3 business days to cancel. Service starts after that period. Your card is charged on the secure Stripe page.</p></div>';
+  }
+
+  function wireSign() {
+    var cv = $('tfs-sig'), ctx, drawing = false, ink = 0, last = null;
+    function size() { var w = cv.clientWidth || 300, r = window.devicePixelRatio || 1; cv.width = Math.round(w * r); cv.height = Math.round(150 * r); ctx = cv.getContext('2d'); ctx.scale(r, r); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#13202F'; }
+    size(); st.sigInk = 0;
+    function pt(e) { var b = cv.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
+    cv.addEventListener('pointerdown', function (e) { drawing = true; last = pt(e); try { cv.setPointerCapture(e.pointerId); } catch (x) { /* optional */ } ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(last.x + 0.1, last.y); ctx.stroke(); e.preventDefault(); });
+    cv.addEventListener('pointermove', function (e) { if (!drawing) return; var p = pt(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ink += Math.abs(p.x - last.x) + Math.abs(p.y - last.y); last = p; st.sigInk = ink; e.preventDefault(); });
+    function up() { drawing = false; }
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up); cv.addEventListener('pointerleave', up);
+    $('tfs-sigclear').onclick = function () { ctx.clearRect(0, 0, cv.width, cv.height); ink = 0; st.sigInk = 0; };
+    $('tfs-signgo').onclick = function () { doSign(cv); };
+  }
+
+  async function doSign(cv) {
+    var err = $('tfs-serr'), btn = $('tfs-signgo'); err.textContent = '';
+    if (!st.signed) {
+      var nm = $('tfs-sname').value.trim();
+      if (!$('tfs-agree').checked) { err.textContent = 'Please check the box to confirm you read the agreement and the Notice of Cancellation.'; return; }
+      if (nm.split(/\s+/).length < 2 || nm.length < 4) { err.textContent = 'Please type your first and last name.'; return; }
+      if (!st.sigInk || st.sigInk < 20) { err.textContent = 'Please sign in the box.'; return; }
+      st.fullName = nm;
+    }
+    btn.disabled = true; btn.textContent = 'Saving\u2026';
+    try {
+      if (!st.signed) {
+        var q = st.srv.quote || {};
+        var r = await postSnow({ action: 'sign', id: st.srv.id, k: st.srv.k, plan: st.plan, addons: addonsObj(), name: st.fullName, agree: true, signature: cv.toDataURL('image/png'), total: q.dueNowCents }, 20000);
+        if (!r || !r.ok) { err.textContent = (r && r.error) || 'We could not save your signature. Please try again, or call ' + PHONE + '.'; btn.disabled = false; btn.textContent = 'Sign and add my card'; return; }
+        st.signed = true; st.dates = r;
+      }
+      await goCheckout(st.srv.id, st.srv.k);
+    } catch (x) {
+      console.warn('[TFS] sign', x);
+      err.textContent = st.signed ? 'Your agreement is signed, but we could not open the card page. Press the button to try again, or call ' + PHONE + '.' : 'We could not reach our server. Please try again, or call ' + PHONE + '.';
+      btn.disabled = false; btn.textContent = st.signed ? 'Add my card' : 'Sign and add my card';
+    }
+  }
+  async function goCheckout(id, k) {
+    var c = await postSnow({ action: 'checkout', id: id, k: k }, 20000);
+    if (!c || !c.ok || !c.url) throw new Error((c && c.error) || 'checkout');
+    location.href = c.url;
+  }
+
+  /* ---------- return from Stripe ---------- */
+  function paidHtml() {
+    var p = st.paid || {};
+    if (p.state === 'checking') return '<div class="tfs-card tfs-done"><h3>Checking your card\u2026</h3><p>One moment.</p></div>';
+    if (p.state === 'ok') {
+      return '<div class="tfs-card tfs-done"><div class="tfs-chk">\u2713</div><h3>You\'re set</h3>' +
+        '<p>Your agreement is signed and your card is saved. We emailed you a copy.</p>' +
+        (p.cancelBy ? '<p>You can cancel until <b>' + esc(prettyDate(p.cancelBy)) + '</b> with the Notice of Cancellation.</p>' : '') +
+        (p.serviceFrom ? '<p>Service starts <b>' + esc(prettyDate(p.serviceFrom)) + '</b>. Before the first snow, mark your driveway and walkway edges.</p>' : '') +
+        '<p>Questions? Call <a href="' + TEL + '">' + PHONE + '</a>.</p></div>';
+    }
+    return '<div class="tfs-card tfs-done"><h3>Your card wasn\'t saved yet</h3>' +
+      '<p>Your agreement is signed, but we have not received your card. Add it now to finish.</p>' +
+      '<button type="button" class="tfs-go" id="tfs-again">Add my card</button><p id="tfs-perr" class="tfs-err" role="alert"></p>' +
+      '<p>Questions? Call <a href="' + TEL + '">' + PHONE + '</a>.</p></div>';
+  }
+  function wirePaid() {
+    var b = $('tfs-again'); if (!b) return;
+    b.onclick = async function () {
+      b.disabled = true; b.textContent = 'One moment\u2026'; $('tfs-perr').textContent = '';
+      try { await goCheckout(st.paid.id, st.paid.k); }
+      catch (x) { b.disabled = false; b.textContent = 'Add my card'; $('tfs-perr').textContent = (x && x.message && x.message !== 'checkout' && x.message !== 'Failed to fetch' ? x.message : 'We could not open the card page. Please try again, or call ' + PHONE + '.'); }
+    };
+  }
+  function checkReturn() {
+    var pm = /[?&]snowpaid=(cs_[A-Za-z0-9_]+)/.exec(location.search || ''), hm = /snow=([^.&]+)\.([^&]+)/.exec(location.hash || '');
+    if (!hm) return;
+    var id = decodeURIComponent(hm[1]), k = decodeURIComponent(hm[2]);
+    st.paid = { state: pm ? 'checking' : 'again', id: id, k: k }; st.step = 'paid';
+    if (!pm) return;
+    jsonp({ r: 'snowpaid', id: id, k: k, session: pm[1] }, 12000).then(function (r) {
+      st.paid = r && r.ok && (r.status === 'active' || r.status === 'paid') ? { state: 'ok', id: id, k: k, cancelBy: r.cancelBy, serviceFrom: r.serviceFrom } : { state: 'again', id: id, k: k };
+    }, function () { st.paid = { state: 'again', id: id, k: k }; }).then(function () { draw(); });
   }
 
   function outOfArea() {
@@ -248,6 +425,8 @@
       if ((b = $('tfs-tomap'))) b.onclick = function () { st.step = 'measure'; draw(); };
     }
     if (st.step === 'price') wirePrice();
+    if (st.step === 'sign') wireSign();
+    if (st.step === 'paid') wirePaid();
   }
 
   function wireAddress() {
@@ -409,7 +588,7 @@
     else if (t) parts.push(st.plan === 'seasonal' ? 'Plan: Seasonal ' + money(t.seasonal) + ' (8 storms up to 6 in; 50% at signing, 50% Jan 15)' : 'Plan: Per visit ' + money(t.visit) + ' per storm up to 6 in');
     if (t) parts.push('Over 6 in: ' + money(SNOW.perInch) + ' per inch');
     parts.push('Add-ons: ' + (a.list.length ? a.list.join('; ') : 'none') + (a.per ? ' = ' + money(a.per) + ' every storm' : ''));
-    parts.push('Prices before 6.35% CT sales tax');
+    parts.push('Prices before ' + taxPct() + '% CT sales tax');
     return parts.join('\n');
   }
 
@@ -442,7 +621,23 @@
       try { var r = await fetch(SNOW.leadWebhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d), keepalive: true }); ok = r.ok; } catch (x) { ok = false; }
       if (!ok) { var f = new URLSearchParams(); Object.keys(d).forEach(function (k) { f.append(k, d[k] == null ? '' : d[k]); }); await fetch(SNOW.leadWebhook, { method: 'POST', mode: 'no-cors', body: f, keepalive: true }); }
       try { if (window.fbq) window.fbq('track', 'Lead', { content_category: 'Snow' }); } catch (x) { /* optional */ }
-      st.first = parts[0]; st.sent = true; st.step = 'done'; draw(); scrollToTool();
+      st.first = parts[0]; st.sent = true; st.fullName = name; st.doneKind = isFull() ? 'waitlist' : '';
+      if (SNOW.online) {
+        // server sign-up path: additions only, any failure leaves today's done screen
+        try {
+          var body = {}; Object.keys(d).forEach(function (k) { body[k] = d[k]; });
+          body.action = 'lead'; body.cid = newCid(); body.plan = st.plan; body.addons = addonsObj();
+          var rep = await postSnow(body, 20000);
+          if (rep && rep.ok) {
+            st.srv = rep;
+            var wait = rep.status === 'waitlist' || isFull() || outOfArea();
+            if (rep.status === 'waitlist' || isFull()) st.doneKind = 'waitlist';
+            else if (rep.canSign && !wait && t && (rep.status === 'lead' || rep.status === 'quoted')) { st.signed = false; st.step = 'sign'; draw(); scrollToTool(); return; }
+            else if (!rep.canSign && !wait) st.doneKind = 'email';
+          }
+        } catch (y) { console.warn('[TFS] server', y); }
+      }
+      st.step = 'done'; draw(); scrollToTool();
     } catch (x) {
       console.warn('[TFS] send', x);
       btn.disabled = false; btn.textContent = 'Try again';
@@ -454,7 +649,8 @@
 
   /* ---------- start ---------- */
   var me = document.currentScript;
-  var st0 = document.createElement('style'); st0.textContent = CSS + SNOW_CSS; (document.head || document.documentElement).appendChild(st0);
+  var SIGN_CSS = '.tfs-sigwrap{border:1px solid #C9D1DA;border-radius:10px;background:#fff;overflow:hidden}.tfs-sig{display:block;width:100%;height:150px;touch-action:none;cursor:crosshair}.tfs-card a{color:#E23E2B;font-weight:700}.tfs-agree span{font-weight:600;font-size:14px}';
+  var st0 = document.createElement('style'); st0.textContent = CSS + SNOW_CSS + SIGN_CSS; (document.head || document.documentElement).appendChild(st0);
   if (!document.querySelector('link[href*="family=Montserrat"]')) { var fl = document.createElement('link'); fl.rel = 'stylesheet'; fl.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap'; document.head.appendChild(fl); }
   var wrap = document.createElement('div'); wrap.innerHTML = '<div class="tfl" data-tf-landing="Snow">' + pageHtml().split('%LOGO%').join(LOGO) + '</div>';
   var root = wrap.firstChild;
@@ -464,6 +660,8 @@
     ddb.addEventListener('click', function (e) { e.stopPropagation(); ddb.setAttribute('aria-expanded', dd.classList.toggle('open') ? 'true' : 'false'); });
     document.addEventListener('click', function (e) { if (!dd.contains(e.target)) { dd.classList.remove('open'); ddb.setAttribute('aria-expanded', 'false'); } }); }
   try { var ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ.map(function (q) { return { '@type': 'Question', name: q[0], acceptedAnswer: { '@type': 'Answer', text: q[1] } }; }) }); document.head.appendChild(ld); } catch (x) { /* optional */ }
+  checkReturn();
   draw();
+  if (st.step !== 'paid') loadConfig();
   window.TFSnow = { state: st, settings: SNOW, quoteSummary: function () { return quoteSummary(); } };
 })();

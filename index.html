@@ -589,7 +589,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='28';
+var APP_VERSION='29';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -634,7 +634,7 @@ function cacheClear(){try{Object.keys(localStorage).forEach(function(k){if(k.ind
 function netPill(on,txt){var p=document.querySelector('.netpill');if(!on){if(p)p.remove();return;}if(!p){p=document.createElement('div');p.className='netpill';document.body.appendChild(p);}p.textContent=txt;}
 /* ---- network: quick timeouts, a send queue for edits, a photo upload queue ---- */
 var NET={boot:'',off:false};
-var RO={boot:1,list:1,matList:1,ping:1,crewJobs:1,users:1,driveBrowse:1,driveThumbs:1,abcSearch:1,abcBranches:1,measure:1,ghlPipelines:1,stripeTest:1,abcTest:1};
+var RO={boot:1,list:1,matList:1,ping:1,crewJobs:1,users:1,driveBrowse:1,driveThumbs:1,abcSearch:1,abcBranches:1,measure:1,ghlPipelines:1,stripeTest:1,abcTest:1,snowBoot:1,snowCrew:1,snowStormReview:1};
 function netErr(msg){var e=new Error(msg);e.net=true;return e;}
 function rawCall(method,args,ms){
   var body=JSON.stringify({pass:S.pass,tok:load('tfp_tok')||'',method:method,args:args||{}});
@@ -652,10 +652,11 @@ function rawCall(method,args,ms){
 var OBX='tfq_out';
 function outbox(){try{return JSON.parse(localStorage.getItem(OBX)||'[]');}catch(e){return [];}}
 function outboxSet(a){try{localStorage.setItem(OBX,JSON.stringify(a));}catch(e){}}
-function queueable(m,a){a=a||{};if(m==='saveJob')return !!a.id;if(m==='saveQuote')return !!a.id&&!a.send;return m==='crewNote'||m==='updatePhoto'||m==='reorderPhotos';}
+function queueable(m,a){a=a||{};if(m==='saveJob')return !!a.id;if(m==='saveQuote')return !!a.id&&!a.send;return m==='crewNote'||m==='updatePhoto'||m==='reorderPhotos'||m==='snowVisit';}
 function findJob(id){var j=null;S.jobs.forEach(function(x){if(x.id===id)j=x;});return j;}
 /* what the screen shows right away for a queued change (and again after fresh data arrives, until it is sent) */
 var OPT={
+  snowVisit:function(a){return (window.SNOWAPP&&SNOWAPP.opt?SNOWAPP.opt(a):null)||{};},
   saveJob:function(a){var j=findJob(a.id);if(!j)return null;Object.keys(a).forEach(function(k){if(k!=='id'&&k!=='base')j[k]=a[k];});return j;},
   saveQuote:function(a){return MAT.optQuote(a);},
   crewNote:function(a){return MAT.optCrewNote(a);},
@@ -739,6 +740,7 @@ function render(){
   document.body.classList.remove('has-tabs');
   if(S.view==='login')return renderLogin();
   if(S.view==='loading'){app.innerHTML=bar('<div class="brand">TEAM <b>FORTE</b></div>')+'<div class="loading"><div class="spin dk"></div></div>';return;}
+  if(S.tab==='snow'){SNOWAPP.render();drawTabs();return;}
   if(S.tab!=='photos'){MAT.render();drawTabs();return;}
   if(S.view==='job'&&job()){renderJob();drawTabs();return;}
   if(S.view==='job'&&S.jobWait){app.innerHTML=bar('<div class="brand">TEAM <b>FORTE</b></div>')+'<div class="loading"><div class="spin dk"></div></div>';drawTabs();return;}
@@ -749,12 +751,13 @@ var TAB_ICONS={
   jobs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
   quotes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>',
   photos:ICON.cam,
+  snow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.9 7l14.2 10M19.1 7L4.9 17M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5"/></svg>',
   money:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
 };
 function drawTabs(){
   document.body.classList.add('has-tabs');
   var n=MAT.newCount();
-  var tabs=isCrew()?[['jobs','Jobs'],['photos','Photos']]:[['quotes','Quotes'],['photos','Photos'],['money','Spending']];
+  var tabs=isCrew()?[['jobs','Jobs'],['photos','Photos'],['snow','Snow']]:[['quotes','Quotes'],['photos','Photos'],['money','Spending'],['snow','Snow']];
   app.insertAdjacentHTML('beforeend','<nav class="tabs" aria-label="Sections"><div class="in2">'+
     tabs.map(function(t){
       return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'"'+(S.tab===t[0]?' aria-current="page"':'')+'>'+TAB_ICONS[t[0]]+t[1]+(t[0]==='quotes'&&n?'<span class="dot">'+n+'</span>':'')+'</button>';
@@ -788,7 +791,7 @@ function logout(msg){S.pass='';store('tfp_pass',null);cacheClear();S.view='login
 function isCrew(){return S.user&&S.user.role==='crew';}
 function applyBoot(d){
   S.user=(d.ping&&d.ping.user)||{name:'Owner',role:'owner'};
-  var ok=isCrew()?['jobs','photos']:['quotes','photos','money'];
+  var ok=isCrew()?['jobs','photos','snow']:['quotes','photos','money','snow'];
   if(ok.indexOf(S.tab)<0)S.tab=ok[0];
   var l=d.list||{};S.jobs=l.jobs||[];if(l.url)EXEC_URL=l.url;sortJobs();
   if(d.mat)MAT.apply(d.mat);
@@ -2110,7 +2113,7 @@ var MAT=(function(){
       (a.branchName?'<p class="hint">Branch: '+esc(a.branchName)+'</p>':'')+
       '<div class="acts"><button type="button" class="btn ghost" data-m="abctest">Test login</button><button type="button" class="btn ghost" data-m="branches">Find CT branches</button></div><div id="brs"></div>'+
       (a.connected?'<div class="acts"><button type="button" class="btn ghost" data-m="hook"'+(a.webhookId?' disabled':'')+'>'+(a.webhookId?'Order updates on':'Turn on order updates')+'</button><button type="button" class="btn danger" data-m="disc">Disconnect</button></div>':'')+
-      '</div>'+(isOwner()?'':'-->')+settingsExtraCards()+(isOwner()?contractCards():'')+'<button class="btn block" type="submit">Save settings</button></form></div>';
+      '</div>'+(isOwner()?'':'-->')+(isCrew()?'':'<div class="card"><h2>Snow</h2><div class="acts"><button type="button" class="btn ghost" data-snow="settings">Snow settings</button></div></div>')+settingsExtraCards()+(isOwner()?contractCards():'')+'<button class="btn block" type="submit">Save settings</button></form></div>';
     app.innerHTML=h;
     wireContractSig();
     var env=a.env||'sandbox';
@@ -3883,6 +3886,762 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   };
 })();
 
+
+/* SNOWAPP:BEGIN */
+/* --- 00-base.js --- */
+/* snowapp/00-base.js: SNOWAPP namespace, tab router, shared helpers (W8a). Inlined into admin.html by tools/embed_snow.py. */
+window.SNOWAPP = (function () {
+  var SN = { boot: null, loading: false, err: '', view: 'home', from: '', prevTab: '', filter: 'All', q: '', id: '' };
+  var css = document.createElement('style');
+  css.textContent = '.sn-spots{background:var(--navy);color:#fff;border-radius:var(--r);padding:14px 16px;margin:0;font-weight:700;font-size:16px}' +
+    '.sn-spots small{display:block;font-weight:500;color:#C4CCD6;font-size:12px;margin-top:2px}' +
+    '.sn-err{background:#FDECEA;color:#B3261E;border:1px solid #F3C4C4;border-radius:10px;padding:10px 12px;font-size:14px;margin:12px 0}' +
+    '.sn-ok{background:var(--green-bg);color:var(--green);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;margin:12px 0}' +
+    '.sn-warn{background:#FFF4E5;color:#7A4B00;border:1px solid #F5D7A6;border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0}' +
+    '.sn-warn ul{margin:6px 0 0;padding-left:18px}' +
+    '.sn-row{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-top:10px}' +
+    '.sn-row .t{font-weight:700;font-size:15px;display:flex;justify-content:space-between;gap:8px}' +
+    '.sn-row .m{color:var(--muted);font-size:13px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.sn-kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}' +
+    '.sn-kv:first-of-type{border-top:0}.sn-kv span{color:var(--muted)}.sn-kv b{text-align:right;min-width:0;overflow-wrap:anywhere}' +
+    '.sn-map{width:100%;border-radius:12px;background:var(--slate);display:block;margin-top:10px}' +
+    '.sn-btns{display:flex;flex-direction:column;gap:8px;margin-top:12px}' +
+    '.sn-x{flex:0 0 46px;padding:0}';
+  document.head.appendChild(css);
+
+  var H = {
+    SN: SN,
+    isOwner: function () { return !!S.user && S.user.role === 'owner'; },
+    isCrew: function () { return !!S.user && S.user.role === 'crew'; },
+    money: function (n) { n = Number(n) || 0; return '$' + n.toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); },
+    cents: function (c) { return H.money((Number(c) || 0) / 100); },
+    errBox: function (id) { return '<div class="sn-err" id="' + id + '" hidden></div>'; },
+    showErr: function (id, msg) {
+      var e = document.getElementById(id);
+      if (!e) { toast(msg, true); return; }
+      e.textContent = msg || ''; e.hidden = !msg;
+      if (msg && e.scrollIntoView) e.scrollIntoView({ block: 'center' });
+    },
+    top: function (title, back, backLabel) {
+      return bar('<button class="back" data-snow="' + back + '">' + ICON.back + esc(backLabel || 'Back') + '</button><div class="bar-title">' + esc(title) + '</div>');
+    },
+    spin: function () { return '<div class="loading"><div class="spin dk"></div></div>'; },
+    load: function () {
+      if (SN.loading || SN.boot) return;
+      SN.loading = true; SN.err = '';
+      call('snowBoot').then(function (d) { SN.boot = d || {}; SN.loading = false; if (S.tab === 'snow') render(); },
+        function (e) { SN.loading = false; SN.err = e.message || 'Couldn’t load snow data.'; if (S.tab === 'snow') render(); });
+    },
+    accounts: function () { return (SN.boot && SN.boot.accounts) || []; },
+    cfg: function () { return (SN.boot && SN.boot.cfg) || {}; },
+    acct: function (id) { var a = H.accounts(); for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; },
+    putAcct: function (acc) {
+      if (!acc || !acc.id || !SN.boot) return;
+      var a = SN.boot.accounts = SN.boot.accounts || [], hit = false;
+      for (var i = 0; i < a.length; i++) if (a[i].id === acc.id) { a[i] = acc; hit = true; }
+      if (!hit) a.push(acc);
+    }
+  };
+
+  function home() {
+    var b = SN.boot, sp = b.spots || {}, own = H.isOwner();
+    app.innerHTML = bar('<div class="brand">TEAM <b>FORTE</b></div><button class="link" data-snow="refresh" aria-label="Refresh">Refresh</button>') +
+      '<div class="wrap"><div class="card"><h2>Snow <small>' + esc((b.cfg && b.cfg.season) || '') + '</small></h2>' +
+      '<div class="sn-spots" id="snspots">' + (sp.used || 0) + ' of ' + (sp.cap || 0) + ' taken · ' + (sp.waitlist || 0) + ' on the waitlist' +
+      (sp.left != null ? '<small>' + sp.left + ' spot' + (sp.left === 1 ? '' : 's') + ' left</small>' : '') + '</div>' +
+      '<div class="sn-btns"><button class="btn" data-snow="newstorm">New storm</button><button class="btn ghost" data-snow="accounts">Accounts</button>' +
+      (own ? '<button class="btn ghost" data-snow="settings">Settings</button>' : '') + '</div></div></div>';
+  }
+  function crewView() {
+    if (API.storm && API.storm.renderCrew) return API.storm.renderCrew();
+    app.innerHTML = bar('<div class="brand">TEAM <b>FORTE</b></div>') + '<div class="wrap"><div class="card"><h2>Today’s stops</h2><p class="hint">Today’s stops will show here on storm days.</p></div></div>';
+  }
+
+  var API = {
+    state: SN,
+    H: H,
+    render: function () {
+      if (H.isCrew()) return crewView();
+      if (!SN.boot) {
+        if (!SN.loading && !SN.err) H.load();
+        app.innerHTML = bar('<div class="brand">TEAM <b>FORTE</b></div>') + '<div class="wrap">' + (SN.err ? '<div class="sn-err">' + esc(SN.err) + '</div><button class="btn block" data-snow="refresh">Try again</button>' : H.spin()) + '</div>';
+        return;
+      }
+      if (SN.view === 'settings' && H.isOwner() && API.settings) return API.settings.render();
+      if (SN.view === 'accounts' && API.accounts) return API.accounts.render();
+      if (SN.view === 'acct' && API.accounts && H.acct(SN.id)) return API.accounts.renderOne(SN.id);
+      SN.view = 'home';
+      home();
+    },
+    handle: function (act, el, ev) {
+      if (act === 'settings' && !H.isOwner()) { toast('Only the owner can change snow settings.', true); return; }
+      var m = /^([a-z]+)-/.exec(act);
+      if (m && API[m[1]] && API[m[1]].handle) { API[m[1]].handle(act, el, ev); return; }
+      if (act === 'settings') {
+        if (S.tab !== 'snow') { SN.prevTab = S.tab; S.tab = 'snow'; SN.from = 'mat'; }
+        SN.view = 'settings'; render(); window.scrollTo(0, 0);
+      } else if (act === 'accounts') { SN.view = 'accounts'; render(); window.scrollTo(0, 0); }
+      else if (act === 'home') {
+        if (SN.from === 'mat') { SN.from = ''; S.tab = SN.prevTab || 'quotes'; }
+        SN.view = 'home'; render(); window.scrollTo(0, 0);
+      } else if (act === 'refresh') { SN.boot = null; SN.err = ''; SN.loading = false; render(); }
+      else if (act === 'newstorm') { if (API.storm && API.storm.open) API.storm.open(); else toast('Storm days are coming soon.'); }
+    }
+  };
+  return API;
+})();
+document.addEventListener('click', function (e) {
+  var t = e.target.closest ? e.target.closest('[data-snow]') : null;
+  if (t) SNOWAPP.handle(t.getAttribute('data-snow'), t, e);
+});
+/* --- 10-settings.js --- */
+/* snowapp/10-settings.js: Settings > Snow form (W8a). Owner only. */
+(function () {
+  var A = SNOWAPP, H = A.H, SN = A.state;
+  var routes = null;   // working copy of the route names while the form is open
+  var busy = false;
+
+  function get(o, path) { var p = path.split('.'); for (var i = 0; i < p.length && o != null; i++) o = o[p[i]]; return o; }
+  function put(o, path, v) { var p = path.split('.'); for (var i = 0; i < p.length - 1; i++) { if (o[p[i]] == null) o[p[i]] = {}; o = o[p[i]]; } o[p[p.length - 1]] = v; }
+  function clone(x) { return JSON.parse(JSON.stringify(x == null ? null : x)); }
+
+  /* one field; t = num | int | date | text */
+  function fld(l, k, t, cfg, hint) {
+    var v = get(cfg, k), num = t === 'num' || t === 'int';
+    return '<label class="f">' + esc(l) + (hint ? ' <small>' + esc(hint) + '</small>' : '') + '</label><input class="in" data-k="' + k + '" data-t="' + t + '" ' +
+      (num ? 'inputmode="' + (t === 'int' ? 'numeric' : 'decimal') + '" ' : t === 'date' ? 'type="date" ' : '') + 'value="' + esc(v == null ? '' : v) + '" data-l="' + esc(l) + '" autocomplete="off">';
+  }
+  function row() { return '<div class="row">' + Array.prototype.map.call(arguments, function (x) { return '<div>' + x + '</div>'; }).join('') + '</div>'; }
+  function sw(k, title, sub, on) {
+    return '<div class="toggle"><div class="tl"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div><button type="button" class="sw' + (on ? ' on' : '') + '" role="switch" data-snow="settings-sw" data-k="' + k + '" aria-checked="' + !!on + '" aria-label="' + esc(title) + '"></button></div>';
+  }
+  function missingBox(missing, strong) {
+    if (!missing || !missing.length) return '';
+    return '<div class="sn-warn" id="snmiss">' + (strong ? '<b>It can’t be turned on yet.</b> ' : '') + 'Still needed before sign-ups can start:<ul>' + missing.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+  }
+
+  function routesHtml() {
+    return routes.map(function (r, i) {
+      return '<div class="row" style="margin-top:8px"><input class="in" data-route value="' + esc(r) + '" aria-label="Route name" maxlength="40"><button type="button" class="btn ghost sn-x" data-snow="settings-rdel" data-i="' + i + '" aria-label="Remove route">' + ICON.x + '</button></div>';
+    }).join('');
+  }
+
+  function render() {
+    var cfg = H.cfg(), b = SN.boot;
+    if (!routes) routes = (cfg.routes || []).slice();
+    var tiers = (cfg.tiers || []).map(function (t, i) {
+      return '<div class="card" style="margin:10px 0;padding:12px"><b>' + esc(t.label || t.id) + '</b>' +
+        fld('Name', 'tiers.' + i + '.label', 'text', cfg) +
+        row(fld('Up to (sq ft)', 'tiers.' + i + '.max', 'int', cfg), fld('Per visit ($)', 'tiers.' + i + '.visit', 'num', cfg), fld('Seasonal ($)', 'tiers.' + i + '.seasonal', 'num', cfg)) + '</div>';
+    }).join('');
+    app.innerHTML = H.top('Snow settings', 'home', SN.from === 'mat' ? 'Settings' : 'Snow') + '<div class="wrap"><form id="snf" novalidate>' +
+      '<div class="card"><h2>Season &amp; sign-up</h2>' +
+      sw('enabled', 'Sign-ups open', 'Turns the snow sign-up page on or off', cfg.enabled !== false) +
+      fld('Season', 'season', 'text', cfg, 'e.g. 2026-27') +
+      row(fld('Season starts', 'seasonStart', 'date', cfg), fld('Season ends', 'seasonEnd', 'date', cfg)) +
+      fld('Seasonal sign-up closes', 'signupCloses', 'date', cfg) + '</div>' +
+      '<div class="card"><h2>Prices</h2>' + tiers +
+      row(fld('Per inch over ($)', 'perInch', 'num', cfg), fld('Over (inches)', 'overInches', 'num', cfg)) +
+      row(fld('Storms in season plan', 'storms', 'int', cfg), fld('Trigger (inches)', 'trigger', 'num', cfg)) +
+      fld('Sales tax (%)', 'taxRate', 'num', cfg) + '</div>' +
+      '<div class="card"><h2>Add-ons</h2>' +
+      row(fld('Extra vehicle ($)', 'addons.vehicle', 'num', cfg), fld('Walkway ($)', 'addons.walkway', 'num', cfg)) +
+      '<label class="f">Ice melt ($)</label>' + row(fld('Small', 'addons.iceMelt.small', 'num', cfg), fld('Medium', 'addons.iceMelt.medium', 'num', cfg), fld('Large', 'addons.iceMelt.large', 'num', cfg)) +
+      fld('Plow return ($)', 'addons.plowReturn', 'num', cfg) + '</div>' +
+      '<div class="card"><h2>Payments</h2>' +
+      row(fld('Paid when signing (%)', 'pay.signPct', 'num', cfg), fld('Reminder days before', 'pay.remindDays', 'int', cfg)) +
+      fld('Second payment date', 'pay.installDate', 'date', cfg) +
+      row(fld('Late fee (%)', 'late.pct', 'num', cfg), fld('Late fee minimum ($)', 'late.min', 'num', cfg)) +
+      row(fld('Interest a year (%)', 'late.apr', 'num', cfg), fld('Days before late', 'late.days', 'int', cfg)) + '</div>' +
+      '<div class="card"><h2>Capacity</h2>' +
+      row(fld('Spots (cap)', 'cap', 'int', cfg), fld('Hold hours', 'holdHours', 'int', cfg)) +
+      fld('Custom lot counts as one spot per (sq ft)', 'customWeightSqft', 'int', cfg) + '</div>' +
+      '<div class="card"><h2>Routes</h2><div id="snroutes">' + routesHtml() + '</div><div class="acts"><button type="button" class="btn ghost" data-snow="settings-radd">Add a route</button></div></div>' +
+      '<div class="card"><h2>Contract</h2>' + fld('Contract version', 'contractVersion', 'text', cfg) +
+      sw('contractApproved', 'Snow contract approved', 'Sign-ups can take payments only when this is on', !!cfg.contractApproved) +
+      '<div id="snmw">' + (cfg.contractApproved ? '' : missingBox(b.missing, false)) + '</div></div>' +
+      H.errBox('snerr') + '<div id="snok" class="sn-ok" hidden>Saved.</div>' +
+      '<button class="btn block" type="submit" id="snsave">Save snow settings</button></form></div>';
+    document.getElementById('snf').addEventListener('submit', function (e) { e.preventDefault(); save(); });
+  }
+
+  function syncRoutes() {
+    var f = document.getElementById('snf'); if (!f) return;
+    routes = Array.prototype.map.call(f.querySelectorAll('[data-route]'), function (i) { return i.value; });
+  }
+
+  function save() {
+    if (busy) return;
+    var cfg = H.cfg(), next = clone(cfg), f = document.getElementById('snf'), err = '';
+    H.showErr('snerr', ''); document.getElementById('snok').hidden = true;
+    Array.prototype.forEach.call(f.querySelectorAll('input[data-k]'), function (i) {
+      var t = i.getAttribute('data-t'), v = i.value.trim();
+      if (t === 'num' || t === 'int') {
+        if (v === '' || isNaN(Number(v))) { err = err || (i.getAttribute('data-l') + ' needs a number.'); return; }
+        put(next, i.getAttribute('data-k'), Number(v));
+      } else if (t === 'date') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { err = err || (i.getAttribute('data-l') + ' needs a date.'); return; }
+        put(next, i.getAttribute('data-k'), v);
+      } else {
+        if (v === '') { err = err || (i.getAttribute('data-l') + ' can’t be empty.'); return; }
+        put(next, i.getAttribute('data-k'), v);
+      }
+    });
+    Array.prototype.forEach.call(f.querySelectorAll('button[data-k].sw'), function (b) { put(next, b.getAttribute('data-k'), b.classList.contains('on')); });
+    syncRoutes();
+    var rs = routes.map(function (r) { return r.trim(); }).filter(Boolean);
+    if (!rs.length) err = err || 'Add at least one route.';
+    if (rs.filter(function (r, i) { return rs.indexOf(r) !== i; }).length) err = err || 'Two routes have the same name.';
+    next.routes = rs;
+    if (err) { H.showErr('snerr', err); return; }
+    var part = {};
+    Object.keys(next).forEach(function (k) { if (JSON.stringify(next[k]) !== JSON.stringify(cfg[k])) part[k] = next[k]; });
+    if (!Object.keys(part).length) { toast('Nothing changed.'); return; }
+    busy = true;
+    var btn = document.getElementById('snsave'); btn.disabled = true;
+    call('snowSaveSettings', part).then(function (c) {
+      busy = false;
+      SN.boot.cfg = c && typeof c === 'object' && !Array.isArray(c) ? c : next;
+      routes = null;
+      render();
+      var ok = document.getElementById('snok'); ok.hidden = false; toast('Saved');
+    }, function (x) {
+      busy = false; btn.disabled = false;
+      H.showErr('snerr', x.message || 'Couldn’t save.');
+    });
+  }
+
+  A.settings = {
+    render: render,
+    handle: function (act, el) {
+      if (act === 'settings-sw') {
+        var on = !el.classList.contains('on');
+        if (on && el.getAttribute('data-k') === 'contractApproved' && SN.boot.missing && SN.boot.missing.length) {
+          document.getElementById('snmw').innerHTML = missingBox(SN.boot.missing, true);
+          return;
+        }
+        el.classList.toggle('on', on); el.setAttribute('aria-checked', on);
+      } else if (act === 'settings-radd') { syncRoutes(); routes.push(''); document.getElementById('snroutes').innerHTML = routesHtml(); var ins = document.querySelectorAll('[data-route]'); ins[ins.length - 1].focus(); }
+      else if (act === 'settings-rdel') { syncRoutes(); routes.splice(+el.getAttribute('data-i'), 1); document.getElementById('snroutes').innerHTML = routesHtml(); }
+    },
+    reset: function () { routes = null; }
+  };
+  /* leaving the form drops unsaved route edits */
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-snow="home"]'); if (t) routes = null; });
+})();
+/* --- 20-accounts.js --- */
+/* snowapp/20-accounts.js: accounts list and account page (W8a). */
+(function () {
+  var A = SNOWAPP, H = A.H, SN = A.state;
+  var FILTERS = { All: null, Active: ['active', 'paused'], Pending: ['pending'], Waitlist: ['waitlist'], Leads: ['lead', 'quoted'], Cancelled: ['cancelled', 'lapsed', 'closed'] };
+  var STATUS = { lead: 'Lead', waitlist: 'Waitlist', quoted: 'Quoted', pending: 'Pending', active: 'Active', paused: 'Paused', cancelled: 'Cancelled', lapsed: 'Lapsed', closed: 'Closed' };
+  var busy = false;
+
+  function pill(a) { var s = a.status; return '<span class="pill' + (s === 'active' ? ' live' : s === 'pending' || s === 'waitlist' ? ' home' : '') + '">' + esc(STATUS[s] || s || '') + '</span>'; }
+  function plan(a) { return (a.plan === 'seasonal' ? 'Seasonal' : a.plan === 'visit' ? 'Per visit' : '') + (a.tier ? ' · ' + a.tier.charAt(0).toUpperCase() + a.tier.slice(1) : ''); }
+  function match(a) {
+    var f = FILTERS[SN.filter];
+    if (f && f.indexOf(a.status) < 0) return false;
+    var q = (SN.q || '').trim().toLowerCase();
+    if (!q) return true;
+    return [a.name, a.address, a.phone, a.email, a.id].join(' ').toLowerCase().indexOf(q) >= 0;
+  }
+  function rows() {
+    var l = H.accounts().filter(match).sort(function (x, y) { return String(x.name || '').localeCompare(String(y.name || '')); });
+    if (!l.length) return '<div class="empty"><b>No accounts</b>Nothing matches this filter.</div>';
+    return l.map(function (a) {
+      return '<button class="sn-row" data-snow="accounts-open" data-id="' + esc(a.id) + '"><div class="t"><span>' + esc(a.name || a.id) + '</span>' + pill(a) + '</div>' +
+        '<div class="m">' + esc(a.address || '') + '</div><div class="m">' + esc(plan(a)) + (a.route ? ' · ' + esc(a.route) : '') + '</div></button>';
+    }).join('');
+  }
+  function renderList() {
+    app.innerHTML = H.top('Accounts', 'home', 'Snow') + '<div class="wrap"><div class="chips" id="snchips">' +
+      Object.keys(FILTERS).map(function (k) { return '<button class="chip' + (SN.filter === k ? ' on' : '') + '" data-snow="accounts-filter" data-v="' + k + '">' + k + '</button>'; }).join('') + '</div>' +
+      '<input class="in mt" id="snq" type="search" placeholder="Search name, address or phone" aria-label="Search accounts" value="' + esc(SN.q) + '"><div id="snlist">' + rows() + '</div></div>';
+    document.getElementById('snq').addEventListener('input', function (e) { SN.q = e.target.value; document.getElementById('snlist').innerHTML = rows(); });
+  }
+
+  function kv(l, v) { return '<div class="sn-kv"><span>' + esc(l) + '</span><b>' + v + '</b></div>'; }
+  function sel(id, opts, cur) { return '<select class="in" id="' + id + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(cur == null ? '' : cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>'; }
+  function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function dl(n) { return n == null || n === '' ? '' : n; }
+
+  function renderOne(id) {
+    var a = H.acct(id), cfg = H.cfg(), own = H.isOwner(), cu = a.custom || {};
+    var routesList = [['', 'No route']].concat((cfg.routes || []).map(function (r) { return [r, r]; }));
+    if (a.route && (cfg.routes || []).indexOf(a.route) < 0) routesList.push([a.route, a.route]);
+    var tiers = (cfg.tiers || []).map(function (t) { return [t.id, t.label || t.id]; }).concat([['custom', 'Custom']]);
+    var signed = !!a.signedAt, k = a.k, link = k && typeof EXEC_URL === 'string' && EXEC_URL ? EXEC_URL + '?r=snowcontract&id=' + encodeURIComponent(a.id) + '&k=' + encodeURIComponent(k) : '';
+    var pays = (a.payments || []).map(function (p) { return '<div class="sn-kv"><span>' + esc(p.label || p.kind) + ' · ' + esc(p.status) + '</span><b>' + H.cents(p.amount) + '</b></div>'; }).join('');
+    var ph = '<p class="hint">' + (a.tierChange && !a.tierChange.accepted ? 'A size change is waiting for the customer’s OK.' : '') + '</p>';
+    app.innerHTML = H.top(a.name || a.id, 'accounts-back', 'Accounts') + '<div class="wrap">' + H.errBox('snaerr') +
+      '<div class="card"><h2>' + esc(a.name || a.id) + ' ' + pill(a) + '</h2>' +
+      kv('Address', esc(a.address || '')) + kv('Phone', esc(a.phone || '')) + kv('Email', esc(a.email || '')) + kv('Plan', esc(plan(a))) +
+      (a.signedAt ? kv('Signed', esc(String(a.signedAt).slice(0, 10))) : '') + (a.cancelBy ? kv('Cancel by', esc(a.cancelBy)) : '') + (a.serviceFrom ? kv('Service from', esc(a.serviceFrom)) : '') +
+      (link ? '<a class="btn ghost block mt" href="' + esc(link) + '" target="_blank" rel="noopener">View contract</a>' : '') + '</div>' +
+      '<div class="card"><h2>Measurement</h2>' + kv('Size', esc(dl(a.sqft)) + ' sq ft') + kv('Tier', esc(a.tier || 'not set')) + kv('Size picked by', a.manual ? 'Customer (typed in)' : 'Drawn on the map') +
+      (a.mapImgId ? '<img class="sn-map" id="snmap" alt="Driveway map" src="' + esc(img(a.mapImgId, 800)) + '">' : '') + '</div>' +
+      '<div class="card"><h2>Route &amp; notes</h2><label class="f">Route</label>' + sel('snr', routesList, a.route) +
+      '<div class="row"><div><label class="f">Stop order</label><input class="in" id="sno" inputmode="numeric" value="' + esc(dl(a.routeOrder)) + '"></div><div><label class="f">Counts as spots</label><input class="in" id="snw" inputmode="decimal" value="' + esc(dl(a.weight)) + '"></div></div>' +
+      '<label class="f">Notes</label><textarea class="in" id="snn" maxlength="600">' + esc(a.notes || '') + '</textarea>' +
+      '<div class="acts"><button class="btn" data-snow="accounts-save">Save</button>' +
+      (a.status === 'active' ? '<button class="btn ghost" data-snow="accounts-pause">Pause service</button>' : a.status === 'paused' ? '<button class="btn ghost" data-snow="accounts-resume">Resume service</button>' : '') + '</div></div>' +
+      '<div class="card"><h2>Change size</h2>' + ph + '<label class="f">New tier</label>' + sel('sntier', tiers, a.tier) +
+      '<label class="f">Square feet</label><input class="in" id="snsq" inputmode="numeric" value="' + esc(dl(a.sqft)) + '">' +
+      (signed ? '<label class="f">Customer OK’d on</label><input class="in" type="date" id="snat" value="' + today() + '">' +
+        '<label class="f">How</label>' + sel('snhow', [['phone', 'Phone call'], ['text', 'Text'], ['email', 'Email'], ['person', 'In person']], 'phone') +
+        '<label class="f">Note</label><input class="in" id="snnote" maxlength="200">' : '') +
+      '<button class="btn block mt" data-snow="accounts-tier">' + (signed ? 'Save size change' : 'Save size') + '</button></div>' +
+      (a.tier === 'custom' ? '<div class="card"><h2>Custom prices</h2><div class="row"><div><label class="f">Per visit ($)</label><input class="in" id="cuv" inputmode="decimal" value="' + esc(dl(cu.visit)) + '"></div><div><label class="f">Per inch ($)</label><input class="in" id="cui" inputmode="decimal" value="' + esc(dl(cu.perInch)) + '"></div></div>' +
+        '<div class="row"><div><label class="f">Seasonal ($)</label><input class="in" id="cus" inputmode="decimal" value="' + esc(dl(cu.seasonal)) + '"></div><div><label class="f">Ice melt ($)</label><input class="in" id="cum" inputmode="decimal" value="' + esc(dl(cu.iceMelt)) + '"></div></div>' +
+        '<button class="btn block mt" data-snow="accounts-custom">Save prices</button></div>' : '') +
+      '<div class="card"><h2>Payments</h2>' + (pays || '<p class="hint">No payments yet.</p>') + '</div>' +
+      (own && a.status !== 'cancelled' ? '<div class="card"><h2>Cancel</h2><p class="hint">Cancels this account and refunds paid amounts when it is still inside the cancel window.</p><button class="btn danger block" data-snow="accounts-cancel">Cancel this account</button></div>' : '') +
+      '</div>';
+  }
+
+  /* send changed fields only, with the base values this phone loaded */
+  function saveFields(fields, a, msg) {
+    if (busy) return;
+    var args = { id: a.id, base: {} }, n = 0;
+    Object.keys(fields).forEach(function (k) {
+      if (JSON.stringify(fields[k]) !== JSON.stringify(a[k] == null ? '' : a[k]) || k === 'tierChange' || k === 'custom' || k === 'status') {
+        args[k] = fields[k]; args.base[k] = a[k] === undefined ? null : a[k]; n++;
+      }
+    });
+    if (!n) { toast('Nothing changed.'); return; }
+    busy = true; H.showErr('snaerr', '');
+    call('snowSaveAccount', args).then(function (r) {
+      busy = false;
+      H.putAcct(r && r.id ? r : Object.assign({}, a, fields));
+      render(); toast(msg || 'Saved');
+    }, function (x) {
+      busy = false;
+      if (isConflict(x)) { conflictBox(x, function () { SN.boot = null; render(); }); return; }
+      H.showErr('snaerr', x.message || 'Couldn’t save.');
+    });
+  }
+  function v(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+  function nz(s) { return s === '' ? '' : Number(s); }
+
+  function cancelSheet(a) {
+    var ov = sheet('<h3>Cancel ' + esc(a.name || a.id) + closeBtn() + '</h3><p class="sub">This cancels the account and refunds every paid card payment if it is inside the cancel window. It can’t be undone.</p>' +
+      '<label class="f">Reason</label><input class="in" id="sncr" maxlength="200" placeholder="Why is it being cancelled?"><div id="sncerr" class="sn-err" hidden></div>' +
+      '<div class="acts"><button class="btn ghost" data-close>Keep account</button><button class="btn" id="sncok" style="background:#C62828">Cancel account</button></div>');
+    ov.querySelector('#sncok').onclick = function () {
+      var reason = ov.querySelector('#sncr').value.trim(), b = this, er = ov.querySelector('#sncerr');
+      b.disabled = true; er.hidden = true;
+      call('snowCancel', { id: a.id, reason: reason }).then(function (r) {
+        closeSheet(); if (r && r.id) H.putAcct(r);
+        render(); toast(r && r.refundNotes ? 'Cancelled. ' + (Array.isArray(r.refundNotes) ? r.refundNotes.join(' ') : r.refundNotes) : 'Cancelled');
+      }, function (x) { b.disabled = false; er.textContent = x.message; er.hidden = false; });
+    };
+  }
+
+  A.accounts = {
+    render: renderList,
+    renderOne: renderOne,
+    handle: function (act, el) {
+      var a = SN.id && H.acct(SN.id);
+      if (act === 'accounts-open') { SN.id = el.getAttribute('data-id'); SN.view = 'acct'; render(); window.scrollTo(0, 0); }
+      else if (act === 'accounts-back') { SN.view = 'accounts'; render(); }
+      else if (act === 'accounts-filter') {
+        SN.filter = el.getAttribute('data-v');
+        Array.prototype.forEach.call(document.querySelectorAll('#snchips .chip'), function (c) { c.classList.toggle('on', c === el); });
+        document.getElementById('snlist').innerHTML = rows();
+      } else if (!a) return;
+      else if (act === 'accounts-save') {
+        saveFields({ route: v('snr'), routeOrder: nz(v('sno')), weight: nz(v('snw')), notes: v('snn') }, a);
+      } else if (act === 'accounts-pause') saveFields({ status: 'paused' }, a, 'Paused');
+      else if (act === 'accounts-resume') saveFields({ status: 'active' }, a, 'Resumed');
+      else if (act === 'accounts-tier') {
+        var tier = v('sntier'), sq = nz(v('snsq'));
+        if (sq === '' || isNaN(sq)) { H.showErr('snaerr', 'Enter the square feet.'); return; }
+        if (!a.signedAt) { saveFields({ tier: tier, sqft: sq }, a); return; }
+        if (!v('snat')) { H.showErr('snaerr', 'Enter the date the customer said OK.'); return; }
+        saveFields({ tierChange: { tier: tier, sqft: sq, accepted: { at: v('snat'), how: v('snhow'), note: v('snnote') } } }, a, 'Size change saved');
+      } else if (act === 'accounts-custom') {
+        var c = { visit: nz(v('cuv')), perInch: nz(v('cui')), seasonal: nz(v('cus')), iceMelt: nz(v('cum')) };
+        if (c.visit === '' || c.perInch === '') { H.showErr('snaerr', 'Enter a per-visit and a per-inch price.'); return; }
+        saveFields({ custom: c }, a, 'Prices saved');
+      } else if (act === 'accounts-cancel') { if (H.isOwner()) cancelSheet(a); }
+    }
+  };
+})();
+/* --- 30-storm.js --- */
+/* snowapp/30-storm.js: storm day screens (W8b). */
+(function () {
+  var A = SNOWAPP, H = A.H, SN = A.state;
+  var ST = { storm: null, stops: [], draft: {}, openIds: {}, review: null, revBusy: false, thumbs: {}, failed: {}, up: {}, charging: false, prog: '', res: null, err: '', crewLoaded: false, loading: false, note: '' };
+  var CK = 'tfsn_crew';
+  var STAGES = [['before', 'Before'], ['after', 'After'], ['depth', 'Depth']];
+  css();
+
+  function css() {
+    var s = document.createElement('style');
+    s.textContent = '.st-head{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}' +
+      '.st-route{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:18px 2px 0}' +
+      '.st-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-top:10px}' +
+      '.st-card.done{border-color:var(--green);background:var(--green-bg)}.st-card.skip{opacity:.75}' +
+      '.st-card .t{font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}' +
+      '.st-card a.adr{display:block;color:#2B4FC7;font-size:14px;margin-top:3px;text-decoration:underline;overflow-wrap:anywhere}' +
+      '.st-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.st-tags .pill{white-space:normal}' +
+      '.st-note{font-size:13px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}' +
+      '.st-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}' +
+      '.st-det{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}.st-det summary{font-weight:700;font-size:14px;padding:8px 0;cursor:pointer}' +
+      '.st-num{display:grid;grid-template-columns:1fr 84px;gap:8px;align-items:center;margin-top:6px;font-size:14px}.st-num .in{min-height:40px;padding:6px 8px}' +
+      '.st-ph{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.st-ph .cell{width:calc(33.3% - 6px);min-width:0}' +
+      '.st-ph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--slate);display:block}' +
+      '.st-ph .lbl{font-size:12px;color:var(--muted);margin-top:2px}.st-ph .bad{font-size:12px;color:#B3261E;font-weight:700}' +
+      '.st-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}.st-tbl td,.st-tbl th{padding:8px 4px;border-top:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere;text-align:left}' +
+      '.st-tbl .r{text-align:right;width:92px}.st-tbl small{display:block;color:var(--muted)}.st-tbl .w{color:#7A4B00;font-size:12px}' +
+      '.st-tot td{font-weight:700;font-size:14px}.st-prog{font-weight:700;margin-top:10px}';
+    document.head.appendChild(s);
+  }
+  function v(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+  function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function num(x) { var n = parseFloat(x); return isNaN(n) || n < 0 ? 0 : n; }
+  function cnt(x) { return Array.isArray(x) ? x.length : (Number(x) || 0); }
+  function aid(s) { return s.accountId || s.id; }
+  function vis(s) { return s.visit || (s.visit = { status: 'todo' }); }
+  function stat(s) { return (s.visit && s.visit.status) || 'todo'; }
+  function findStop(id) { for (var i = 0; i < ST.stops.length; i++) if (aid(ST.stops[i]) === id) return ST.stops[i]; return null; }
+  function queued(id) {
+    try { if (typeof outbox !== 'function') return false; return outbox().some(function (it) { return it.m === 'snowVisit' && it.a && it.a.accountId === id && (!ST.storm || it.a.stormId === ST.storm.id); }); } catch (e) { return false; }
+  }
+  function ro() { return !ST.storm || ST.storm.status !== 'open'; }
+
+  /* ---------- data ---------- */
+  function setData(d, keep) {
+    d = d || {};
+    ST.storm = d.storm || ST.storm; ST.stops = d.stops || d.visits || [];
+    if (!keep) { ST.draft = {}; }
+    ST.crewLoaded = true;
+  }
+  function saveCache() { try { localStorage.setItem(CK, JSON.stringify({ storm: ST.storm, stops: ST.stops })); } catch (e) {} }
+  function loadCache() {
+    try { var c = JSON.parse(localStorage.getItem(CK) || 'null'); if (c && c.storm) { setData(c); applyQueued(); return true; } } catch (e) {}
+    return false;
+  }
+  function applyQueued() {
+    try { if (typeof outbox === 'function') outbox().forEach(function (it) { if (it.m === 'snowVisit') applyVisit(it.a); }); } catch (e) {}
+  }
+  function applyVisit(a) {
+    if (!a || !ST.storm || a.stormId !== ST.storm.id) return false;
+    var s = findStop(a.accountId); if (!s) return false;
+    var vv = vis(s); vv.status = a.status; if (a.did) vv.did = a.did; if (a.note != null) vv.note = a.note;
+    return true;
+  }
+  /* what the phone shows at once for a queued change (called by the app's send queue) */
+  A.opt = function (a) { try { applyVisit(a); saveCache(); } catch (e) {} return {}; };
+
+  function fetchCrew(stormId) {
+    ST.loading = true; ST.err = '';
+    return call('snowCrew', stormId ? { stormId: stormId } : {}).then(function (d) {
+      ST.loading = false; setData(d && d.storm !== undefined ? d : { storm: null, stops: [] });
+      if (!d || !d.storm) ST.storm = null;
+      applyQueued(); saveCache();
+    }, function (e) {
+      ST.loading = false;
+      if (e && e.net && loadCache()) { ST.note = 'No signal. Showing the last list you loaded.'; return; }
+      ST.err = (e && e.message) || 'Couldn’t load the stops.';
+    });
+  }
+
+  /* ---------- new storm sheet ---------- */
+  function open() {
+    var list = ((SN.boot && SN.boot.storms) || []).slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).slice(0, 5);
+    var recent = list.length ? '<label class="f">Open an earlier storm</label>' + list.map(function (s) {
+      return '<button class="sn-row" data-snow="storm-view" data-id="' + esc(s.id) + '"><div class="t"><span>' + esc(s.date) + ' · ' + esc(s.depthRaw != null && s.depthRaw !== '' ? s.depthRaw : s.depth) + ' in</span><span class="pill">' + esc(label(s.status)) + '</span></div></button>';
+    }).join('') : '';
+    sheet('<h3>New storm' + closeBtn() + '</h3><label class="f">Date</label><input class="in" type="date" id="stdate" value="' + today() + '">' +
+      '<div class="row"><div><label class="f">Snow (inches)</label><input class="in" id="stdepth" inputmode="decimal" placeholder="e.g. 4.5"></div>' +
+      '<div><label class="f">Ended at</label><input class="in" type="time" id="stend"></div></div>' +
+      '<label class="f">Kind</label><select class="in" id="stkind"><option value="storm">Storm</option><option value="request">Customer request</option></select>' +
+      '<label class="f">Note</label><textarea class="in" id="stnote" maxlength="400"></textarea><div class="sn-err" id="sterr" hidden></div>' +
+      '<div class="acts"><button class="btn ghost" data-close>Cancel</button><button class="btn" id="stgo">Start storm</button></div>' + recent);
+    document.getElementById('stgo').onclick = function () {
+      var b = this, er = document.getElementById('sterr'), kind = v('stkind'), depth = v('stdepth'), date = v('stdate');
+      er.hidden = true;
+      if (!date) { er.textContent = 'Pick the date.'; er.hidden = false; return; }
+      if (kind === 'storm' && (depth === '' || isNaN(parseFloat(depth)))) { er.textContent = 'Enter how many inches fell.'; er.hidden = false; return; }
+      b.disabled = true;
+      call('snowStormSave', { date: date, depthRaw: depth, endedAt: v('stend') ? date + 'T' + v('stend') : '', kind: kind, note: v('stnote') }).then(function (r) {
+        var s = r && r.storm; if (!s) throw new Error('The storm wasn’t saved.');
+        if (SN.boot) { var l = SN.boot.storms = SN.boot.storms || [], hit = false; for (var i = 0; i < l.length; i++) if (l[i].id === s.id) { l[i] = s; hit = true; } if (!hit) l.push(s); }
+        closeSheet(); show(s.id, r);
+      }, function (x) { b.disabled = false; er.textContent = (x && x.message) || 'Couldn’t save.'; er.hidden = false; });
+    };
+  }
+  function label(s) { return s === 'charging' ? 'Charging' : s === 'charged' ? 'Charged' : 'Open'; }
+
+  function show(id, seed) {
+    if (S.tab !== 'snow') { SN.prevTab = S.tab; S.tab = 'snow'; SN.from = 'mat'; }
+    closeSheet();
+    ST.storm = (seed && seed.storm) || null; ST.stops = []; ST.review = null; ST.res = null; ST.prog = ''; ST.err = ''; ST.note = ''; ST.draft = {}; ST.crewLoaded = false;
+    SN.view = 'storm'; SN.stormId = id; render(); window.scrollTo(0, 0);
+    fetchCrew(id).then(function () { if (SN.view === 'storm') render(); });
+  }
+
+  /* ---------- storm page ---------- */
+  function groups() {
+    var order = (H.cfg().routes || []).slice(), by = {};
+    ST.stops.forEach(function (s) { var r = s.route || ''; (by[r] = by[r] || []).push(s); if (r && order.indexOf(r) < 0) order.push(r); });
+    var keys = order.filter(function (r) { return by[r]; }); if (by['']) keys.push('');
+    return keys.map(function (k) {
+      by[k].sort(function (a, b) { return (a.plan === 'seasonal' ? 0 : 1) - (b.plan === 'seasonal' ? 0 : 1) || (Number(a.order) || 0) - (Number(b.order) || 0) || String(a.name).localeCompare(String(b.name)); });
+      return { route: k || 'No route', stops: by[k] };
+    });
+  }
+  function addonTags(s) {
+    var a = s.addons || {}, t = [];
+    if (a.vehicles) t.push(a.vehicles + ' vehicle' + (a.vehicles === 1 ? '' : 's') + (a.vehicleMode === 'request' ? ' (on request)' : ''));
+    if (a.ice) t.push('Ice melt' + (a.iceMode === 'request' ? ' (on request)' : ''));
+    if (a.walkway) t.push('Walkway');
+    if (a.plowReturn) t.push('Plow return');
+    return t;
+  }
+  function dr(s) {
+    var id = aid(s);
+    if (!ST.draft[id]) {
+      var d = (s.visit && s.visit.did) || null, a = s.addons || {}, o = d && d.other && d.other[0];
+      ST.draft[id] = {
+        vehicles: d && d.vehicles != null ? d.vehicles : (a.vehicleMode === 'request' ? 0 : (a.vehicles || 0)),
+        ice: d && d.ice != null ? d.ice : (a.ice && a.iceMode !== 'request' ? 1 : 0),
+        walkway: d && d.walkway != null ? !!d.walkway : !!a.walkway,
+        plowReturn: d && d.plowReturn != null ? d.plowReturn : 0,
+        olabel: o ? o.label : '', oamt: o ? o.amount : '',
+        note: (s.visit && s.visit.note) || ''
+      };
+    }
+    return ST.draft[id];
+  }
+  function photoCell(p, id) {
+    return '<div class="cell"><img alt="' + esc(p.stage) + ' photo" src="' + esc(ST.thumbs[p.cid] || img(p.id, 240)) + '"><div class="lbl">' + esc(p.stage) + '</div></div>';
+  }
+  function photosHtml(s) {
+    var id = aid(s), v1 = s.visit || {}, out = '';
+    (v1.photos || []).forEach(function (p) { out += photoCell(p, id); });
+    Object.keys(ST.up).forEach(function (cid) {
+      var u = ST.up[cid]; if (u.id !== id) return;
+      out += '<div class="cell"><img alt="uploading" src="' + esc(u.thumb) + '" style="opacity:.5"><div class="lbl">Sending ' + esc(u.stage) + '…</div></div>';
+    });
+    Object.keys(ST.failed).forEach(function (cid) {
+      var f = ST.failed[cid]; if (f.id !== id) return;
+      out += '<div class="cell"><img alt="not sent" src="' + esc(f.thumb) + '"><div class="bad">Not sent</div><button class="btn ghost sm" data-snow="storm-retry" data-cid="' + esc(cid) + '">Retry</button></div>';
+    });
+    var btns = STAGES.map(function (g) { return '<button class="btn ghost" data-snow="storm-photo" data-id="' + esc(id) + '" data-stage="' + g[0] + '" ' + (ro() ? 'disabled' : '') + '>' + g[1] + ' photo</button>'; }).join('');
+    return '<div class="st-ph" id="ph-' + esc(id) + '">' + out + '</div><div class="sn-btns">' + btns + '</div>';
+  }
+  function numRow(id, key, text, val) { return '<label class="st-num"><span>' + text + '</span><input class="in" inputmode="numeric" data-dr="' + key + '" data-id="' + esc(id) + '" value="' + esc(val) + '"></label>'; }
+  function card(s) {
+    var id = aid(s), st = stat(s), d = dr(s), tags = addonTags(s), own = !H.isCrew(), q = queued(id), dis = ro() ? ' disabled' : '';
+    var det = '<details class="st-det" data-id="' + esc(id) + '"' + (ST.openIds[id] ? ' open' : '') + '><summary>Add-ons, note and photos</summary>' +
+      numRow(id, 'vehicles', 'Vehicles cleared', d.vehicles) + numRow(id, 'ice', 'Ice melt applications', d.ice) +
+      '<label class="st-num"><span>Walkway done</span><input type="checkbox" data-dr="walkway" data-id="' + esc(id) + '"' + (d.walkway ? ' checked' : '') + ' style="width:24px;height:24px"></label>' +
+      numRow(id, 'plowReturn', 'Plow returns', d.plowReturn) +
+      (own ? '<label class="f">Other charge (owner / office)</label><div class="row"><input class="in" placeholder="What for" data-dr="olabel" data-id="' + esc(id) + '" value="' + esc(d.olabel) + '"><input class="in" inputmode="decimal" placeholder="Amount" style="max-width:110px" data-dr="oamt" data-id="' + esc(id) + '" value="' + esc(d.oamt) + '"></div>' : '') +
+      '<label class="f">Note</label><textarea class="in" maxlength="400" data-dr="note" data-id="' + esc(id) + '">' + esc(d.note) + '</textarea>' + photosHtml(s) + '</details>';
+    return '<div class="st-card ' + (st === 'done' ? 'done' : st === 'skipped' ? 'skip' : '') + '" data-stop="' + esc(id) + '"><div class="t"><span>' + esc(s.name || id) + '</span>' +
+      '<span class="pill ' + (st === 'done' ? 'live' : '') + '">' + (st === 'done' ? 'Done' : st === 'skipped' ? 'Skipped' : 'To do') + '</span></div>' +
+      (s.address ? '<a class="adr" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(s.address) + '">' + esc(s.address) + '</a>' : '') +
+      '<div class="st-tags"><span class="pill">' + (s.plan === 'seasonal' ? 'Seasonal' : 'Per visit') + '</span>' + tags.map(function (t) { return '<span class="pill">' + esc(t) + '</span>'; }).join('') +
+      (q ? '<span class="pill home">waiting to send</span>' : '') + '</div>' +
+      (s.notes ? '<div class="st-note">' + esc(s.notes) + '</div>' : '') + det +
+      '<div class="st-acts"><button class="btn" data-snow="storm-done" data-id="' + esc(id) + '"' + dis + '>Done</button><button class="btn ghost" data-snow="storm-skip" data-id="' + esc(id) + '"' + dis + '>Skip</button></div>' +
+      (st !== 'todo' && !ro() ? '<button class="btn ghost block mt" data-snow="storm-undo" data-id="' + esc(id) + '">Back to to do</button>' : '') + '</div>';
+  }
+  function headHtml() {
+    var s = ST.storm || {}, done = ST.stops.filter(function (x) { return stat(x) !== 'todo'; }).length;
+    return '<div class="card"><h2>' + esc(s.date || '') + (s.kind === 'request' ? ' · Customer request' : '') + '</h2><div class="st-head">' +
+      '<span class="pill">' + esc((s.depthRaw != null && s.depthRaw !== '' ? s.depthRaw : s.depth != null ? s.depth : '0')) + ' in</span><span class="pill ' + (s.status === 'charged' ? 'live' : '') + '">' + label(s.status) + '</span>' +
+      '<span class="pill">' + done + ' of ' + ST.stops.length + ' stops finished</span></div>' + (s.note ? '<div class="st-note">' + esc(s.note) + '</div>' : '') + '</div>';
+  }
+  function stopsHtml() {
+    if (!ST.stops.length) return '<div class="empty"><b>No stops</b>No active customers are due on this storm.</div>';
+    return groups().map(function (g) { return '<div class="st-route">' + esc(g.route) + '</div>' + g.stops.map(card).join(''); }).join('');
+  }
+
+  /* ---------- money (owner / office) ---------- */
+  function settled() { return ST.stops.length > 0 && ST.stops.every(function (s) { return stat(s) !== 'todo'; }); }
+  function rowCents(r) { var c = r.calc || {}; return Number(c.cents != null ? c.cents : c.total) || 0; }
+  function notifyNeeded() { return (H.cfg().notifyBeforeCharge !== false) && ST.review && (ST.review.rows || []).some(function (r) { return rowCents(r) > 0 && !(r.visit && r.visit.notifiedAt); }); }
+  function chargeWhy() {
+    if (!ST.storm || ST.storm.status === 'charged') return 'This storm is already charged.';
+    if (!settled()) return 'Mark every stop Done or Skip first.';
+    if (!ST.review) return 'Review the charges first.';
+    if (notifyNeeded()) return 'Email the amounts to customers first.';
+    return '';
+  }
+  function reviewHtml() {
+    var rv = ST.review; if (!rv) return '';
+    var rows = rv.rows || [], t = rv.totals || {}, sub = 0, tax = 0, tot = 0;
+    var body = rows.map(function (r) {
+      var c = r.calc || {}, lines = (c.lines || []).map(function (l) { return '<small>' + esc(l.label) + (l.qty > 1 ? ' × ' + l.qty : '') + ' · ' + H.cents(l.cents) + '</small>'; }).join('');
+      var w = (r.warnings || []).map(function (x) { return '<div class="w">' + esc(x) + '</div>'; }).join('');
+      var nm = (r.account && r.account.name) || (r.visit && r.visit.accountId) || '';
+      var cents = rowCents(r); sub += Number(c.sub) || 0; tax += Number(c.tax) || 0; tot += cents;
+      return '<tr><td>' + esc(nm) + (c.coveredBase ? '<small>Covered by the season plan</small>' : '') + lines + w + '</td><td class="r">' + (Number(c.tax) ? '<small>Tax ' + H.cents(c.tax) + '</small>' : '') + '<b>' + H.cents(cents) + '</b></td></tr>';
+    }).join('');
+    return '<table class="st-tbl" id="strev"><thead><tr><th>Stop</th><th class="r">Amount</th></tr></thead><tbody>' + (body || '<tr><td colspan="2">Nothing to review.</td></tr>') + '</tbody>' +
+      '<tfoot><tr class="st-tot"><td>Total (tax ' + H.cents(t.tax != null ? t.tax : tax) + ')</td><td class="r" id="sttotal">' + H.cents(t.cents != null ? t.cents : (t.total != null ? t.total : tot)) + '</td></tr></tfoot></table>';
+  }
+  function resultsHtml() {
+    var r = ST.res; if (!r) return '';
+    function li(l, n, arr) { return n || l === 'Paid' ? '<div class="sn-kv"><span>' + l + '</span><b>' + n + '</b></div>' + (arr.length && typeof arr[0] === 'object' ? arr.map(function (x) { return '<div class="st-note">' + esc((x.name || x.accountId || '') + (x.err ? ': ' + x.err : '')) + '</div>'; }).join('') : '') : ''; }
+    return '<div class="sn-ok" id="stres" style="font-weight:500">' + li('Paid', r.paid.length, r.paid) + li('Invoice sent', r.invoiced.length, r.invoiced) + li('Nothing due', r.zero.length, r.zero) + li('Failed', r.failed.length, r.failed) + '</div>';
+  }
+  function moneyHtml() {
+    if (H.isCrew()) return '';
+    var own = H.isOwner(), why = chargeWhy(), run = ST.charging, tot = ST.review && ST.review.totals;
+    return '<div class="card"><h2>Charges</h2>' + H.errBox('sterr2') + (ST.err ? '<div class="sn-err">' + esc(ST.err) + '</div>' : '') +
+      '<div class="sn-btns"><button class="btn ghost" data-snow="storm-review"' + (ST.revBusy ? ' disabled' : '') + '>' + (ST.revBusy ? 'Loading…' : ST.review ? 'Refresh charges' : 'Review charges') + '</button></div>' + reviewHtml() +
+      (own ? '<div class="sn-btns"><button class="btn ghost" data-snow="storm-notify"' + (!ST.review || run || ST.storm.status === 'charged' ? ' disabled' : '') + '>Email amounts to customers</button>' +
+        '<button class="btn" id="stcharge" data-snow="storm-charge"' + (why || run ? ' disabled' : '') + '>' + (run ? 'Charging…' : ST.storm.status === 'charging' ? 'Continue charging' : 'Charge saved cards') + '</button></div>' +
+        (why && !run ? '<p class="hint" id="stwhy">' + esc(why) + '</p>' : '') : '') +
+      '<div class="st-prog" id="stprog">' + esc(ST.prog) + '</div>' + resultsHtml() + '</div>';
+  }
+
+  function renderStorm() {
+    if (!ST.storm && ST.loading) { app.innerHTML = H.top('Storm', 'home', 'Snow') + '<div class="wrap">' + H.spin() + '</div>'; return; }
+    if (!ST.storm) { app.innerHTML = H.top('Storm', 'home', 'Snow') + '<div class="wrap">' + (ST.err ? '<div class="sn-err">' + esc(ST.err) + '</div>' : '') + '<div class="empty"><b>Storm not found</b></div></div>'; return; }
+    app.innerHTML = H.top('Storm ' + (ST.storm.date || ''), 'home', 'Snow') + '<div class="wrap">' + (ST.note ? '<div class="sn-warn">' + esc(ST.note) + '</div>' : '') +
+      headHtml() + stopsHtml() + moneyHtml() + '<input type="file" id="stfile" accept="image/*" capture="environment" hidden></div>';
+  }
+  function renderCrew() {
+    if (!ST.crewLoaded && !ST.loading && !ST.err) { fetchCrew().then(function () { if (S.tab === 'snow' && H.isCrew()) render(); }); }
+    var b = bar('<div class="brand">TEAM <b>FORTE</b></div><button class="link" data-snow="storm-refresh">Refresh</button>');
+    if (ST.loading && !ST.crewLoaded) { app.innerHTML = b + '<div class="wrap">' + H.spin() + '</div>'; return; }
+    if (ST.err && !ST.storm) { app.innerHTML = b + '<div class="wrap"><div class="sn-err">' + esc(ST.err) + '</div><button class="btn block" data-snow="storm-refresh">Try again</button></div>'; return; }
+    if (!ST.storm || ST.storm.status !== 'open') { app.innerHTML = b + '<div class="wrap"><div class="card"><h2>Today’s stops</h2><p class="hint">No open storm right now. Stops show here on storm days.</p></div></div>'; return; }
+    app.innerHTML = b + '<div class="wrap">' + (ST.note ? '<div class="sn-warn">' + esc(ST.note) + '</div>' : '') + headHtml() + stopsHtml() + '<input type="file" id="stfile" accept="image/*" capture="environment" hidden></div>';
+  }
+
+  /* ---------- actions ---------- */
+  function buildDid(s) {
+    var d = dr(s), did = { vehicles: Math.round(num(d.vehicles)), ice: Math.round(num(d.ice)), walkway: !!d.walkway, plowReturn: Math.round(num(d.plowReturn)) };
+    if (!H.isCrew() && d.olabel && num(d.oamt) > 0) did.other = [{ label: d.olabel, amount: num(d.oamt) }];
+    return did;
+  }
+  function mark(id, status) {
+    var s = findStop(id); if (!s || ro()) return;
+    var prev = JSON.parse(JSON.stringify(vis(s))), d = dr(s);
+    var args = { stormId: ST.storm.id, accountId: id, status: status, did: status === 'done' ? buildDid(s) : (status === 'todo' ? {} : {}), note: d.note || '', base: { status: prev.status || 'todo' } };
+    applyVisit(args); ST.review = null; ST.res = null; saveCache(); render();
+    call('snowVisit', args).then(function (r) {
+      if (r && r.status && r.id) { var vv = vis(s); Object.keys(r).forEach(function (k) { vv[k] = r[k]; }); saveCache(); }
+      render();
+    }, function (x) {
+      s.visit = prev; saveCache(); render();
+      if (isConflict(x)) conflictBox(x, function () { fetchCrew(H.isCrew() ? '' : ST.storm.id).then(render); });
+      else toast((x && x.message) || 'Couldn’t save that stop.', true);
+    });
+  }
+  function pickPhoto(id, stage) {
+    var f = document.getElementById('stfile'); if (!f) return;
+    f.value = ''; f.onchange = function () { if (f.files && f.files[0]) addPhoto(id, stage, f.files[0]); };
+    f.click();
+  }
+  function addPhoto(id, stage, file) {
+    var cid = 'sp' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    shrink(file).then(function (r) {
+      ST.thumbs[cid] = r.thumb;
+      sendPhoto(cid, { id: id, stage: stage, thumb: r.thumb, args: { stormId: ST.storm.id, accountId: id, stage: stage, dataUrl: 'data:image/jpeg;base64,' + r.base64, cid: cid } });
+    }, function (e) { toast((e && e.message) || 'Couldn’t read that photo.', true); });
+  }
+  function sendPhoto(cid, p) {
+    delete ST.failed[cid]; ST.up[cid] = p; render();
+    call('snowPhoto', p.args).then(function (r) {
+      delete ST.up[cid];
+      var s = findStop(p.id);
+      if (s) { var vv = vis(s); vv.photos = (vv.photos || []).concat([{ id: (r && r.id) || cid, stage: p.stage, cid: cid }]); }
+      render();
+    }, function (x) {
+      delete ST.up[cid]; ST.failed[cid] = p; render(); toast('Photo not sent. Tap Retry. ' + ((x && x.message) || ''), true);
+    });
+  }
+
+  function doReview() {
+    if (ST.revBusy) return; ST.revBusy = true; render();
+    call('snowStormReview', { stormId: ST.storm.id }).then(function (r) { ST.revBusy = false; ST.review = r || { rows: [], totals: {} }; render(); },
+      function (x) { ST.revBusy = false; render(); H.showErr('sterr2', (x && x.message) || 'Couldn’t load the review.'); });
+  }
+  function doNotify() {
+    var b = document.querySelector('[data-snow="storm-notify"]'); if (b) b.disabled = true;
+    call('snowStormNotify', { stormId: ST.storm.id }).then(function (r) {
+      toast('Emailed ' + cnt(r && r.sent) + ' customer' + (cnt(r && r.sent) === 1 ? '' : 's') + (cnt(r && r.skipped) ? ' (' + cnt(r.skipped) + ' skipped)' : ''));
+      return call('snowStormReview', { stormId: ST.storm.id });
+    }).then(function (r) { ST.review = r || ST.review; render(); }, function (x) { render(); H.showErr('sterr2', (x && x.message) || 'Couldn’t send the emails.'); });
+  }
+  function doCharge() {
+    if (ST.charging || chargeWhy()) return;
+    ST.charging = true; render();
+    var tot = ST.review && ST.review.totals, totalTxt = H.cents(tot && tot.cents != null ? tot.cents : (tot && tot.total) || 0);
+    confirmBox('Charge saved cards', 'This charges the saved cards for ' + totalTxt + ' in total. Customers without a card, or whose card is declined, get an invoice by email. It can’t be undone.', 'Charge ' + totalTxt).then(function (ok) {
+      if (!ok) { ST.charging = false; render(); return; }
+      ST.res = { paid: [], invoiced: [], zero: [], failed: [] }; ST.err = ''; ST.prog = 'Starting…'; var total = 0, finished = 0, idle = 0;
+      (function step() {
+        render();
+        call('snowStormCharge', { stormId: ST.storm.id, confirm: true }).then(function (r) {
+          r = r || {};
+          [['paid', 'paid'], ['failed', 'failed'], ['zero', 'zero'], ['invoiced', 'invoiced']].forEach(function (k) {
+            var x = r[k[0]]; if (Array.isArray(x)) ST.res[k[1]] = ST.res[k[1]].concat(x); else for (var i = 0; i < (Number(x) || 0); i++) ST.res[k[1]].push(0);
+          });
+          var dn = cnt(r.done), left = cnt(r.left); finished += dn; total = Math.max(total, finished + left);
+          ST.prog = 'Charged ' + finished + ' of ' + total + '…';
+          idle = dn ? 0 : idle + 1;
+          if (left <= 0) { ST.charging = false; ST.prog = 'Done. ' + finished + ' of ' + total + ' handled.'; ST.storm.status = 'charged'; render(); return; }
+          if (idle >= 3) { ST.charging = false; ST.err = 'The charge run stopped moving. Tap Continue charging to try again.'; render(); return; }
+          step();
+        }, function (x) {
+          ST.charging = false; ST.prog = 'Stopped after ' + finished + ' of ' + (total || '?') + '.'; ST.storm.status = 'charging';
+          ST.err = ((x && x.message) || 'Something went wrong.') + ' Tap Continue charging to pick up where it stopped.'; render();
+        });
+      })();
+    });
+  }
+
+  /* ---------- events ---------- */
+  document.addEventListener('input', function (e) {
+    var t = e.target, k = t && t.getAttribute && t.getAttribute('data-dr'); if (!k) return;
+    var s = findStop(t.getAttribute('data-id')); if (!s) return;
+    dr(s)[k] = t.type === 'checkbox' ? t.checked : t.value;
+  });
+  document.addEventListener('change', function (e) {
+    var t = e.target, k = t && t.getAttribute && t.getAttribute('data-dr'); if (!k || t.type !== 'checkbox') return;
+    var s = findStop(t.getAttribute('data-id')); if (s) dr(s)[k] = t.checked;
+  });
+  document.addEventListener('toggle', function (e) {
+    var t = e.target; if (t && t.matches && t.matches('details.st-det')) ST.openIds[t.getAttribute('data-id')] = t.open;
+  }, true);
+
+  var prevRender = A.render;
+  A.render = function () {
+    if (SN.view === 'storm' && SN.boot && !H.isCrew()) return renderStorm();
+    return prevRender();
+  };
+
+  A.storm = {
+    open: open,
+    renderCrew: renderCrew,
+    render: renderStorm,
+    state: ST,
+    handle: function (act, el) {
+      var id = el.getAttribute('data-id');
+      if (act === 'storm-view') show(id);
+      else if (act === 'storm-done') mark(id, 'done');
+      else if (act === 'storm-skip') mark(id, 'skipped');
+      else if (act === 'storm-undo') mark(id, 'todo');
+      else if (act === 'storm-photo') pickPhoto(id, el.getAttribute('data-stage'));
+      else if (act === 'storm-retry') { var cid = el.getAttribute('data-cid'); if (ST.failed[cid]) sendPhoto(cid, ST.failed[cid]); }
+      else if (act === 'storm-review') doReview();
+      else if (act === 'storm-notify') { if (H.isOwner()) doNotify(); }
+      else if (act === 'storm-charge') { if (H.isOwner()) doCharge(); }
+      else if (act === 'storm-refresh') { ST.crewLoaded = false; ST.err = ''; ST.note = ''; render(); }
+    }
+  };
+})();
+/* SNOWAPP:END */
 
 /* ---------- start ---------- */
 function cacheMerge(part,d){var c=cacheGet('boot');if(c){c[part]=d;cacheSet('boot',c);}}
