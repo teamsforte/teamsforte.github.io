@@ -589,7 +589,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='31';
+var APP_VERSION='34';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -1555,6 +1555,10 @@ var MAT=(function(){
     if(!canMeasureHere()){toast('Add the Google Maps key under Quote prices first.',true);return;}
     var base=measFor(x);
     var st={type:'ridge',pitch:base.pitch||'6/12',lines:JSON.parse(JSON.stringify((x.meas&&x.meas.traced)||[])),cur:[],dirty:false,map:null,objs:[],curObjs:[]};
+    var MZK='tfp_mzdraft_'+x.id,restored=false;
+    try{var dz=JSON.parse(localStorage.getItem(MZK)||'null');
+      if(dz&&Date.now()-dz.t<3*86400000&&((dz.lines&&dz.lines.length)||(dz.cur&&dz.cur.length))){st.lines=dz.lines||[];st.cur=dz.cur||[];st.type=dz.type||st.type;st.pitch=dz.pitch||st.pitch;st.dirty=true;restored=true;}}catch(e){}
+    function persist(){try{if(!st.lines.length&&!st.cur.length){localStorage.removeItem(MZK);return;}localStorage.setItem(MZK,JSON.stringify({t:Date.now(),lines:st.lines,cur:st.cur,type:st.type,pitch:st.pitch}));}catch(e){}}
     var pitches=[];for(var p=0;p<=18;p++)pitches.push(p+'/12');
     if(pitches.indexOf(st.pitch)<0)pitches.push(st.pitch);
     var ov=document.createElement('div');ov.className='mz';ov.id='mz';
@@ -1566,6 +1570,7 @@ var MAT=(function(){
       '<label class="mz-pitch">Pitch <select id="mzpitch">'+pitches.map(function(v){return '<option'+(v===st.pitch?' selected':'')+'>'+esc(v)+'</option>';}).join('')+'</select><span>used for hips, valleys and rakes</span></label>'+
       '<div id="mzlist"></div></div>';
     document.body.appendChild(ov);document.body.style.overflow='hidden';
+    if(restored)toast('Restored the lines you had not saved yet');
     function g(id){return ov.querySelector('#'+id);}
     function clearObjs(a){a.forEach(function(o){o.setMap(null);});a.length=0;}
     function ll(p){return {lat:p[0],lng:p[1]};}
@@ -1605,14 +1610,14 @@ var MAT=(function(){
       if(cap.lf)h+='<p class="mz-tot"><b>Hip &amp; ridge cap: '+cap.bundles+' bundle'+(cap.bundles===1?'':'s')+'</b> ('+cap.lf+' LF + 5%)'+(function(){var e=m.est||{},w=[];if(e.ridges&&m.ridges)w.push('ridges');if(e.hips&&m.hips)w.push('hips');return w.length?' · '+w.join(' &amp; ')+' still estimated':'';})()+'</p>';
       g('mzlist').innerHTML=h;
     }
-    function refresh(){readout();list();drawCur();drawLines();}
+    function refresh(){readout();list();drawCur();drawLines();persist();}
     function finish(){
       if(st.cur.length<2){toast('Tap both ends of the line first.',true);return false;}
       var plan=mtFeet(st.cur);
       st.lines.push({t:st.type,pts:st.cur.map(function(p){return [Math.round(p[0]*1e7)/1e7,Math.round(p[1]*1e7)/1e7];}),plan:Math.round(plan*10)/10,len:Math.round(mtTrue(st.type,plan,st.pitch)*10)/10,pitch:st.pitch});
       st.cur=[];st.dirty=true;refresh();return true;
     }
-    function close(){ov.remove();document.body.style.overflow='';}
+    function close(){ov.remove();document.body.style.overflow='';try{localStorage.removeItem(MZK);}catch(e){}}
     function save(){
       if(st.cur.length>1)finish();
       var x2=q(),saved=x2.meas||{},m,args;
@@ -1854,6 +1859,13 @@ var MAT=(function(){
   }
 
   function wireQuote(x){
+    var MK='tfp_mdraft_'+x.id,mEls=document.querySelectorAll('[data-meas]');
+    if(mEls.length){
+      try{var dv=JSON.parse(localStorage.getItem(MK)||'null'),back=0;
+        if(dv&&dv.v&&Date.now()-dv.t<3*86400000)mEls.forEach(function(el){var k=el.getAttribute('data-meas');if(dv.v[k]!==undefined&&dv.v[k]!==el.value){el.value=dv.v[k];back++;}});
+        if(back)toast('Restored the measurements you typed');}catch(e){}
+      mEls.forEach(function(el){el.addEventListener('input',function(){var o={};document.querySelectorAll('[data-meas]').forEach(function(e2){o[e2.getAttribute('data-meas')]=e2.value;});try{localStorage.setItem(MK,JSON.stringify({t:Date.now(),v:o}));}catch(e){}});});
+    }
     var pk=document.getElementById('pkg');
     if(pk)pk.onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;var i=+b.getAttribute('data-pk');
       var priceEl=document.getElementById('qp');var cur=Number(priceEl.value)||0;var old=M.draft&&M.draft.id===x.id?M.draft.pick:(x.pick>=0?x.pick:1);
@@ -1877,7 +1889,7 @@ var MAT=(function(){
   function baseOf(x,args){var b={};if(!x)return b;Object.keys(args).forEach(function(k){if(k!=='id'&&k!=='base'&&k!=='send')b[k]=x[k]===undefined?null:x[k];});return b;}
   function saveQ(args,msg){
     args.id=M.qid;if(!args.base)args.base=baseOf(q(),args);
-    return call('saveQuote',args).then(function(r){mergeQ(r);render();if(msg)toast(msg);return r;}).catch(function(e){if(isConflict(e))conflictBox(e,function(){load().then(render).then(function(){toast('Reloaded');}).catch(err);});else err(e);throw e;});
+    return call('saveQuote',args).then(function(r){mergeQ(r);if(args.meas){try{localStorage.removeItem('tfp_mdraft_'+args.id);}catch(e){}}render();if(msg)toast(msg);return r;}).catch(function(e){if(isConflict(e))conflictBox(e,function(){load().then(render).then(function(){toast('Reloaded');}).catch(err);});else err(e);throw e;});
   }
 
   function approve(){
@@ -2296,7 +2308,21 @@ var MAT=(function(){
   }
   var COLORS=COLOR_BOOK.reduce(function(a,b){b.colors.forEach(function(c){if(a.indexOf(c)<0)a.push(c);});return a;},[]);
   var PITCHES=['2/12','3/12','4/12','5/12','6/12','7/12','8/12','9/12','10/12','11/12','12/12','14/12','16/12'];
-  function newEst(){M.est={type:(M.est&&M.est.type)||'replacement',trade:(M.est&&M.est.trade)||'Roofing',items:[],rooms:null,address:'',name:'',phone:'',email:'',lat:0,lng:0,roofs:[],layers:1,pick:1,color:'',m:null,busy:false};}
+  var EST_KEY='tfp_est_draft',estTimer=0;
+  function estClear(){try{localStorage.removeItem(EST_KEY);}catch(e){}}
+  function estSaveNow(){try{var e=M.est;if(!e||M.view!=='new')return;
+    var has=String(e.address||'').trim()||String(e.name||'').trim()||String(e.phone||'').trim()||String(e.email||'').trim()||(e.roofs&&e.roofs.length)||(e.items&&e.items.length)||(e.rooms&&Object.keys(e.rooms).length);
+    if(!has){localStorage.removeItem(EST_KEY);return;}
+    localStorage.setItem(EST_KEY,JSON.stringify({t:Date.now(),est:Object.assign({},e,{busy:false})}));}catch(x){}}
+  function estRestore(){try{var v=JSON.parse(localStorage.getItem(EST_KEY)||'null');
+    if(!v||!v.est||Date.now()-v.t>3*86400000)return false;
+    M.est=Object.assign({items:[],roofs:[],layers:1,pick:1,m:null},v.est,{busy:false});M.est.items=M.est.items||[];M.est.roofs=M.est.roofs||[];
+    toast('Restored your unfinished estimate');return true;}catch(x){return false;}}
+  function estSoon(){clearTimeout(estTimer);estTimer=setTimeout(estSaveNow,400);}
+  ['input','change','click'].forEach(function(ev){document.addEventListener(ev,estSoon,true);});
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')estSaveNow();});
+  window.addEventListener('pagehide',estSaveNow);
+  function newEst(){estClear();try{Object.keys(localStorage).forEach(function(k){if(k.indexOf('tfp_rmdraft_est_')===0||k.indexOf('tfp_cndraft_est_')===0)localStorage.removeItem(k);});}catch(x){}M.est={type:(M.est&&M.est.type)||'replacement',trade:(M.est&&M.est.trade)||'Roofing',items:[],rooms:null,address:'',name:'',phone:'',email:'',lat:0,lng:0,roofs:[],layers:1,pick:1,color:'',m:null,busy:false};}
   function estMode(e){return e.type!=='repair'?'replacement':(e.trade&&e.trade!=='Roofing'?'hi':'roofrep');}
   function typeSeg(e){var m=estMode(e);return '<div class="seg mt" id="etype">'+[['replacement','Roof replacement'],['roofrep','Roof repair'],['hi','Home improvement']].map(function(t){return '<button type="button" class="'+(m===t[0]?'on':'')+'" data-et="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';}
   function setEstType(e,v){if(v==='replacement'){e.type='replacement';return;}e.type='repair';if(e.trade&&e.trade!=='Roofing')e.hiTrade=e.trade;e.trade=v==='hi'?(e.hiTrade||'Flooring'):'Roofing';}
@@ -3166,6 +3192,10 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   function roomsSheet(rooms,items,trade,done){
     var list=((rooms&&rooms.list)||[]).map(function(r){return Object.assign({},r);});if(!list.length)list.push({n:'Room 1',l:'',w:'',h:8,d:1,win:1,c:true});
     var outs0=roomOuts(roomCalc([]));var use=(rooms&&rooms.use)?rooms.use.slice():outs0.filter(function(o){return o.t===trade&&(o.k!=='floor'||trade==='Flooring');}).map(function(o){return o.k;});
+    var RK='tfp_rmdraft_'+((M.view==='quote'&&M.qid)?M.qid:'est')+'_'+trade,rmBack=false;
+    try{var dr=JSON.parse(localStorage.getItem(RK)||'null');
+      if(dr&&Date.now()-dr.t<3*86400000&&dr.list&&dr.list.some(function(r){return r&&(r.l||r.w);})){list=dr.list;use=dr.use||use;rmBack=true;}}catch(e){}
+    function rmKeep(){try{localStorage.setItem(RK,JSON.stringify({t:Date.now(),list:list,use:use}));}catch(e){}}
     var ov=sheet('<h3>Room measurements'+closeBtn()+'</h3><p class="hint">Feet. Doors and windows are taken off the wall area (3×7 door, 3×5 window).</p><div id="rml"></div>'+
       '<button type="button" class="btn ghost block mt" id="rmadd">'+ICON.plus+'Add room</button><div id="rmout" class="mt"></div><button class="btn block mt" id="rmsv">Fill the quote</button>');
     function num(v){return Number(String(v).replace(/[^\d.]/g,''))||0;}
@@ -3179,6 +3209,8 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         return '<div class="add"><label><input type="checkbox" data-ro="'+o.k+'"'+(use.indexOf(o.k)>=0?' checked':'')+(b?'':' disabled')+'><span>'+esc(o.label)+'<small>'+o.qty.toLocaleString()+' '+esc(o.u)+(b?' × '+money(b.price)+' = '+money(o.qty*b.price):' · not in the '+o.t.toLowerCase()+' price book')+'</small></span></label></div>';}).join('')+'</div>';}
     drawList();drawOut();
     var sh=ov.querySelector('.sheet');
+    if(rmBack)toast('Restored the room sizes you had typed');
+    ['input','change','click'].forEach(function(evn){sh.addEventListener(evn,function(){setTimeout(rmKeep,0);});});
     sh.addEventListener('input',function(ev){var t=ev.target,i=t.getAttribute('data-ri');if(i==null)return;var k=t.getAttribute('data-rk');if(k==='c')return;list[+i][k]=k==='n'?t.value:num(t.value);drawOut();});
     sh.addEventListener('change',function(ev){var t=ev.target;if(t.getAttribute('data-rk')==='c'){list[+t.getAttribute('data-ri')].c=t.checked;drawOut();return;}
       var ok=t.getAttribute('data-ro');if(ok){use=use.filter(function(k){return k!==ok;});if(t.checked)use.push(ok);}});
@@ -3187,7 +3219,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     ov.querySelector('#rmsv').onclick=function(){
       var clean=list.filter(function(r){return num(r.l)>0&&num(r.w)>0;});if(!clean.length){toast('Type the length and width of at least one room.',true);return;}
       var outs=roomOuts(roomCalc(clean)),before=(rooms&&rooms.use)||[],next=fillOuts(items,outs,use,before);
-      closeSheet();done(Object.assign({},rooms||{},{list:clean,use:use}),next);};
+      try{localStorage.removeItem(RK);}catch(e){}closeSheet();done(Object.assign({},rooms||{},{list:clean,use:use}),next);};
   }
   /* ----- quick count per category: kitchen cabinet runs, bath tile + shower door, closets, fence + deck ----- */
   var COUNT_KIND={Kitchens:'k',Bathrooms:'b',Carpentry:'cl',Outdoor:'o'};
@@ -3243,6 +3275,10 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     var kind=countKind(trade);if(!kind)return;var d=JSON.parse(JSON.stringify((rooms&&rooms[kind])||countBlank(kind)));
     var before=(rooms&&rooms[kind]&&rooms[kind].use)||[],use=before.length?before.slice():countCalc(kind,d).outs.map(function(o){return o.k;});
     if(kind==='o'&&!before.length)use=use.filter(function(k){return k!=='permit';}).concat(['permit']);
+    var CK='tfp_cndraft_'+((M.view==='quote'&&M.qid)?M.qid:'est')+'_'+kind,cnBack=false;
+    try{var dc=JSON.parse(localStorage.getItem(CK)||'null');
+      if(dc&&Date.now()-dc.t<3*86400000&&dc.d&&typeof dc.d==='object'&&JSON.stringify(dc.d)!==JSON.stringify(countBlank(kind))){d=dc.d;use=dc.use||use;cnBack=true;}}catch(e){}
+    function cnKeep(){try{localStorage.setItem(CK,JSON.stringify({t:Date.now(),d:d,use:use}));}catch(e){}}
     var ov=sheet('<h3>'+COUNT_TITLE[kind]+closeBtn()+'</h3><div id="cfm"></div><div id="cout" class="mt"></div><button class="btn block mt" id="csv">Fill the quote</button>');
     function fld(k,lab,v,mode){return '<div><label class="f" style="margin-top:6px">'+lab+'</label><input class="in money" inputmode="'+(mode||'decimal')+'" data-cf="'+k+'" value="'+(v===''||v==null?'':esc(String(v)))+'"></div>';}
     function sel(k,lab,opts,v){return '<div><label class="f" style="margin-top:6px">'+lab+'</label><select class="in" data-cf="'+k+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>';}
@@ -3270,6 +3306,8 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         return '<div class="add"><label><input type="checkbox" data-co="'+o.k+'"'+(use.indexOf(o.k)>=0?' checked':'')+(b?'':' disabled')+'><span>'+esc(o.label)+'<small>'+o.qty.toLocaleString()+' '+esc(o.u)+(b?' × '+money(b.price)+' = '+money(o.qty*b.price):' · not in the '+esc(TRADE_LABEL[o.t].toLowerCase())+' price book')+'</small></span></label></div>';}).join('')+'</div>';}
     drawForm();drawOut();
     var sh=ov.querySelector('.sheet');
+    if(cnBack)toast('Restored the measurements you had typed');
+    ['input','change','click'].forEach(function(evn){sh.addEventListener(evn,function(){setTimeout(cnKeep,0);});});
     sh.addEventListener('input',function(ev){var t=ev.target;
       if(t.hasAttribute('data-cf')&&t.tagName!=='SELECT'){d[t.getAttribute('data-cf')]=cnum(t.value);drawOut();return;}
       var l=t.getAttribute('data-cl');if(l&&t.type!=='checkbox'){var k=t.getAttribute('data-ck');d[l][+t.getAttribute('data-ci')][k]=k==='n'?t.value:cnum(t.value);drawOut();}});
@@ -3282,7 +3320,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
       if(ev.target.closest('#cyard'))yardTool(d,place||{},function(){drawForm();drawOut();});});
     ov.querySelector('#csv').onclick=function(){var c=countCalc(kind,d);
       if(!c.outs.some(function(o){return o.qty>0;})){toast(kind==='o'?'Draw or type a fence or deck first.':'Type at least one measurement first.',true);return;}
-      d.use=use;d.sum=c.sum;var next=fillOuts(items,c.outs,use,before),r=Object.assign({list:[],use:[]},rooms||{});r[kind]=d;closeSheet();done(r,next);};
+      d.use=use;d.sum=c.sum;var next=fillOuts(items,c.outs,use,before),r=Object.assign({list:[],use:[]},rooms||{});r[kind]=d;try{localStorage.removeItem(CK);}catch(e){}closeSheet();done(r,next);};
   }
   /* satellite photo: tap points for a fence line, or around a deck (closes on its own) */
   function yardTool(d,place,done){
@@ -3828,7 +3866,7 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='savepeople'){var ppl=[];document.querySelectorAll('#people .person').forEach(function(r){var nm=r.querySelector('[data-pn]').value.trim(),pn=r.querySelector('[data-pp]').value.trim();if(!nm&&!pn)return;ppl.push({id:r.getAttribute('data-id')||undefined,name:nm,role:r.querySelector('[data-pr]').value,pin:pn});});
       t.disabled=true;call('saveUsers',{users:ppl}).then(function(){loadPeople();toast('People saved');}).catch(err).then(function(){t.disabled=false;});return;}
     if(a==='rbadd'){var box=document.querySelector('.rbt[data-t="'+t.getAttribute('data-t')+'"] .rbrows');if(box)box.insertAdjacentHTML('beforeend',rbRow({unit:'each'}));return;}
-    if(a==='newest'){newEst();M.view='new';render();window.scrollTo(0,0);var ea=document.getElementById('ea');if(ea)ea.focus();return;}
+    if(a==='newest'){if(!estRestore())newEst();M.view='new';render();window.scrollTo(0,0);var ea=document.getElementById('ea');if(ea)ea.focus();return;}
     if(a==='pricing'){M.view='pricing';render();window.scrollTo(0,0);return;}
     if(a==='measure'){measure();return;}
     if(a==='colors'){colorBook(1,null,'');return;}
@@ -3943,12 +3981,18 @@ window.SNOWAPP = (function () {
     }
   };
 
+  function spotsBox(id, label, sp) {
+    sp = sp || {};
+    return '<div class="sn-spots" id="' + id + '"><b>' + esc(label) + '</b> ' + (sp.used || 0) + ' of ' + (sp.cap || 0) + ' taken · ' + (sp.waitlist || 0) + ' on the waitlist' +
+      (sp.left != null ? '<small>' + sp.left + ' spot' + (sp.left === 1 ? '' : 's') + ' left</small>' : '') + '</div>';
+  }
   function home() {
     var b = SN.boot, sp = b.spots || {}, own = H.isOwner();
     app.innerHTML = bar('<div class="brand">TEAM <b>FORTE</b></div><button class="link" data-snow="refresh" aria-label="Refresh">Refresh</button>') +
       '<div class="wrap"><div class="card"><h2>Snow <small>' + esc((b.cfg && b.cfg.season) || '') + '</small></h2>' +
-      '<div class="sn-spots" id="snspots">' + (sp.used || 0) + ' of ' + (sp.cap || 0) + ' taken · ' + (sp.waitlist || 0) + ' on the waitlist' +
-      (sp.left != null ? '<small>' + sp.left + ' spot' + (sp.left === 1 ? '' : 's') + ' left</small>' : '') + '</div>' +
+      (b.regions ? spotsBox('snspots', 'Central CT', b.regions.central) + spotsBox('snspots-ff', 'Fairfield County', b.regions.fairfield) + spotsBox('snspots-nh', 'New Haven County', b.regions.newhaven) :
+        '<div class="sn-spots" id="snspots">' + (sp.used || 0) + ' of ' + (sp.cap || 0) + ' taken · ' + (sp.waitlist || 0) + ' on the waitlist' +
+        (sp.left != null ? '<small>' + sp.left + ' spot' + (sp.left === 1 ? '' : 's') + ' left</small>' : '') + '</div>') +
       '<div class="sn-btns"><button class="btn" data-snow="newstorm">New storm</button><button class="btn ghost" data-snow="accounts">Accounts</button>' +
       (own ? '<button class="btn ghost" data-snow="settings">Settings</button>' : '') + '</div></div></div>';
   }
@@ -4055,7 +4099,8 @@ document.addEventListener('click', function (e) {
       row(fld('Late fee (%)', 'late.pct', 'num', cfg), fld('Late fee minimum ($)', 'late.min', 'num', cfg)) +
       row(fld('Interest a year (%)', 'late.apr', 'num', cfg), fld('Days before late', 'late.days', 'int', cfg)) + '</div>' +
       '<div class="card"><h2>Capacity</h2>' +
-      row(fld('Spots (cap)', 'cap', 'int', cfg), fld('Hold hours', 'holdHours', 'int', cfg)) +
+      row(fld('Spots, central CT (cap)', 'cap', 'int', cfg), fld('Spots, Fairfield County (cap)', 'capFairfield', 'int', cfg)) +
+      row(fld('Spots, New Haven County (cap)', 'capNewHaven', 'int', cfg), fld('Hold hours', 'holdHours', 'int', cfg)) +
       fld('Custom lot counts as one spot per (sq ft)', 'customWeightSqft', 'int', cfg) + '</div>' +
       '<div class="card"><h2>Routes</h2><div id="snroutes">' + routesHtml() + '</div><div class="acts"><button type="button" class="btn ghost" data-snow="settings-radd">Add a route</button></div></div>' +
       '<div class="card"><h2>Contract</h2>' + fld('Contract version', 'contractVersion', 'text', cfg) +
@@ -4152,7 +4197,7 @@ document.addEventListener('click', function (e) {
     if (!l.length) return '<div class="empty"><b>No accounts</b>Nothing matches this filter.</div>';
     return l.map(function (a) {
       return '<button class="sn-row" data-snow="accounts-open" data-id="' + esc(a.id) + '"><div class="t"><span>' + esc(a.name || a.id) + '</span>' + pill(a) + '</div>' +
-        '<div class="m">' + esc(a.address || '') + '</div><div class="m">' + esc(plan(a)) + (a.route ? ' · ' + esc(a.route) : '') + '</div></button>';
+        '<div class="m">' + esc(a.address || '') + '</div><div class="m">' + esc(plan(a)) + (a.route ? ' · ' + esc(a.route) : '') + (a.region === 'fairfield' ? ' · Fairfield County' : a.region === 'newhaven' ? ' · New Haven County' : '') + '</div></button>';
     }).join('');
   }
   function renderList() {
@@ -4179,7 +4224,9 @@ document.addEventListener('click', function (e) {
       '<div class="card"><h2>' + esc(a.name || a.id) + ' ' + pill(a) + '</h2>' +
       kv('Address', esc(a.address || '')) + kv('Phone', esc(a.phone || '')) + kv('Email', esc(a.email || '')) + kv('Plan', esc(plan(a))) +
       (a.signedAt ? kv('Signed', esc(String(a.signedAt).slice(0, 10))) : '') + (a.cancelBy ? kv('Cancel by', esc(a.cancelBy)) : '') + (a.serviceFrom ? kv('Service from', esc(a.serviceFrom)) : '') +
-      '<button class="btn ghost block mt" data-snow="accounts-contract">View agreement</button></div>' +
+      '<button class="btn ghost block mt" data-snow="accounts-contract">View agreement</button>' +
+      (H.isOwner() && !signed && ['lead', 'quoted'].indexOf(a.status) >= 0 ? '<button class="btn block mt" data-snow="accounts-sign">Sign in person</button>' : '') +
+      (H.isOwner() && signed && !a.cardOk && a.status !== 'cancelled' ? '<button class="btn block mt" data-snow="accounts-pay">Take card payment</button>' : '') + '</div>' +
       '<div class="card"><h2>Measurement</h2>' + kv('Size', esc(dl(a.sqft)) + ' sq ft') + kv('Tier', esc(a.tier || 'not set')) + kv('Size picked by', a.manual ? 'Customer (typed in)' : 'Drawn on the map') +
       (a.mapImgId ? '<img class="sn-map" id="snmap" alt="Driveway map" src="' + esc(img(a.mapImgId, 800)) + '">' : '') + '</div>' +
       '<div class="card"><h2>Route &amp; notes</h2><label class="f">Route</label>' + sel('snr', routesList, a.route) +
@@ -4255,6 +4302,8 @@ document.addEventListener('click', function (e) {
       if (act === 'accounts-open') { SN.id = el.getAttribute('data-id'); SN.view = 'acct'; render(); window.scrollTo(0, 0); }
       else if (act === 'accounts-back') { SN.view = 'accounts'; render(); }
       else if (act === 'accounts-contract') { if (a) viewAgreement(a); }
+      else if (act === 'accounts-sign') { if (a && H.isOwner() && A.sign) A.sign.open(a); }
+      else if (act === 'accounts-pay') { if (a && H.isOwner() && A.sign) A.sign.pay(a); }
       else if (act === 'accounts-filter') {
         SN.filter = el.getAttribute('data-v');
         Array.prototype.forEach.call(document.querySelectorAll('#snchips .chip'), function (c) { c.classList.toggle('on', c === el); });
@@ -4342,6 +4391,7 @@ document.addEventListener('click', function (e) {
       '<label class="f" for="snatier">Size if you do not trace it</label>' + tierSel +
       '</div>' +
       '<div class="card"><h2>Plan</h2>' + planSel +
+      '<label class="f" for="snaregion">Service area</label><select class="in" id="snaregion"><option value="central">Central Connecticut</option><option value="fairfield">Fairfield County</option><option value="newhaven">New Haven County</option></select>' +
       '<label class="f" for="snanotes">Notes</label><textarea class="in" id="snanotes" rows="2" maxlength="1000"></textarea>' +
       '<p class="hint">The customer signs the agreement and saves a card from the link on the account page.</p></div>' +
       '<div class="sn-err" id="snaerr" hidden></div>' +
@@ -4492,7 +4542,7 @@ document.addEventListener('click', function (e) {
     var polys = areas.map(function (a) { return a.path.map(function (p) { return [p.lat(), p.lng()]; }); });
     if (!polys.length && !tier) return bad('Trace the driveway on the map, or pick a size.');
     if (drawing && drawing.pts.length) return bad('Finish the shape you are drawing first.');
-    var args = { name: name, phone: phone, email: email, address: address, lat: F.lat, lng: F.lng, plan: plan, notes: notes, areas: polys, tier: polys.length ? '' : tier };
+    var args = { name: name, phone: phone, email: email, address: address, lat: F.lat, lng: F.lng, plan: plan, region: ['fairfield', 'newhaven'].indexOf(val('snaregion')) >= 0 ? val('snaregion') : 'central', notes: notes, areas: polys, tier: polys.length ? '' : tier };
     busy = true;
     var btn = document.getElementById('snasave'); btn.disabled = true; btn.textContent = 'Adding…';
     call('snowAdd', args).then(function (r) {
@@ -4519,6 +4569,93 @@ document.addEventListener('click', function (e) {
       else if (act === 'add-save') { save(); }
     }
   };
+})();
+/* --- 26-sign.js --- */
+/* snowapp/26-sign.js: the owner has the customer sign on this phone, then takes the card payment.
+   Server: snowSignPerson (same checks as the website sign-up) and snowPayPerson (the same Stripe Checkout). */
+(function () {
+  var A = SNOWAPP, H = A.H, SN = A.state;
+  var css = document.createElement('style');
+  css.textContent = '.sn-check{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:14px;line-height:1.35}.sn-check input{margin-top:3px;flex:0 0 auto}' +
+    '.sn-pad{width:100%;height:170px;border:1px solid var(--line);border-radius:10px;background:#fff;touch-action:none;display:block;margin-top:6px}';
+  document.head.appendChild(css);
+
+  function val(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+  function setErr(ov, msg) { var e = ov.querySelector('#snsgerr'); e.textContent = msg || ''; e.hidden = !msg; }
+
+  function open(a) {
+    var done = false;
+    var ov = sheet('<h3>Sign agreement' + closeBtn() + '</h3>' +
+      '<p class="sub">Show the agreement to the customer. They read it, type their full name and sign on the screen.</p>' +
+      '<iframe id="snsgfr" title="Agreement" sandbox="" style="width:100%;height:38vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>' +
+      '<label class="f" for="snsgname">Customer’s full name</label><input class="in" id="snsgname" autocomplete="off" maxlength="80">' +
+      '<label class="sn-check"><input type="checkbox" id="snsgagree"><span>The customer read the agreement and the right-to-cancel notice, and agrees to them.</span></label>' +
+      '<label class="f">Customer signs here</label><canvas id="snsgpad" class="sn-pad"></canvas>' +
+      '<div class="acts" style="justify-content:flex-start"><button class="btn ghost" type="button" id="snsgclear">Clear signature</button></div>' +
+      '<div class="sn-err" id="snsgerr" hidden></div>' +
+      '<div id="snsgdone"></div>' +
+      '<button class="btn block mt" type="button" id="snsgsign">Sign agreement</button>',
+      function () { if (done) { SN.boot = null; A.render(); } });
+
+    call('snowPreview', { id: a.id }).then(function (r) {
+      ov.querySelector('#snsgfr').srcdoc = (r && r.html) || '<p>No agreement.</p>';
+    }, function (x) { setErr(ov, x.message || 'Couldn’t load the agreement.'); });
+
+    /* signature pad: finger or stylus, drawn at the screen's real resolution */
+    var pad = ov.querySelector('#snsgpad'), g = null, drawn = false, last = null;
+    function fit() {
+      var r = pad.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      pad.width = Math.max(1, Math.round(r.width * dpr)); pad.height = Math.max(1, Math.round(r.height * dpr));
+      g = pad.getContext('2d'); g.scale(dpr, dpr); g.lineWidth = 2.4; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#111';
+    }
+    setTimeout(fit, 0);
+    function pos(e) { var r = pad.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    pad.addEventListener('pointerdown', function (e) { if (!g) return; e.preventDefault(); pad.setPointerCapture(e.pointerId); last = pos(e); });
+    pad.addEventListener('pointermove', function (e) {
+      if (!g || !last) return; e.preventDefault();
+      var p = pos(e); g.beginPath(); g.moveTo(last.x, last.y); g.lineTo(p.x, p.y); g.stroke(); last = p; drawn = true;
+    });
+    function stop() { last = null; }
+    pad.addEventListener('pointerup', stop); pad.addEventListener('pointercancel', stop);
+    ov.querySelector('#snsgclear').onclick = function () { if (g) g.clearRect(0, 0, pad.width, pad.height); drawn = false; };
+
+    var btn = ov.querySelector('#snsgsign');
+    btn.onclick = function () {
+      var name = val('snsgname');
+      setErr(ov, '');
+      if (name.length < 2) return setErr(ov, 'Type the customer’s full name.');
+      if (!ov.querySelector('#snsgagree').checked) return setErr(ov, 'The customer must tick the box to agree.');
+      if (!drawn) return setErr(ov, 'The customer must sign on the screen.');
+      btn.disabled = true; btn.textContent = 'Signing…';
+      call('snowSignPerson', { id: a.id, name: name, agree: true, signature: pad.toDataURL('image/png'), plan: a.plan === 'visit' ? 'visit' : 'seasonal', addons: a.addons || {} }).then(function (r) {
+        done = true;
+        btn.hidden = true;
+        ov.querySelector('#snsgdone').innerHTML = '<div class="sn-ok">Signed. The customer can cancel within 3 business days, and service starts after that.</div>' +
+          '<button class="btn block mt" type="button" id="snsgpay">Take card payment</button>';
+        ov.querySelector('#snsgpay').onclick = function () { payNow(a, ov); };
+      }, function (x) {
+        btn.disabled = false; btn.textContent = 'Sign agreement';
+        setErr(ov, x.message || 'Couldn’t sign. Try again.');
+      });
+    };
+  }
+
+  /* the card step: opens Stripe’s card page; the customer types the card there, not in this app */
+  function payNow(a, ov) {
+    var b = ov.querySelector('#snsgpay'); b.disabled = true; b.textContent = 'Opening card page…';
+    var w = window.open('', '_blank');
+    call('snowPayPerson', { id: a.id }).then(function (r) {
+      b.disabled = false; b.textContent = 'Take card payment';
+      if (r && r.url) { if (w) w.location.href = r.url; else window.open(r.url, '_blank'); }
+      else { if (w) w.close(); setErr(ov, 'Couldn’t open the card page.'); }
+    }, function (x) {
+      if (w) try { w.close(); } catch (e) { /* ignore */ }
+      b.disabled = false; b.textContent = 'Take card payment';
+      setErr(ov, x.message || 'Couldn’t open the card page.');
+    });
+  }
+
+  A.sign = { open: open, pay: function (a) { var ov = sheet('<h3>Take card payment' + closeBtn() + '</h3><div class="sn-err" id="snsgerr" hidden></div><button class="btn block mt" type="button" id="snsgpay">Take card payment</button>'); ov.querySelector('#snsgpay').onclick = function () { payNow(a, ov); }; } };
 })();
 /* --- 30-storm.js --- */
 /* snowapp/30-storm.js: storm day screens (W8b). */
