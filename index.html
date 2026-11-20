@@ -589,7 +589,7 @@ if (typeof module !== 'undefined') module.exports = TAKEOFF;
 'use strict';
 var EXEC_URL='https://script.google.com/macros/s/AKfycbyQpxQSZqBBXYN7i14FAsy23bjOoIT_F8333zYMU2JdYRL_b22SXzdS-dlWZeVhkvxA/exec';
 var API_URL=EXEC_URL+'?r=api';
-var APP_VERSION='34';
+var APP_VERSION='35';
 var SERVICES=['Roofing','Flooring','Kitchens','Bathrooms','Painting','Carpentry','Outdoor','Handyman'];
 var HI_SERVICES=SERVICES.filter(function(x){return x!=='Roofing';});
 var STAGES=[['before','Before'],['during','During'],['after','After']];
@@ -1443,7 +1443,7 @@ var MAT=(function(){
         return '<button class="q" data-m="openq" data-id="'+esc(x.id)+'"><div class="top"><div style="min-width:0"><div class="nm">'+esc(x.name||(x.source==='app'?'Customer':'Website visitor'))+'</div>'+
           '<div class="ad">'+esc(x.address||'')+'</div></div><div class="rg money">'+esc(pr)+'</div></div>'+
           '<div class="pills"><span class="pill '+x.status+'">'+ST_LABEL[x.status]+'</span>'+
-          (x.type==='repair'?'<span class="pill">'+esc(TRADE_LABEL[tradeOf(x)])+' · '+(x.items||[]).length+' item'+((x.items||[]).length===1?'':'s')+'</span>':'<span class="pill">'+(sqft(x)>0?Math.round(sqft(x)).toLocaleString()+' sq ft':'Measure needed')+'</span>')+
+          (x.type==='repair'?'<span class="pill">'+(x.project?'Renovation package':esc(TRADE_LABEL[tradeOf(x)])+' · '+(x.items||[]).length+' item'+((x.items||[]).length===1?'':'s'))+'</span>':'<span class="pill">'+(sqft(x)>0?Math.round(sqft(x)).toLocaleString()+' sq ft':'Measure needed')+'</span>')+
           (x.signedAt?'<span class="pill done">✓ Signed</span>':x.proposalSentAt?'<span class="pill">Sent for signature</span>':'')+
           (pk?'<span class="pill">OC '+esc(pk.label)+(x.color?' · '+esc(x.color):'')+'</span>':'')+
           (x.lead&&x.lead.inspectionDay?'<span class="pill" style="background:#FFE8E3;color:#B4321F">Inspection requested</span>':'')+
@@ -1490,7 +1490,7 @@ var MAT=(function(){
       var jobTabs=[['money','Money'],['roof',hiOf(x)?'Scope & materials':'Roof & materials'],['photos','Photos']];
       var curTab=jobTabs.some(function(t){return t[0]===M.jobTab;})?M.jobTab:'money';
       h+='<div class="seg" style="margin:12px 0" role="tablist">'+jobTabs.map(function(t){return '<button type="button" class="'+(t[0]===curTab?'on':'')+'" data-m="jtab" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';
-      if(curTab==='money')h+=proposalCard(x)+changeOrdersCard(x)+paymentsCard(x)+scheduleCard(x)+profitCard(x);
+      if(curTab==='money')h+=proposalCard(x)+milestonesCard(x)+changeOrdersCard(x)+paymentsCard(x)+scheduleCard(x)+profitCard(x);
       else if(curTab==='roof')h+=(rep?(hiOf(x)?'':measCard(x))+repairCard(x):'')+jobCards(x);
       else h+=inspectionCard(x)+(x.status==='done'?wrapCard(x):'');
       if(isOwner()&&x.signedAt&&!x.cancelledAt)h+='<details class="card more"><summary>Other actions</summary><p class="hint">Only if the customer has cancelled in writing. This archives the job.</p><button class="btn danger block mt" data-m="cxl">Customer cancelled</button></details>';
@@ -3452,15 +3452,102 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
   }
 
   /* ----- repair parts of the quote page ----- */
-  function repairCard(x){
+  function repairCard(x){return projectCard(x)+repairItemsCard(x);}
+  function repairItemsCard(x){
     var items=x.items||[];var sub=items.reduce(function(n,it){return n+it.qty*it.price;},0);var tot=x.basePrice||x.contractPrice;
-    return '<div class="card"><h2>'+esc(TRADE_LABEL[tradeOf(x)])+' <small>'+items.length+' item'+(items.length===1?'':'s')+'</small></h2>'+
+    if(x.project)tot=items.reduce(function(n,it){return n+it.qty*it.price;},0);
+    return '<div class="card"><h2>'+(x.project?'Items for your costs <small>not shown to the customer</small>':esc(TRADE_LABEL[tradeOf(x)])+' <small>'+items.length+' item'+(items.length===1?'':'s')+'</small>')+'</h2>'+
       items.map(function(it){return kv(esc(it.name)+'<br><small class="hint">'+it.qty+' '+esc(units(it.unit,it.qty))+' × '+money(it.price)+'</small>','<span class="money">'+money(it.qty*it.price)+'</span>');}).join('')+
-      (sub<tot?kv('Minimum charge',''):'')+
+      (sub<tot&&!x.project?kv('Minimum charge',''):'')+
       '<div class="tot"><div class="kv grand"><span>'+((x.chosen||[]).length?'Items total':'Total')+'</span><b class="money">'+money(tot)+'</b></div>'+profitLine(items,tot,true)+'</div>'+
       (x.status==='new'&&!x.signedAt?'<button class="btn ghost block mt" data-m="edititems">Edit items</button>':'')+'</div>'+
       (roomsFor(tradeOf(x))&&(x.rooms||(x.status==='new'&&!x.signedAt))?'<div class="card">'+roomsCardBody(x.rooms,x.status==='new'&&!x.signedAt?'qrooms':'')+'</div>':'')+
       (countKind(tradeOf(x))&&((x.rooms&&x.rooms[countKind(tradeOf(x))])||(x.status==='new'&&!x.signedAt))?'<div class="card">'+countCardBody(x.rooms,tradeOf(x),x.status==='new'&&!x.signedAt?'qcount':'')+'</div>':'');
+  }
+  /* ----- renovation package (app v35): several trades under one price, options, allowances, milestone payments ----- */
+  var PJ_CONDS=[['Engineering','Structural work is priced on standard framing. If the engineer’s final design calls for more (steel, extra footings or posts), the added cost goes in a written change order before that work starts.'],
+    ['Hidden conditions','Damage found behind walls, under floors or in the roof (rot, old wiring, structural problems) is repaired by written change order.']];
+  var PJ_SCHED=[['Signing','The contract is signed and the 3-day cancellation period has passed',30],['Halfway','',40],['Final','Final inspections passed and the walkthrough punch list finished',30]];
+  function pjAmounts(x){var sc=(x.project&&x.project.sched)||[],t=Number(x.contractPrice)||0,used=0;return sc.map(function(m,i){var a=i===sc.length-1?Math.round((t-used)*100)/100:Math.round(t*m.p)/100;used=Math.round((used+a)*100)/100;return a;});}
+  function projectCard(x){
+    var p=x.project,open=x.status==='new'&&!x.signedAt;
+    if(!p)return open?'<div class="card"><h2>Renovation package <small>optional</small></h2><p class="sub">A big job with several trades? Put it under one package price with sections, options the customer can add, allowances and your own payment milestones.</p><button class="btn ghost block" data-m="pjedit">Set up as a renovation package</button></div>':'';
+    var sc=p.sched||[];
+    return '<div class="card"><h2>Renovation package <small>'+p.sections.length+' section'+(p.sections.length===1?'':'s')+'</small></h2>'+
+      kv('Package price','<b class="money">'+money(p.price)+'</b>')+
+      p.sections.map(function(z,i){return kv((i+1)+'. '+esc(z.t||'Work'),'<small class="hint">'+z.lines.length+' line'+(z.lines.length===1?'':'s')+'</small>');}).join('')+
+      (p.opts||[]).map(function(o){return kv('Option: '+esc(o.name),'<span class="money">+'+money(o.price)+'</span>');}).join('')+
+      ((p.allow||[]).length?kv('Allowances',(p.allow||[]).length+' · <span class="money">'+money(p.allow.reduce(function(n,a){return n+a.amt;},0))+'</span>'):'')+
+      (sc.length?kv('Payments',sc.map(function(m){return m.p+'%';}).join(' / ')):'')+
+      ((p.links||[]).length?kv('Links',p.links.map(function(l){return '<a href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>';}).join('<br>')):'')+
+      (open?'<button class="btn ghost block mt" data-m="pjedit">Edit package</button>':'<p class="hint">Locked: the contract is signed.</p>')+'</div>';
+  }
+  function milestonesCard(x){
+    var p=x.project,sc=(p&&p.sched)||[];if(!x.signedAt||sc.length<2)return '';
+    var am=pjAmounts(x),done=p.done||{},can=role()!=='crew'&&!x.cancelledAt,inWin=x.cancelBy&&todayYmd()<=x.cancelBy;
+    return '<div class="card"><h2>Payment milestones <small>'+sc.length+' payments</small></h2>'+sc.map(function(m,i){
+      var st=i===0?(x.depositStatus==='paid'?'<span class="pill approved">Paid</span>':'<span class="pill new">Due at signing</span>'):
+        done[i]?'<span class="pill approved">Requested '+esc(dateStr(done[i].at))+'</span>':(can?'<button class="btn ghost" style="padding:6px 10px;font-size:13px" data-m="pjms" data-v="'+i+'"'+(inWin?' disabled':'')+'>Milestone reached</button>':'');
+      return '<div class="kv" style="align-items:flex-start;gap:10px"><span><b>'+(i+1)+'. '+esc(m.n)+'</b> · '+m.p+'%<br><small class="hint">'+esc(m.w||'')+'</small></span><span style="text-align:right"><b class="money">'+money(am[i])+'</b><br>'+st+'</span></div>';
+    }).join('')+(inWin?'<p class="hint">Milestone payments can be requested after the cancellation period ends ('+esc(dateStr(x.cancelBy+'T12:00:00'))+').</p>':'<p class="hint">Milestone reached charges the customer’s saved card, or emails them an invoice with a pay link. Payments are due within 7 days.</p>')+'</div>';
+  }
+  function pjRows(kind,list){
+    return list.map(function(r,i){
+      var del='<button type="button" class="link" data-pjdel="'+kind+':'+i+'" aria-label="Remove">Remove</button>';
+      if(kind==='sec')return '<div class="pjrow" data-k="sec"><div class="row" style="gap:6px;align-items:center"><input class="in" data-f="t" placeholder="Section title, e.g. Master suite over the garage" value="'+esc(r.t||'')+'">'+del+'</div><textarea class="in mt" data-f="lines" rows="3" placeholder="What’s included, one line each">'+esc((r.lines||[]).join('\n'))+'</textarea></div>';
+      if(kind==='opt')return '<div class="pjrow" data-k="opt"><div class="row" style="gap:6px;align-items:center"><input class="in" data-f="name" placeholder="Option name" value="'+esc(r.name||'')+'"><input class="in money" data-f="price" inputmode="decimal" placeholder="Price" style="max-width:120px" value="'+(r.price||'')+'">'+del+'</div><textarea class="in mt" data-f="desc" rows="2" placeholder="What it includes, one line each">'+esc((r.desc||[]).join('\n'))+'</textarea></div>';
+      if(kind==='allow')return '<div class="pjrow row" data-k="allow" style="gap:6px;align-items:center"><input class="in" data-f="name" placeholder="Item, e.g. Bathroom tile (material)" value="'+esc(r.name||'')+'"><input class="in money" data-f="amt" inputmode="decimal" placeholder="Amount" style="max-width:120px" value="'+(r.amt||'')+'">'+del+'</div>';
+      if(kind==='cond')return '<div class="pjrow" data-k="cond"><div class="row" style="gap:6px;align-items:center"><input class="in" data-f="h" placeholder="Heading" value="'+esc(r.h||'')+'">'+del+'</div><textarea class="in mt" data-f="t" rows="2">'+esc(r.t||'')+'</textarea></div>';
+      if(kind==='ms')return '<div class="pjrow" data-k="ms"><div class="row" style="gap:6px;align-items:center"><b style="min-width:18px">'+(i+1)+'</b><input class="in" data-f="n" placeholder="'+(i===0?'Signing':'Milestone name')+'" value="'+esc(r.n||'')+'"><input class="in money" data-f="p" inputmode="decimal" placeholder="%" style="max-width:70px" value="'+(r.p||'')+'">'+(i===0?'':del)+'</div><input class="in mt" data-f="w" placeholder="'+(i===0?'Due at signing':'Done when…')+'" value="'+esc(r.w||'')+'"></div>';
+      return '<div class="pjrow row" data-k="link" style="gap:6px;align-items:center"><input class="in" data-f="label" placeholder="Button text, e.g. See your house in 3D" value="'+esc(r.label||'')+'"><input class="in" data-f="url" inputmode="url" placeholder="https://..." value="'+esc(r.url||'')+'">'+del+'</div>';
+    }).join('');
+  }
+  function projectSheet(){
+    var x=q(),p=x.project?JSON.parse(JSON.stringify(x.project)):{price:x.contractPrice||'',sections:[{t:'',lines:[]}],opts:[],allow:[],excluded:[],conds:PJ_CONDS.map(function(c){return {h:c[0],t:c[1]};}),
+      sched:PJ_SCHED.map(function(m){return {n:m[0],w:m[1],p:m[2]};}),order:[],links:[]};
+    var D={sec:p.sections,opt:p.opts||[],allow:p.allow||[],cond:p.conds||[],ms:p.sched||[],link:p.links||[]};
+    var ov=sheet('<h3>Renovation package'+closeBtn()+'</h3>'+
+      '<label class="f">Package price</label><input class="in money" id="pjprice" inputmode="decimal" value="'+(p.price||'')+'"><p class="hint">One price for everything below, before options. Options and allowances are separate.</p>'+
+      '<label class="f">Sections</label><div id="pj-sec"></div><button type="button" class="btn ghost block mt" data-pjadd="sec">'+ICON.plus+'Add section</button>'+
+      '<label class="f">Options the customer can add</label><div id="pj-opt"></div><button type="button" class="btn ghost block mt" data-pjadd="opt">'+ICON.plus+'Add option</button>'+
+      '<label class="f">Allowances <small>(amounts included for items the customer picks)</small></label><div id="pj-allow"></div><button type="button" class="btn ghost block mt" data-pjadd="allow">'+ICON.plus+'Add allowance</button>'+
+      '<label class="f">Not included <small>(one per line)</small></label><textarea class="in" id="pjex" rows="3">'+esc((p.excluded||[]).join('\n'))+'</textarea>'+
+      '<label class="f">Conditions <small>(printed in the contract)</small></label><div id="pj-cond"></div><button type="button" class="btn ghost block mt" data-pjadd="cond">'+ICON.plus+'Add condition</button>'+
+      '<label class="f">Payment schedule <small id="pjsum"></small></label><p class="hint">Payment 1 is paid at signing. The others are billed when you tap Milestone reached. Percentages must add up to 100.</p><div id="pj-ms"></div><button type="button" class="btn ghost block mt" data-pjadd="ms">'+ICON.plus+'Add milestone</button>'+
+      '<label class="f">Order of work <small>(one step per line; shown as the customer’s timeline)</small></label><textarea class="in" id="pjord" rows="3">'+esc((p.order||[]).join('\n'))+'</textarea>'+
+      '<label class="f">Links on the proposal <small>(3D model, plans, photos)</small></label><div id="pj-link"></div><button type="button" class="btn ghost block mt" data-pjadd="link">'+ICON.plus+'Add link</button>'+
+      '<div class="err" id="pjerr"></div><button class="btn block mt" id="pjsave">Save package</button>'+(x.project?'<button class="btn ghost block mt" id="pjoff">Remove the package (back to items)</button>':''));
+    function read(){
+      ['sec','opt','allow','cond','ms','link'].forEach(function(k){D[k]=Array.prototype.map.call(ov.querySelectorAll('#pj-'+k+' .pjrow'),function(r){var o={};r.querySelectorAll('[data-f]').forEach(function(el){o[el.getAttribute('data-f')]=el.value;});
+        if(k==='sec')o.lines=String(o.lines||'').split('\n').map(function(t){return t.trim();}).filter(String);
+        if(k==='opt')o.desc=String(o.desc||'').split('\n').map(function(t){return t.trim();}).filter(String);
+        return o;});});
+    }
+    function draw(){['sec','opt','allow','cond','ms','link'].forEach(function(k){ov.querySelector('#pj-'+k).innerHTML=pjRows(k,D[k]);});sum();}
+    function sum(){var t=Array.prototype.reduce.call(ov.querySelectorAll('#pj-ms [data-f=p]'),function(n,el){return n+(Number(el.value)||0);},0);t=Math.round(t*10)/10;
+      var el=ov.querySelector('#pjsum');el.textContent='· '+t+'%';el.style.color=Math.abs(t-100)<0.05?'':'#C62828';}
+    draw();
+    ov.addEventListener('input',function(e){if(e.target.closest('#pj-ms'))sum();});
+    ov.addEventListener('click',function(e){
+      var a=e.target.closest('[data-pjadd]');if(a){read();var k=a.getAttribute('data-pjadd');D[k].push(k==='sec'?{t:'',lines:[]}:k==='opt'?{name:'',price:'',desc:[]}:{});draw();return;}
+      var d=e.target.closest('[data-pjdel]');if(d){read();var z=d.getAttribute('data-pjdel').split(':');D[z[0]].splice(+z[1],1);draw();}
+    });
+    function num(v){return Number(String(v==null?'':v).replace(/[^\d.]/g,''))||0;}
+    ov.querySelector('#pjsave').onclick=function(){
+      read();var er=ov.querySelector('#pjerr');er.textContent='';
+      var out={price:num(ov.querySelector('#pjprice').value),sections:D.sec,opts:D.opt.map(function(o){return {name:o.name,price:num(o.price),desc:o.desc};}),
+        allow:D.allow.map(function(a){return {name:a.name,amt:num(a.amt)};}),excluded:ov.querySelector('#pjex').value,conds:D.cond,
+        sched:D.ms.map(function(m){return {n:m.n,w:m.w,p:num(m.p)};}),order:ov.querySelector('#pjord').value,links:D.link};
+      if(!(out.price>0)){er.textContent='Enter the package price.';return;}
+      if(!out.sections.some(function(z){return String(z.t||'').trim()||z.lines.length;})){er.textContent='Add at least one section.';return;}
+      var ms=out.sched.filter(function(m){return String(m.n||'').trim()&&m.p>0;}),tot=Math.round(ms.reduce(function(n,m){return n+m.p;},0)*10)/10;
+      if(ms.length<2){er.textContent='Add at least two payments: one at signing and one later.';return;}
+      if(Math.abs(tot-100)>0.05){er.textContent='The payment schedule adds up to '+tot+'%. It must be 100%.';return;}
+      if(D.link.some(function(l){return String(l.url||'').trim()&&!/^https:\/\/\S+$/.test(String(l.url).trim());})){er.textContent='Links must start with https://';return;}
+      var b=this;b.disabled=true;b.textContent='Saving…';
+      saveQ({project:out},'Package saved').then(function(){closeSheet();}).catch(function(){b.disabled=false;b.textContent='Save package';});
+    };
+    var off=ov.querySelector('#pjoff');if(off)off.onclick=function(){confirmBox('Remove the package?','The sections, options and payment schedule are removed and the quote goes back to its items and the standard payments.','Remove').then(function(ok){if(ok)saveQ({project:null},'Package removed');});};
   }
   function approveRepairCard(x){
     return '<div class="card"><h2>Approve job</h2><p class="sub">Approving adds the job to Photos and starts its materials list and job costs. If the customer signs online, this happens on its own.</p>'+
@@ -3577,15 +3664,15 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
         '<label class="f">Color <span class="hint" style="font-weight:500">· optional, they can pick it in the plan</span></label><input class="in" id="pcl" value="'+esc(x.color||'')+'" placeholder="Estate Gray">')+
       '<div class="row"><div><label class="f">Start date</label><input class="in" type="date" id="psd" value="'+esc(x.startDate||sd0)+'"></div><div><label class="f">Completion date</label><input class="in" type="date" id="ped" value="'+esc(x.endDate||ed0)+'"></div></div>'+
       '<p class="hint">Connecticut contracts need both dates. Your best estimate; the contract says weather permitting.</p>'+
-      termsBlock(x)+
-      addonsBlock(x)+levelsBlock(x)+
+      (x.project?'<div class="note">Payments, options and allowances come from the renovation package. Edit them with Edit package.</div>':termsBlock(x))+
+      addonsBlock(x)+(x.project?'':levelsBlock(x))+
       (contractGaps().length?'<div class="note">Finish the contract setup first ('+esc(contractGaps().join(', '))+'): Spending › Settings › Contract.</div>':'')+
       '<label class="f">Customer email</label><input class="in" id="pem" type="email" value="'+esc(x.email||'')+'" placeholder="customer@email.com">'+
       '<button class="btn block mt" id="ppres">Present now on this device</button>'+
       '<div class="acts"><button class="btn ghost" id="pemail">Email it</button><button class="btn ghost" id="plink">Text or copy link</button></div><div id="pout"></div>');
     if(!rep)ov.querySelector('#ppk').onclick=function(e){var b=e.target.closest('[data-pk]');if(!b)return;pick=+b.getAttribute('data-pk');ov.querySelectorAll('#ppk button').forEach(function(z){var on=z===b;z.classList.toggle('on',on);z.querySelector('span').textContent=on?'Recommended':' ';});};
     function offersIn(){return [0,1,2].map(function(i){return Number(String(ov.querySelector('[data-of="'+i+'"]').value).replace(/[^\d.]/g,''))||0;});}
-    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim(),startDate:ov.querySelector('#psd').value,endDate:ov.querySelector('#ped').value,addons:addonsIn(ov),jobTerms:termsIn(ov)};var lv=levelsIn(ov,x);if(lv!==undefined)a.levels=lv;if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
+    function args(send){var a={id:x.id,send:send,email:ov.querySelector('#pem').value.trim(),startDate:ov.querySelector('#psd').value,endDate:ov.querySelector('#ped').value,addons:addonsIn(ov),jobTerms:x.project?undefined:termsIn(ov)};var lv=x.project?undefined:levelsIn(ov,x);if(lv!==undefined)a.levels=lv;if(!rep){var of=offersIn();a.offers=of;a.pick=pick;a.color=ov.querySelector('#pcl').value;a.contractPrice=of[pick];}return a;}
     function okPrices(a){if(!a.startDate||!a.endDate){toast('Add the start and completion dates.',true);return false;}if(a.endDate<a.startDate){toast('The completion date is before the start date.',true);return false;}if(rep)return true;if(!(a.contractPrice>0)){toast('Enter a price for the recommended option ('+PK[pick].label+').',true);return false;}return true;}
     ov.querySelector('#ppres').onclick=function(){var b=this;var a=args('present');if(!okPrices(a))return;b.disabled=true;var w=null;try{w=window.open('about:blank','_blank');}catch(e){}
       try{if(w)w.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#13202F;color:#C4CCD6;font:600 15px Montserrat,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center"><div><div style="font-size:22px;font-weight:800;letter-spacing:.08em;color:#fff">TEAM <span style="color:#FF5440">FORTE</span></div><p>Getting the '+planOf(x)+' ready…</p></div></body>');}catch(e){}
@@ -3824,6 +3911,11 @@ return out.sort((a, b) => a.distFt - b.distFt).slice(0, v.otherRoofMaxShown || 6
     if(a==='qrooms'){var xr=q();roomsSheet(xr.rooms,xr.items||[],tradeOf(xr),function(rooms,items){saveQ({rooms:rooms,items:items,contractPrice:repairTotal(items,tradeOf(xr))},'Rooms saved');});return;}
     if(a==='approverep'){t.disabled=true;saveQ({status:'approved'},'Approved').then(function(){M.qfilter='approved';call('list').then(function(d){S.jobs=d.jobs||[];cacheMerge('list',d);});}).catch(function(){t.disabled=false;});return;}
     if(a==='propose'){proposeSheet();return;}
+    if(a==='pjedit'){projectSheet();return;}
+    if(a==='pjms'){var xm=q(),mi=+t.getAttribute('data-v'),mm=xm.project.sched[mi],ma=pjAmounts(xm)[mi];
+      var ovm=sheet('<h3>Milestone reached?'+closeBtn()+'</h3><p class="sub"><b>'+(mi+1)+'. '+esc(mm.n)+'</b>'+(mm.w?': '+esc(mm.w):'')+'</p>'+kv('Amount','<b class="money">'+money(ma)+'</b>')+'<p class="hint">The customer’s saved card is charged now. If there is none, they get an invoice email with a pay link, due within 7 days.</p><div class="acts"><button class="btn ghost" data-close>Not yet</button><button class="btn" id="msok">Bill '+money(ma)+'</button></div>');
+      ovm.querySelector('#msok').onclick=function(){var b=this;b.disabled=true;b.textContent='Sending…';call('projectMilestone',{id:xm.id,i:mi}).then(function(r){mergeQ(r);closeSheet();render();toast('Milestone billed: '+money(ma));}).catch(function(e){b.disabled=false;b.textContent='Bill '+money(ma);err(e);});};
+      return;}
     if(a==='conew'){coSheet('');return;}
     if(a==='coedit'){coSheet(t.getAttribute('data-co'));return;}
     if(a==='cosend'){coSendSheet(t.getAttribute('data-co'));return;}

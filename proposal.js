@@ -597,6 +597,21 @@
   function otherTrade() { return D && D.type === 'repair' && D.trade && D.trade !== 'Roofing' ? D.trade : ''; }
   function jobLabel() { return (D && D.jobLabel) || 'Roof repair'; }
   function planWord() { return (D && D.plan) || 'roof plan'; }
+  /* renovation package (several trades under one price): sections, options, allowances, milestone payments */
+  function PJ() { return D && D.type === 'repair' && D.project ? D.project : null; }
+  function PS() { var p = PJ(); return p && (p.sched || []).length >= 2 ? p.sched : null; }
+  function msAmounts(t) { var sc = PS() || [], used = 0; return sc.map(function (x, i) { var a = i === sc.length - 1 ? Math.round((t - used) * 100) / 100 : Math.round(t * x.p) / 100; used = Math.round((used + a) * 100) / 100; return a; }); }
+  function ulist(a, cls) { return '<ul class="' + (cls || 'jl') + '">' + a.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; }
+  function projectBody() {
+    var p = PJ(), h = '';
+    h += p.sections.map(function (x, i) { return '<p class="k" style="margin-top:14px">' + (i + 1) + '. ' + esc(x.t || 'Work') + '</p>' + (x.lines.length ? ulist(x.lines) : ''); }).join('');
+    if ((p.opts || []).length) h += '<p class="k" style="margin-top:18px">Options you can add</p>' + p.opts.map(function (o) { return '<div class="sum"><div class="r"><span><b>' + esc(o.name) + '</b></span><span>+' + money(o.price) + '</span></div>' + (o.desc.length ? ulist(o.desc) : '') + '</div>'; }).join('') + '<p class="m">Tick the ones you want when you sign.</p>';
+    if ((p.allow || []).length) h += '<p class="k" style="margin-top:18px">Allowances</p><p class="m">The price includes these amounts for items you pick. If your picks cost more or less, the difference is added or credited.</p><div class="sum">' + p.allow.map(function (x) { return '<div class="r"><span>' + esc(x.name) + '</span><span>' + money(x.amt) + '</span></div>'; }).join('') + '</div>';
+    if ((p.excluded || []).length) h += '<p class="k" style="margin-top:18px">Not included</p>' + ulist(p.excluded);
+    if (PS()) h += '<p class="k" style="margin-top:18px">Payment schedule</p><div class="sum">' + PS().map(function (x, i) { return '<div class="r"><span>' + (i + 1) + '. ' + esc(x.n) + (x.w ? '<br><small class="m">' + esc(x.w) + '</small>' : '') + '</span><span>' + x.p + '%</span></div>'; }).join('') + '</div><p class="m">Each payment after the first is due within 7 days of reaching its milestone. If you add an option, the same percentages apply to the new total.</p>';
+    return h + linksHtml();
+  }
+  function linksHtml() { var p = PJ(); return p && (p.links || []).length ? '<div class="ask" style="margin-top:14px">' + p.links.map(function (l) { return '<a class="btn ghost" href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + ' ↗</a>'; }).join('') + '</div>' : ''; }
   var GENERIC_STEPS = [
     ['Sign & deposit', 'Your deposit holds your spot on the schedule.'],
     ['Materials', 'We order the materials for your job.'],
@@ -621,7 +636,7 @@
   }
   function depositText(p) { return D.depositPct > 0 ? money(Math.round(p * D.depositPct) / 100, true) : ''; }
   function split(t) { var mp = D.matPct != null ? D.matPct : 30, dp = D.depositPct || 0, dep = Math.round(t * dp) / 100, mat = Math.round(t * mp) / 100; return { dep: dep, mat: mat, bal: Math.max(0, Math.round((t - dep - mat) * 100) / 100), dp: dp, mp: mp, bp: Math.max(0, 100 - dp - mp) }; }
-  function planLine() { var x = split(0); return x.mp > 0 ? x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, ' + x.mp + '% progress payment when materials are delivered, and the final ' + x.bp + '% when the job is done.' : x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, and the final ' + x.bp + '% is due on the day the job is completed.'; }
+  function planLine() { if (PS()) return PS()[0].p + '% at signing holds your start date, then ' + (PS().length - 1) + ' payments as the work reaches each milestone.'; var x = split(0); return x.mp > 0 ? x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, ' + x.mp + '% progress payment when materials are delivered, and the final ' + x.bp + '% when the job is done.' : x.dp + '% deposit at signing holds your ' + (otherTrade() ? 'start' : 'install') + ' date, and the final ' + x.bp + '% is due on the day the job is completed.'; }
   /* the job's own written scope and exclusions (set in the app) */
   function jobScope() {
     var li = function (a) { return '<ul class="jl">' + a.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; };
@@ -711,7 +726,7 @@
     if (D.type !== 'repair') secs.push(['color', '<section class="slide" data-t="Your color"><div class="s" id="tfp-color"></div></section>']);
     /* 10. timeline */
     secs.push(['steps', '<section class="slide" data-t="What happens next"><div class="s"><p class="k">What happens next</p><h2>From yes to done</h2><ol class="tl">' +
-      (otherTrade() ? ((D.copy && D.copy.steps) || GENERIC_STEPS) : COPY.steps).map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></li>'; }).join('') + '</ol></div></section>']);
+      (PJ() && PJ().order.length ? PJ().order.map(function (o) { return [o, '']; }) : otherTrade() ? ((D.copy && D.copy.steps) || GENERIC_STEPS) : COPY.steps).map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3>' + (w[1] ? '<p>' + esc(w[1]) + '</p>' : '') + '</li>'; }).join('') + '</ol></div></section>']);
     /* 11. questions */
     var dep = D.depositPct > 0 ? 'A ' + planLine() : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
     secs.push(['faq', '<section class="slide" data-t="Questions"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
@@ -750,7 +765,10 @@
 
   function renderPrice() {
     var box = root.querySelector('#tfp-price'), h;
-    if (D.type === 'repair') {
+    if (PJ()) {
+      h = '<p class="k">Your investment</p><h2>Your renovation package</h2>' + lockLine() + '<div class="sum"><div class="r"><span><b>Package price</b><br><small class="m">One price for all the work below</small></span><span class="tot">' + money(D.signed && D.basePrice ? D.basePrice : D.price, true) + '</span></div></div>' +
+        (D.depositPct > 0 ? '<div class="dep">' + planLine() + '</div>' : '') + projectBody() + jobScope();
+    } else if (D.type === 'repair') {
       h = '<p class="k">Your investment</p><h2>' + (otherTrade() ? 'Your ' + esc(otherTrade().toLowerCase()) + ' job' : 'Your repair') + '</h2><div class="sum">' + D.items.map(function (it) {
         return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty + (/ft|LF|hour/i.test(it.unit || '') ? ' ' + esc(it.unit) + (/hour$/i.test(it.unit) ? 's' : '') : '') : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>';
       }).join('') + '<div class="r"><span><b>Total</b></span><span class="tot">' + money(D.signed && D.basePrice ? D.basePrice : D.price, true) + '</span></div></div>' +
@@ -793,6 +811,9 @@
   function grandTotal() { var base = D.signed ? (D.basePrice || D.price) : chosenPrice(); return D.signed ? D.price : base + pickedAdds().reduce(function (n, a) { return n + (Number(a.total) || 0); }, 0); }
   function sumHtml() {
     var p = PKGS[S.pick], base = D.signed ? (D.basePrice || D.price) : chosenPrice(), adds = pickedAdds(), tot = grandTotal();
+    if (PS()) { var am = msAmounts(tot);
+      return '<div class="sum" id="tfp-sum"><div class="r"><span>Renovation package</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>+ ' + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') +
+        '<div class="r"><span>Total</span><span class="tot">' + money(tot, true) + '</span></div>' + PS().map(function (x, i) { return '<div class="r"><span>' + (i + 1) + '. ' + esc(x.n) + ' (' + x.p + '%)</span><span>' + money(am[i], true) + '</span></div>'; }).join('') + '</div>'; }
     return '<div class="sum" id="tfp-sum">' + (D.type === 'repair' ? '<div class="r"><span>' + esc(jobLabel()) + '</span><span>' + D.items.length + ' item' + (D.items.length > 1 ? 's' : '') + '</span></div>' :
       '<div class="r"><span>Roof</span><span><b>' + esc(p ? p.name : '') + '</b></span></div><div class="r"><span>Color</span><span>' + (S.color ? esc(S.color) : '<span class="m">Choose later</span>') + '</span></div>') +
       (adds.length ? '<div class="r"><span>' + (D.type === 'repair' ? (otherTrade() ? 'Job' : 'Repair') : 'Roof') + ' price</span><span>' + money(base, true) + '</span></div>' + adds.map(function (a) { return '<div class="r"><span>' + (a.grp === 'lvl' ? 'Option chosen: ' : '+ ') + esc(a.name) + '</span><span>' + money(a.total, true) + '</span></div>'; }).join('') : '') +
@@ -809,7 +830,7 @@
       lv.map(function (a) { return '<label class="adl"><input type="radio" name="tfp-lvl" data-add="' + esc(a.key) + '"' + (S.add[a.key] ? ' checked' : '') + '><span>' + esc(a.name) + (a.desc ? '<small>' + esc(a.desc) + '</small>' : '') + '</span><b>+' + money(a.total) + '</b></label>'; }).join('');
     if (!ad.length) return h;
     return h + '<p class="k" style="margin-top:6px">Add to your project <span class="m" style="text-transform:none;letter-spacing:0;font-weight:500">· optional</span></p>' + ad.map(function (a) {
-      return '<label class="adl"><input type="checkbox" data-add="' + esc(a.key) + '"' + (S.add[a.key] ? ' checked' : '') + '><span>' + esc(a.name) + '<small>' + esc(String(a.qty)) + ' ' + esc(a.unit) + (a.qty > 1 ? ' × ' + money(a.price, true) : '') + '</small></span><b>+' + money(a.total) + '</b></label>';
+      return '<label class="adl"><input type="checkbox" data-add="' + esc(a.key) + '"' + (S.add[a.key] ? ' checked' : '') + '><span>' + esc(a.name) + '<small>' + (a.grp === 'po' ? esc(a.desc || '') : esc(String(a.qty)) + ' ' + esc(a.unit) + (a.qty > 1 ? ' × ' + money(a.price, true) : '')) + '</small></span><b>+' + money(a.total) + '</b></label>';
     }).join('');
   }
   /* the contract lines that change with the customer's choices on this page */
@@ -819,6 +840,7 @@
     return 'Owens Corning ' + p.label + ' shingles' + (S.color ? ' in ' + S.color : ' (color chosen with you before materials are ordered)') + ', with the Owens Corning underlayment, starter, ice & water barrier, hip & ridge and ventilation listed in the scope.';
   }
   function livePayment() {
+    if (PS()) { var am = msAmounts(grandTotal()); return PS().map(function (y, i) { return (i + 1) + '. ' + y.n + ': ' + money(am[i], true) + ' (' + y.p + '%)' + (y.w ? ', when ' + y.w.replace(/^when\s+/i, '').replace(/\.$/, '') : '') + '.'; }).join(' ') + ' The first payment is due at signing; it is refunded in full if you cancel within the cancellation period and is non-refundable after that. Each later payment is due within 7 days of reaching its milestone.'; }
     var x = split(grandTotal()), parts = [];
     if (x.dep > 0) parts.push('Deposit of ' + money(x.dep, true) + ' (' + x.dp + '%) at signing. It is refunded in full if you cancel within the cancellation period, and is non-refundable after that.');
     if (x.mat > 0) parts.push('Progress payment of ' + money(x.mat, true) + ' (' + x.mp + '%) when the materials are delivered.');
@@ -826,6 +848,7 @@
     return parts.join(' ');
   }
   function liveCardAuth() {
+    if (PS()) return D.contract && D.contract.cardAuth ? D.contract.cardAuth : '';
     var x = split(grandTotal());
     if (!(x.dep > 0) || !D.contract) return '';
     return 'If you pay the deposit online by card or bank account, that card or bank account is saved securely with our payment processor, Stripe. By signing, you authorize Team Forte to charge it for ' + (x.mat > 0 ? 'the progress payment of ' + money(x.mat, true) + ' when the materials are delivered and ' : '') + 'the final payment of ' + money(x.bal, true) + ' when the work is complete. You will get an email receipt for each charge. If a charge does not go through, we will email you an invoice with a link to pay instead. If you pay the deposit by cash or check, nothing is saved and we will send you an invoice for each later payment.';
@@ -856,7 +879,7 @@
     if (D.signed) {
       var payPart = '';
       if (D.stripe && D.depositDue > 0) payPart = '<div style="margin-top:14px">' + payBtn('deposit', D.depositDue, 'Pay the ' + money(D.depositDue, true) + ' deposit now') + '</div>';
-      else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Remaining: ' + money(D.balance, true) + (split(0).mp > 0 ? ' (progress payment when materials are delivered, final payment when the job is done). We’ll send each one when it’s due.' : ', due on the day the job is completed. We’ll send it then.') : ' Paid in full.') + '</p>';
+      else if (D.stripe && D.paid > 0) payPart = '<p style="margin:10px 0 0"><b>✓ ' + money(D.paid, true) + ' received.</b>' + (D.balance > 0 ? ' Remaining: ' + money(D.balance, true) + (PS() ? '. We’ll send each payment when its milestone is reached.' : split(0).mp > 0 ? ' (progress payment when materials are delivered, final payment when the job is done). We’ll send each one when it’s due.' : ', due on the day the job is completed. We’ll send it then.') : ' Paid in full.') + '</p>';
       else if (D.depositLink) payPart = '<br><a class="btn" href="' + esc(D.depositLink) + '" target="_top">Pay the ' + depositText(pr) + ' deposit</a>';
       box.innerHTML = '<p class="k">Signed</p><h2>Thank you, ' + esc(D.signed.name) + '!</h2>' + sum +
         '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Signed on ' + esc(D.signed.date) + '.</b> We’ll call you to schedule.' + payPart + '</div>' +
@@ -870,7 +893,7 @@
       '<label class="f" for="tfp-nm">Your full name</label><input class="inp" id="tfp-nm" autocomplete="name" value="' + esc(D.name || '') + '">' +
       '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
       (D.contract ? '<div class="cancelbox">' + esc(D.contract.cancelLine) + '</div>' : '') +
-      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.' + (liveCardAuth() ? ' If I pay the deposit online, I agree that my card or bank account is saved and charged for the ' + (split(0).mp > 0 ? 'progress and final payments' : 'final payment') + ', as described in the contract.' : '') + '</span></label>' +
+      '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.' + (liveCardAuth() ? (PS() ? ' If I pay the first payment online, I agree that my card or bank account is saved and charged for each later payment in the payment schedule when its milestone is reached, as described in the contract.' : ' If I pay the deposit online, I agree that my card or bank account is saved and charged for the ' + (split(0).mp > 0 ? 'progress and final payments' : 'final payment') + ', as described in the contract.') : '') + '</span></label>' +
       (FIN && FIN.on && D.type !== 'repair' ? '<p class="m" style="margin:0 0 10px">Planning to use financing? You can still sign now to hold your spot, and we’ll help you with the application.</p>' : '') +
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
@@ -885,7 +908,7 @@
   /* Just the contract to sign, no presentation: #p=TF-XXXXX&sign=1 */
   function buildSignOnly() {
     var p = PKGS[S.pick];
-    var scope = D.type === 'repair' ? '<div class="sum">' + D.items.map(function (it) { return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>'; }).join('') + '</div>' + jobScope() :
+    var scope = PJ() ? projectBody() : D.type === 'repair' ? '<div class="sum">' + D.items.map(function (it) { return '<div class="r"><span>' + esc(it.name) + (it.qty > 1 ? ' × ' + it.qty : '') + '</span><span>' + money(it.qty * it.price, true) + '</span></div>'; }).join('') + '</div>' + jobScope() :
       '<p>' + esc(p ? p.name : 'New roof') + (D.color ? ', ' + esc(D.color) : '') + '</p>' + jobScope();
     var h = '<div class="inv"><p class="k">Contract · ' + esc(D.id) + '</p><h1 style="font-size:30px">' + (D.signed ? 'Your signed contract' : 'Your contract to sign') + '</h1><p class="lead">' + esc(D.address) + '</p>' +
       '<p class="k" style="margin-top:18px">Scope of work</p>' + scope +
