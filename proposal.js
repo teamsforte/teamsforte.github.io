@@ -383,7 +383,7 @@
     S.pick = D.offers ? (D.pick >= 0 ? D.pick : 1) : D.pick;
     S.color = D.color || '';
     S.add = {};
-    if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else if (SIGNONLY) buildSignOnly(); else build();
+    if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else if (SIGNONLY) buildSignOnly(); else { build(); loadGal(); }
     if (started && y) window.scrollTo(0, y);
     if (PAID && !started) checkPaid();
     started = true;
@@ -459,7 +459,7 @@
   function loadMaps() {
     if (window.google && google.maps && google.maps.StreetViewService) return Promise.resolve();
     if (S.mapsP) return S.mapsP;
-    if (!D.mapsKey || !(D.lat && D.lng)) return Promise.reject(new Error('nomap'));
+    if (!D.mapsKey) return Promise.reject(new Error('nomap'));
     S.mapsP = new Promise(function (ok, bad) {
       var cb = '__tfpMaps' + Date.now(); window[cb] = function () { ok(); };
       var sc = document.createElement('script'); sc.async = true; sc.onerror = function () { bad(new Error('maps')); };
@@ -476,7 +476,7 @@
   var ROOF_COLORS = ['#FF5440', '#FDB022', '#38BDF8', '#A78BFA', '#34D399', '#F472B6'];
   function initCover() {
     var el = root.querySelector('#tfp-sv'); if (!el || el.__done) return; el.__done = true;
-    loadMaps().then(function () {
+    loadMaps().then(houseSpot).then(function () {
       var house = new google.maps.LatLng(D.lat, D.lng);
       new google.maps.StreetViewService().getPanorama({ location: house, radius: 70, source: google.maps.StreetViewSource.OUTDOOR, preference: google.maps.StreetViewPreference.NEAREST }, function (data, st) {
         if (st === 'OK' && data && data.location) {
@@ -486,10 +486,20 @@
           el.insertAdjacentHTML('beforeend', '<span class="cap">Your home</span>');
         } else satellite(el, 20, false);
       });
-    }).catch(function () { /* keep the photo */ });
+    }).catch(function () { /* no map of the house: show the photo instead */ var h = el.getAttribute('data-hero'); if (h && !el.querySelector('.mapbox')) el.innerHTML = img(h, 1600, ''); });
+  }
+  /* the house's coordinates: saved with the quote, or looked up from its address (quotes made without a roof measurement have none) */
+  function houseSpot() {
+    if (D.lat && D.lng) return Promise.resolve();
+    if (!D.address || !google.maps.Geocoder) return Promise.reject(new Error('noaddr'));
+    return new Promise(function (ok, bad) {
+      new google.maps.Geocoder().geocode({ address: D.address }, function (res, st) {
+        if (st === 'OK' && res && res[0]) { var l = res[0].geometry.location; D.lat = l.lat(); D.lng = l.lng(); ok(); } else bad(new Error('geocode ' + st));
+      });
+    });
   }
   function initRoofMap() {
-    var el = root.querySelector('#tfp-map'); if (!el || el.__done) return; el.__done = true;
+    var el = root.querySelector('#tfp-map'); if (!el || el.__done || !(D.lat && D.lng)) return; el.__done = true;
     loadMaps().then(function () { satellite(el, 20, true); }).catch(function () {});
   }
   function satellite(el, zoom, outlines) {
@@ -595,6 +605,67 @@
   function planLabel(x) { return x.label || ((Number(x.apr) === 0 ? '0% APR' : x.apr + '% APR') + ' for ' + x.months + ' months'); }
   /* itemized jobs for other trades (carpentry, painting, handyman) use their own words; '' = roofing */
   function otherTrade() { return D && D.type === 'repair' && D.trade && D.trade !== 'Roofing' ? D.trade : ''; }
+
+  /* ------------------------------------------------------------------ recent work that matches this job
+     For jobs other than roofing, "Our work" shows the published gallery jobs closest to what this proposal covers
+     (a bathroom in the scope -> our bathrooms, a roof raise -> our roofs, a countertop -> our kitchens), each with an "after" photo.
+     The gallery list comes from the same public feed as the website's gallery and is kept for a week on the customer's phone. */
+  var GAL_KEY = 'tfp_gal', TOPICS = [
+    ['Bathrooms', /bath|shower|vanity|toilet|\btile/g],
+    ['Kitchens', /kitchen|countertop|cabinet|quartz|pantry|backsplash/g],
+    ['Roofing', /\broof|shingle|gable|ridge vent/g],
+    ['Flooring', /flooring|hardwood|\blvp\b|laminate/g],
+    ['Painting', /\bpaint/g],
+    ['Outdoor', /\bdeck|patio|fence|porch|pergola/g],
+    ['Carpentry', /built-in|fireplace|mantel|stair|wainscot|coffered/g]
+  ];
+  function galJobs() {
+    if (S.gal) return S.gal;
+    try { var v = JSON.parse(localStorage.getItem(GAL_KEY) || 'null'); if (v && v.jobs && Date.now() - v.t < 7 * 864e5) return v.jobs; } catch (e) {}
+    return null;
+  }
+  function scopeText() {
+    var pr = D.project || {}, t = [D.jobLabel || ''];
+    (pr.sections || []).forEach(function (x) { t.push(x.t || ''); t = t.concat(x.lines || []); });
+    (pr.opts || []).forEach(function (o) { t.push(o.name || ''); t = t.concat(o.desc || []); });
+    (D.items || []).concat(D.addons || []).forEach(function (a) { t.push(a.name || '', a.desc || ''); });
+    t = t.concat(D.scope || []);
+    return t.join(' \n ').toLowerCase();
+  }
+  function afterPic(j) {
+    var ph = j.photos || [], a = ph.filter(function (p) { return p.stage === 'after'; });
+    return a.length ? a[0].id : (ph.length ? '' : (j.cover || ''));
+  }
+  function workJobs() {
+    var base = D.jobs || [], all = otherTrade() ? galJobs() : null, txt = all && all.length ? scopeText() : '';
+    if (!txt) return base;
+    var seen = {}; (txt.match(/[a-z]{4,}/g) || []).forEach(function (w) { seen[w] = 1; });
+    /* within a kind of work: whole jobs first (not partial or repair), then the most finished photos, then the closest wording */
+    var STOP = { with: 1, from: 1, that: 1, this: 1, into: 1, over: 1, under: 1, your: 1, have: 1, will: 1, also: 1, were: 1, they: 1, them: 1, then: 1, what: 1, when: 1 };
+    var fit = function (j) {
+      var n = 0; ((j.title + ' ' + (j.description || '')).toLowerCase().match(/[a-z]{4,}/g) || []).forEach(function (w) { if (seen[w] && !STOP[w]) n++; });
+      var after = (j.photos || []).filter(function (p) { return p.stage === 'after'; }).length;
+      return (/partial|repair/i.test(j.title) ? 0 : 1000) + Math.min(after, 9) * 10 + Math.min(n, 9);
+    };
+    var lists = TOPICS.map(function (t) { return [t[0], (txt.match(t[1]) || []).length]; })
+      .filter(function (t) { return t[1] > 0; }).sort(function (a, b) { return b[1] - a[1]; })
+      .map(function (t) { return all.filter(function (j) { return j.service === t[0] && afterPic(j); }).sort(function (a, b) { return fit(b) - fit(a); }); })
+      .filter(function (l) { return l.length; });
+    var out = [];
+    for (var r = 0; r < 3 && out.length < 3; r++) lists.forEach(function (l) { if (out.length < 3 && l[r]) out.push(l[r]); });
+    if (!out.length) return base;
+    return out.map(function (j) { return { title: j.title, town: j.town || '', date: j.date || '', cover: afterPic(j) }; });
+  }
+  function loadGal() {
+    if (S.galP || !otherTrade()) return;
+    S.galP = jsonp(EXEC + '?r=data', 20000).then(function (d) {
+      if (!d || !d.jobs) return;
+      var before = JSON.stringify(workJobs());
+      S.gal = d.jobs;
+      try { localStorage.setItem(GAL_KEY, JSON.stringify({ t: Date.now(), jobs: d.jobs })); } catch (e) {}
+      if (JSON.stringify(workJobs()) !== before && S.built && !PRESENT && !busy() && root.querySelector('.deck')) { var y = window.scrollY; build(); if (y) window.scrollTo(0, y); }
+    }).catch(function () {});
+  }
   function jobLabel() { return (D && D.jobLabel) || 'Roof repair'; }
   function planWord() { return (D && D.plan) || 'roof plan'; }
   /* renovation package (several trades under one price): sections, options, allowances, milestone payments */
@@ -644,16 +715,16 @@
   }
 
   function build() {
-    var secs = [], first = esc(D.first || '');
-    var hero = D.insp.length ? D.insp[0].id : (D.jobs.length ? D.jobs[0].cover : '');
-    var house = D.mapsKey && D.lat && D.lng;
+    var secs = [], first = esc(D.name || D.first || ''), works = workJobs();
+    var hero = D.insp.length ? D.insp[0].id : (works.length ? works[0].cover : '');
+    var house = !!(D.mapsKey && ((D.lat && D.lng) || D.address));
     /* 1. cover: their house */
     secs.push(['cover', '<section class="cover slide" data-t="Welcome"><div class="s"><div>' +
       '<p class="k">' + (D.type === 'repair' ? (otherTrade() ? 'Your ' + esc(planWord()) : 'Your repair plan') : 'Your roof plan') + '</p><h1>' + (first ? 'Prepared for ' + first : 'Your Team Forte proposal') + '</h1>' +
       '<p class="lead">' + esc(D.address) + '</p>' +
       '<div class="chips"><span class="chip">' + esc(D.date) + '</span><span class="chip">Proposal ' + esc(D.id) + '</span><span class="chip">Registered & insured' + (D.company.hic ? ' · CT ' + esc(D.company.hic) : '') + '</span></div>' +
       (PRESENT ? '' : '<p style="margin-top:26px"><a class="btn" href="#tfp-sign" data-go="sign">' + (D.signed ? 'See your signed proposal' : 'Skip to my price') + '</a></p>') + '</div>' +
-      '<div class="media" id="' + (house ? 'tfp-sv' : 'tfp-hero') + '">' + (hero ? img(hero, 1600, '') : '') + '</div></div></section>']);
+      '<div class="media" id="' + (house ? 'tfp-sv' : 'tfp-hero') + '"' + (house && hero ? ' data-hero="' + esc(hero) + '"' : '') + '>' + (hero && !house ? img(hero, 1600, '') : '') + '</div></div></section>']);
     /* 2. roof today: satellite + stats */
     if (D.type !== 'repair' && D.roofs.length) {
       var area = D.roofs.reduce(function (n, r) { return n + (Number(r.s) || 0); }, 0);
@@ -694,8 +765,8 @@
         }).join('') + '</div>' + (D.insp.length > shown.length ? '<p class="m" style="margin-top:12px">+ ' + (D.insp.length - shown.length) + ' more photos in your inspection report.</p>' : '') + '</div></section>']);
     }
     /* 4. recent work: magazine layout */
-    if (D.jobs.length) {
-      var js = D.jobs.slice(0, 3);
+    if (works.length) {
+      var js = works.slice(0, 3);
       secs.push(['work', '<section class="slide" data-t="Our work"><div class="s"><p class="k">Our work</p><h2>Recent Team Forte ' + (otherTrade() ? 'work' : 'roofs') + '</h2><p class="lead">Real jobs by our crews, start to finish.</p>' +
         '<div class="' + (js.length === 3 ? 'mag' : 'grid' + Math.max(2, js.length)) + '">' +
         js.map(function (j) { return '<div class="card job">' + img(j.cover, 1200, j.title) + '<div class="in"><h3>' + esc(j.title) + '</h3><div class="m">' + esc([j.town, j.date].filter(Boolean).join(' · ')) + '</div></div></div>'; }).join('') +
