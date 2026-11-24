@@ -448,7 +448,7 @@
       '<div class="r"><span>Balance</span><span class="tot">' + money(D.balance, true) + '</span></div></div>' +
       (due > 0 ? (D.stripe ? '<div class="sum"><div class="r due"><span><b>' + esc(label) + '</b></span><span class="tot">' + money(due, true) + '</span></div></div>' + payBtn('request', due, 'Pay ' + money(due, true) + ' now') :
         '<p class="m">To pay, call us at ' + esc(COPY.phone) + '.</p>') : '<div class="ok"><div class="okchk">' + ICON.check + '</div><b>Paid in full. Thank you!</b></div>') +
-      (FIN && FIN.on && due >= 1000 ? '<p class="m" style="margin-top:14px">Prefer monthly payments? <a href="' + esc(FIN.applyUrl || smsHref('Hi Team Forte, I’d like to hear about financing for ' + D.id + '.')) + '">' + (FIN.applyUrl ? 'Check your financing options' : 'Ask us about financing') + '</a>.</p>' : '') +
+      (finOn() && due >= 1000 ? '<p class="m" style="margin-top:14px">Prefer monthly payments? <a href="' + esc(FIN.applyUrl || smsHref('Hi Team Forte, I’d like to hear about financing for ' + D.id + '.')) + '">' + (FIN.applyUrl ? 'Check your financing options' : 'Ask us about financing') + '</a>.</p>' : '') +
       '<p class="m" style="margin-top:22px;text-align:center"><a href="#p=' + encodeURIComponent(D.id) + '" data-full="1">View your full ' + esc(planWord()) + '</a> · Questions? <a href="' + esc(smsHref('Hi Team Forte, about invoice ' + D.id + ': ')) + '">Text us</a></p></div>' +
       '<div class="foot"><div class="s"><b>' + esc(D.company.legal || 'Team Forte') + '</b><br>' + esc([D.company.town, D.company.phone, D.company.email].filter(Boolean).join(' · ')) + (D.company.hic ? '<br>CT ' + esc(D.company.hic) : '') + '</div></div>';
     root.className = ''; root.innerHTML = bar() + barHtml + h;
@@ -600,6 +600,9 @@
   function price(i) { return D.offers ? Number(D.offers[i]) || 0 : D.price; }
   function chosenPrice() { return D.type === 'repair' ? D.price : (D.offers ? price(S.pick) : D.price); }
   var FIN = window.TFP_FINANCE || COPY.finance;
+  /* jobs where we don't offer financing: add the quote id here, or set "finance": false in its package */
+  var NO_FINANCE = ['TF-D8KLF'];
+  function finOn() { return !!(FIN && FIN.on && D && NO_FINANCE.indexOf(D.id) < 0 && !(PJ() && PJ().finance === false)); }
   function monthly(p, apr, n) { var r = (Number(apr) || 0) / 1200; n = Number(n) || 0; if (!(p > 0) || !(n > 0)) return 0; return r ? p * r / (1 - Math.pow(1 + r, -n)) : p / n; }
   function amortPlan() { return (FIN.plans || []).filter(function (x) { return x.months > 0 && x.apr != null; }).sort(function (a, b) { return b.months - a.months; })[0]; }
   function planLabel(x) { return x.label || ((Number(x.apr) === 0 ? '0% APR' : x.apr + '% APR') + ' for ' + x.months + ' months'); }
@@ -705,7 +708,7 @@
     return 'Yes. Ask us about monthly payment options for ' + (otherTrade() ? 'your project' : 'your roof') + ' and we’ll walk you through them.';
   }
   function financeBox() {
-    if (!FIN || !FIN.on || (D.type === 'repair' && !(D.price >= 1000))) return '';
+    if (!finOn() || (D.type === 'repair' && !(D.price >= 1000))) return '';
     var pr = chosenPrice(), pl = amortPlan(), mo = pl ? monthly(pr, pl.apr, pl.months) : 0;
     var h = '<div class="fin"><div><p class="k" style="margin:0 0 4px">Prefer monthly payments?</p>';
     if (mo > 0) h += '<div class="fin-mo">About <b>' + money(Math.ceil(mo)) + '/mo</b>*</div><div class="m">for the ' + (D.type === 'repair' ? (otherTrade() ? 'job' : 'repair') : esc((PKGS[S.pick] || {}).label || '') + ' option') + '</div>';
@@ -811,7 +814,7 @@
     /* 11. questions */
     var dep = D.depositPct > 0 ? (PS() ? '' : 'A ') + planLine() + (PS() ? ' Each payment after the first is due within 7 days of reaching its milestone, as listed above under Payment schedule.' : '') : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
     secs.push(['faq', '<section class="slide" data-t="Questions"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
-      (PJ() ? projectFaq() : (otherTrade() && D.copy && D.copy.faq) || []).concat(COPY.faq.filter(function (f) { return (f[1] !== '__FINANCE__' || (FIN && FIN.on)) && !(otherTrade() && ROOF_ONLY_FAQ.indexOf(f[0]) >= 0); }).map(function (f) { return otherTrade() && /protect my yard/.test(f[0]) ? ['Will you protect my home?', 'Yes. We cover floors and furniture near the work, clean up every day, and leave the work area broom-clean.'] : f; })).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
+      (PJ() ? projectFaq() : (otherTrade() && D.copy && D.copy.faq) || []).concat(COPY.faq.filter(function (f) { return (f[1] !== '__FINANCE__' || finOn()) && !(otherTrade() && ROOF_ONLY_FAQ.indexOf(f[0]) >= 0); }).map(function (f) { return otherTrade() && /protect my yard/.test(f[0]) ? ['Will you protect my home?', 'Yes. We cover floors and furniture near the work, clean up every day, and leave the work area broom-clean.'] : f; })).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
       '<p class="m" style="margin-top:16px">Something else on your mind?</p><div class="ask"><a class="btn ghost" href="' + esc(smsHref('Hi Team Forte, I have a question about proposal ' + D.id + ': ')) + '">' + ICON.chat + 'Text us a question</a><a class="btn ghost" href="' + phoneHref() + '">' + ICON.phone + 'Call ' + esc(COPY.phone) + '</a></div></div></section>']);
     /* 12. sign */
     secs.push(['sign', '<section class="slide" id="tfp-sign" data-t="Accept & sign"><div class="s" id="tfp-signbox"></div></section>']);
@@ -975,7 +978,7 @@
       '<div class="row"><label class="f">Sign below</label><button class="lnk" id="tfp-clr" type="button">Clear</button></div><canvas class="sig" id="tfp-cv" aria-label="Signature pad"></canvas>' +
       (D.contract ? '<div class="cancelbox">' + esc(D.contract.cancelLine) + '</div>' : '') +
       '<label class="ck"><input type="checkbox" id="tfp-ag"><span>I accept this proposal and contract, and I’m authorized to approve work at this address.' + (liveCardAuth() ? (PS() ? ' If I pay the first payment online, I agree that my card or bank account is saved and charged for each later payment in the payment schedule when its milestone is reached, as described in the contract.' : ' If I pay the deposit online, I agree that my card or bank account is saved and charged for the ' + (split(0).mp > 0 ? 'progress and final payments' : 'final payment') + ', as described in the contract.') : '') + '</span></label>' +
-      (FIN && FIN.on && D.type !== 'repair' ? '<p class="m" style="margin:0 0 10px">Planning to use financing? You can still sign now to hold your spot, and we’ll help you with the application.</p>' : '') +
+      (finOn() && D.type !== 'repair' ? '<p class="m" style="margin:0 0 10px">Planning to use financing? You can still sign now to hold your spot, and we’ll help you with the application.</p>' : '') +
       '<button class="btn block" id="tfp-go" type="button">Accept & sign</button><div class="err" id="tfp-er"></div><div id="tfp-done"></div>' +
       '<p class="m" style="margin-top:14px;text-align:center">Not ready? <a href="' + esc(smsHref('Hi Team Forte, about proposal ' + D.id + ': ')) + '">Text us</a> or call ' + esc(COPY.phone) + '.</p>';
     sigPad();
