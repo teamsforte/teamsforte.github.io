@@ -689,6 +689,16 @@
     ['The work', 'Our crew does the work on the dates in your contract.'],
     ['Cleanup & walkthrough', 'We clean up and walk through the finished work with you before we call it done.']
   ];
+  /* questions for a renovation package, built from what this proposal itself says */
+  function projectFaq() {
+    var p = PJ(), q = [], txt = scopeText();
+    if ((p.allow || []).length) q.push(['Do I get to pick my own finishes?', 'Yes. Your price includes an allowance for each item you pick, listed under Allowances. If your picks cost more or less, the difference is added or credited.']);
+    if (/permit/.test(txt)) q.push(['Who pulls the permits?', 'We do. Permits are included in your package price.']);
+    if (/engineer/.test(txt)) q.push(['Who designs the structural work?', 'A structural engineer, and the engineer is included in your price.']);
+    if ((p.opts || []).length) q.push(['Can I add one of the options?', 'Yes. Tick it when you sign.' + (PS() ? ' The same payment percentages apply to the new total.' : '')]);
+    if ((p.excluded || []).length) q.push(['What isn’t included?', p.excluded.map(function (x, i) { return i ? x.charAt(0).toLowerCase() + x.slice(1) : x; }).join(', ') + '.']);
+    return q;
+  }
   var ROOF_ONLY_FAQ = ['Why might your price be higher than another quote?', 'What if you find rotted wood under the old roof?', 'What warranty comes with the roof?', 'Do you help with insurance claims?', 'How long will it take?'];
   function financeAnswer() {
     if (FIN.lender) return 'Yes. We offer financing through ' + FIN.lender + ', on approved credit.' + ((FIN.plans || []).length ? ' Plans include ' + FIN.plans.map(planLabel).join(', ') + '.' : '') + (FIN.applyUrl ? ' You can check your options online in a few minutes with the button on the price page.' : ' Ask us and we’ll walk you through it.');
@@ -799,9 +809,9 @@
     secs.push(['steps', '<section class="slide" data-t="What happens next"><div class="s"><p class="k">What happens next</p><h2>From yes to done</h2><ol class="tl">' +
       (PJ() && PJ().order.length ? PJ().order.map(function (o) { return [o, '']; }) : otherTrade() ? ((D.copy && D.copy.steps) || GENERIC_STEPS) : COPY.steps).map(function (w) { return '<li><h3>' + esc(w[0]) + '</h3>' + (w[1] ? '<p>' + esc(w[1]) + '</p>' : '') + '</li>'; }).join('') + '</ol></div></section>']);
     /* 11. questions */
-    var dep = D.depositPct > 0 ? 'A ' + planLine() : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
+    var dep = D.depositPct > 0 ? (PS() ? '' : 'A ') + planLine() + (PS() ? ' Each payment after the first is due within 7 days of reaching its milestone, as listed above under Payment schedule.' : '') : 'Nothing until the job is scheduled. We’ll go over payment when you sign.';
     secs.push(['faq', '<section class="slide" data-t="Questions"><div class="s faq"><p class="k">Questions</p><h2>What homeowners ask us</h2>' +
-      ((otherTrade() && D.copy && D.copy.faq) || []).concat(COPY.faq.filter(function (f) { return (f[1] !== '__FINANCE__' || (FIN && FIN.on)) && !(otherTrade() && ROOF_ONLY_FAQ.indexOf(f[0]) >= 0); }).map(function (f) { return otherTrade() && /protect my yard/.test(f[0]) ? ['Will you protect my home?', 'Yes. We cover floors and furniture near the work, clean up every day, and leave the work area broom-clean.'] : f; })).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
+      (PJ() ? projectFaq() : (otherTrade() && D.copy && D.copy.faq) || []).concat(COPY.faq.filter(function (f) { return (f[1] !== '__FINANCE__' || (FIN && FIN.on)) && !(otherTrade() && ROOF_ONLY_FAQ.indexOf(f[0]) >= 0); }).map(function (f) { return otherTrade() && /protect my yard/.test(f[0]) ? ['Will you protect my home?', 'Yes. We cover floors and furniture near the work, clean up every day, and leave the work area broom-clean.'] : f; })).map(function (f, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1] === '__DEPOSIT__' ? dep : f[1] === '__FINANCE__' ? financeAnswer() : f[1]) + '</p></details>'; }).join('') +
       '<p class="m" style="margin-top:16px">Something else on your mind?</p><div class="ask"><a class="btn ghost" href="' + esc(smsHref('Hi Team Forte, I have a question about proposal ' + D.id + ': ')) + '">' + ICON.chat + 'Text us a question</a><a class="btn ghost" href="' + phoneHref() + '">' + ICON.phone + 'Call ' + esc(COPY.phone) + '</a></div></div></section>']);
     /* 12. sign */
     secs.push(['sign', '<section class="slide" id="tfp-sign" data-t="Accept & sign"><div class="s" id="tfp-signbox"></div></section>']);
