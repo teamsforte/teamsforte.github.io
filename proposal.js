@@ -402,7 +402,7 @@
 
   /* ------------------------------------------------------------------ payments */
   function payBtn(kind, amount, label) {
-    return '<button class="btn block" type="button" data-pay="' + kind + '">' + esc(label || ('Pay ' + money(amount, true) + ' now')) + '</button><p class="secure">Secure checkout by Stripe. Card or bank account.</p>';
+    return '<button class="btn block" type="button" data-pay="' + kind + '">' + esc(label || ('Pay ' + money(amount, true) + ' now')) + '</button><p class="secure">Secure checkout by Stripe. ' + (amount >= 2500 ? 'For a payment this size, please choose bank account.' : 'Card or bank account.') + '</p>';
   }
   function payNow(kind, btn) {
     var old = btn.innerHTML; btn.disabled = true; btn.textContent = 'Opening secure checkout…';
