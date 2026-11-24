@@ -1,0 +1,106 @@
+diff --git a/proposal.js b/proposal.js
+index a7cae62..609767e 100644
+--- a/proposal.js
++++ b/proposal.js
+@@ -386 +386 @@
+-    if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else if (SIGNONLY) buildSignOnly(); else build();
++    if (CO) buildCo(); else if (INVOICE && D.signed) buildInvoice(); else if (SIGNONLY) buildSignOnly(); else { build(); loadGal(); }
+@@ -462 +462 @@
+-    if (!D.mapsKey || !(D.lat && D.lng)) return Promise.reject(new Error('nomap'));
++    if (!D.mapsKey) return Promise.reject(new Error('nomap'));
+@@ -479 +479 @@
+-    loadMaps().then(function () {
++    loadMaps().then(houseSpot).then(function () {
+@@ -489 +489,11 @@
+-    }).catch(function () { /* keep the photo */ });
++    }).catch(function () { /* no map of the house: show the photo instead */ var h = el.getAttribute('data-hero'); if (h && !el.querySelector('.mapbox')) el.innerHTML = img(h, 1600, ''); });
++  }
++  /* the house's coordinates: saved with the quote, or looked up from its address (quotes made without a roof measurement have none) */
++  function houseSpot() {
++    if (D.lat && D.lng) return Promise.resolve();
++    if (!D.address || !google.maps.Geocoder) return Promise.reject(new Error('noaddr'));
++    return new Promise(function (ok, bad) {
++      new google.maps.Geocoder().geocode({ address: D.address }, function (res, st) {
++        if (st === 'OK' && res && res[0]) { var l = res[0].geometry.location; D.lat = l.lat(); D.lng = l.lng(); ok(); } else bad(new Error('geocode ' + st));
++      });
++    });
+@@ -492 +502 @@
+-    var el = root.querySelector('#tfp-map'); if (!el || el.__done) return; el.__done = true;
++    var el = root.querySelector('#tfp-map'); if (!el || el.__done || !(D.lat && D.lng)) return; el.__done = true;
+@@ -597,0 +608,61 @@
++
++  /* ------------------------------------------------------------------ recent work that matches this job
++     For jobs other than roofing, "Our work" shows the published gallery jobs closest to what this proposal covers
++     (a bathroom in the scope -> our bathrooms, a roof raise -> our roofs, a countertop -> our kitchens), each with an "after" photo.
++     The gallery list comes from the same public feed as the website's gallery and is kept for a week on the customer's phone. */
++  var GAL_KEY = 'tfp_gal', TOPICS = [
++    ['Bathrooms', /bath|shower|vanity|toilet|\btile/g],
++    ['Kitchens', /kitchen|countertop|cabinet|quartz|pantry|backsplash/g],
++    ['Roofing', /\broof|shingle|gable|ridge vent/g],
++    ['Flooring', /flooring|hardwood|\blvp\b|laminate/g],
++    ['Painting', /\bpaint/g],
++    ['Outdoor', /\bdeck|patio|fence|porch|pergola/g],
++    ['Carpentry', /built-in|fireplace|mantel|stair|wainscot|coffered/g]
++  ];
++  function galJobs() {
++    if (S.gal) return S.gal;
++    try { var v = JSON.parse(localStorage.getItem(GAL_KEY) || 'null'); if (v && v.jobs && Date.now() - v.t < 7 * 864e5) return v.jobs; } catch (e) {}
++    return null;
++  }
++  function scopeText() {
++    var pr = D.project || {}, t = [D.jobLabel || ''];
++    (pr.sections || []).forEach(function (x) { t.push(x.t || ''); t = t.concat(x.lines || []); });
++    (pr.opts || []).forEach(function (o) { t.push(o.name || ''); t = t.concat(o.desc || []); });
++    (D.items || []).concat(D.addons || []).forEach(function (a) { t.push(a.name || '', a.desc || ''); });
++    t = t.concat(D.scope || []);
++    return t.join(' \n ').toLowerCase();
++  }
++  function afterPic(j) {
++    var ph = j.photos || [], a = ph.filter(function (p) { return p.stage === 'after'; });
++    return a.length ? a[0].id : (ph.length ? '' : (j.cover || ''));
++  }
++  function workJobs() {
++    var base = D.jobs || [], all = otherTrade() ? galJobs() : null, txt = all && all.length ? scopeText() : '';
++    if (!txt) return base;
++    var seen = {}; (txt.match(/[a-z]{4,}/g) || []).forEach(function (w) { seen[w] = 1; });
++    /* within a kind of work: whole jobs first (not partial or repair), then the most finished photos, then the closest wording */
++    var STOP = { with: 1, from: 1, that: 1, this: 1, into: 1, over: 1, under: 1, your: 1, have: 1, will: 1, also: 1, were: 1, they: 1, them: 1, then: 1, what: 1, when: 1 };
++    var fit = function (j) {
++      var n = 0; ((j.title + ' ' + (j.description || '')).toLowerCase().match(/[a-z]{4,}/g) || []).forEach(function (w) { if (seen[w] && !STOP[w]) n++; });
++      var after = (j.photos || []).filter(function (p) { return p.stage === 'after'; }).length;
++      return (/partial|repair/i.test(j.title) ? 0 : 1000) + Math.min(after, 9) * 10 + Math.min(n, 9);
++    };
++    var lists = TOPICS.map(function (t) { return [t[0], (txt.match(t[1]) || []).length]; })
++      .filter(function (t) { return t[1] > 0; }).sort(function (a, b) { return b[1] - a[1]; })
++      .map(function (t) { return all.filter(function (j) { return j.service === t[0] && afterPic(j); }).sort(function (a, b) { return fit(b) - fit(a); }); })
++      .filter(function (l) { return l.length; });
++    var out = [];
++    for (var r = 0; r < 3 && out.length < 3; r++) lists.forEach(function (l) { if (out.length < 3 && l[r]) out.push(l[r]); });
++    if (!out.length) return base;
++    return out.map(function (j) { return { title: j.title, town: j.town || '', date: j.date || '', cover: afterPic(j) }; });
++  }
++  function loadGal() {
++    if (S.galP || !otherTrade()) return;
++    S.galP = jsonp(EXEC + '?r=data', 20000).then(function (d) {
++      if (!d || !d.jobs) return;
++      var before = JSON.stringify(workJobs());
++      S.gal = d.jobs;
++      try { localStorage.setItem(GAL_KEY, JSON.stringify({ t: Date.now(), jobs: d.jobs })); } catch (e) {}
++      if (JSON.stringify(workJobs()) !== before && S.built && !PRESENT && !busy() && root.querySelector('.deck')) { var y = window.scrollY; build(); if (y) window.scrollTo(0, y); }
++    }).catch(function () {});
++  }
+@@ -647,3 +718,3 @@
+-    var secs = [], first = esc(D.first || '');
+-    var hero = D.insp.length ? D.insp[0].id : (D.jobs.length ? D.jobs[0].cover : '');
+-    var house = D.mapsKey && D.lat && D.lng;
++    var secs = [], first = esc(D.name || D.first || ''), works = workJobs();
++    var hero = D.insp.length ? D.insp[0].id : (works.length ? works[0].cover : '');
++    var house = !!(D.mapsKey && ((D.lat && D.lng) || D.address));
+@@ -656 +727 @@
+-      '<div class="media" id="' + (house ? 'tfp-sv' : 'tfp-hero') + '">' + (hero ? img(hero, 1600, '') : '') + '</div></div></section>']);
++      '<div class="media" id="' + (house ? 'tfp-sv' : 'tfp-hero') + '"' + (house && hero ? ' data-hero="' + esc(hero) + '"' : '') + '>' + (hero && !house ? img(hero, 1600, '') : '') + '</div></div></section>']);
+@@ -697,2 +768,2 @@
+-    if (D.jobs.length) {
+-      var js = D.jobs.slice(0, 3);
++    if (works.length) {
++      var js = works.slice(0, 3);
